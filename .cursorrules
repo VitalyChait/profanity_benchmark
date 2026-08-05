@@ -1,0 +1,193 @@
+CRITICAL: Before writing, changing, or refactoring any code, you MUST always read the 'plan.md' file located in the root directory to maintain context, project constraints, and project goals. Ensure all proposed changes strictly align with the milestones in 'plan.md'.
+
+
+# YouthEscalateBench Plan Work Protocol
+
+Use this file as the shared operating contract for any model working on the plan in
+`/home/vitaly/uni/research/PLAN.md`. It is intentionally model-agnostic.
+
+There is no universal cross-model auto-discovery convention for `skills.md`.
+Configure each client or repository-level instruction file to read this file before
+plan work. Keep this file canonical and make tool-specific adapters thin pointers;
+do not maintain divergent copies of these rules.
+
+## Mission
+
+Produce and maintain the canonical project plan at:
+
+`/home/vitaly/uni/research/profanity_benchmark/plan.md`
+
+Follow the current user request first, then this protocol. Treat `PLAN.md` as the
+task specification, not as the missing benchmark-plan content.
+
+## Repository facts
+
+- The Git repository root is
+  `/home/vitaly/uni/research/profanity_benchmark`, not
+  `/home/vitaly/uni/research`.
+- `PLAN.md` currently requires the complete latest plan titled
+  “YouthEscalateBench: A Living Benchmark for Multi-Turn Youth-Safety Moderation.”
+- `26-Profanity-Detection.md` is background material describing the broader
+  research direction. It is not a substitute for the canonical plan.
+- `profanity_benchmark/README.md` contains only a short project description.
+- The canonical “preceding response” referenced by `PLAN.md` is not currently
+  present in the workspace or the repository's initial commit.
+
+Re-check these facts when the workspace changes; do not assume they remain true.
+
+## Source-of-truth order
+
+Resolve conflicts in this order:
+
+1. The user's latest explicit instruction.
+2. `/home/vitaly/uni/research/PLAN.md`.
+3. The exact canonical YouthEscalateBench plan supplied by the user or recovered
+   from an authoritative artifact.
+4. Existing project files and Git history.
+5. External primary sources, only for verification or user-authorized synthesis.
+6. Model inference.
+
+Never allow inference to overwrite a higher-ranked source.
+
+## Non-fabrication gate
+
+Before creating `plan.md`, locate the canonical source text. Search the workspace,
+repository history, branches, and any artifact or conversation context actually
+available to the model. A useful local check is:
+
+```bash
+rg -n -i "YouthEscalateBench|Living Benchmark|dynamic version|trend.analysis" \
+  /home/vitaly/uni/research
+git -C /home/vitaly/uni/research/profanity_benchmark log --all \
+  --oneline --decorate
+```
+
+If the complete source is unavailable, stop before creating `plan.md` and request
+the preceding response, a file containing it, or permission to reconstruct it.
+State exactly what was searched. Do not silently synthesize a plausible plan and
+describe it as preserved or canonical.
+
+Use one of these explicit modes:
+
+- **Faithful-transfer mode (default):** reproduce the supplied canonical plan
+  without dropping or redesigning content.
+- **Synthesis mode (requires explicit user authorization):** build a new plan
+  from available research notes and verified sources. Label assumptions and
+  unresolved decisions; never imply that the result is the missing prior text.
+- **Revision mode:** modify an existing canonical `plan.md` only to the extent
+  requested, preserving unrelated content.
+
+## Faithful-transfer workflow
+
+1. Read `PLAN.md`, this file, the complete canonical source, and the current target
+   file if one exists.
+2. Inspect repository state before editing:
+
+   ```bash
+   git -C /home/vitaly/uni/research/profanity_benchmark status --short
+   ```
+
+3. Record pre-existing changes as user-owned. Do not edit, stage, discard, or
+   reformat unrelated files.
+4. Create only `profanity_benchmark/plan.md` unless the user expands the scope.
+5. Preserve the source's semantic and structural fidelity, including:
+   - title and complete heading hierarchy;
+   - tables, lists, formulas, notation, and metric definitions;
+   - citations, links, footnotes, and bibliography entries;
+   - dynamic versioning and release rules;
+   - temporal and trend-analysis methods;
+   - dataset construction and contamination controls;
+   - evaluation protocols, baselines, ablations, and statistical procedures;
+   - governance, safety, ethics, assumptions, limitations, and open decisions.
+6. Keep Markdown portable: UTF-8, fenced code blocks, valid tables, balanced links,
+   and consistent LaTeX delimiters. Do not rewrite formulas as prose.
+7. Do not “improve,” modernize, shorten, or correct preserved content unless the
+   user asks. Surface suspected errors separately.
+
+## Synthesis-mode research standard
+
+Apply this section only after the user explicitly authorizes reconstruction or a
+new plan.
+
+Make the plan execution-ready and falsifiable. At minimum, define:
+
+- research questions, hypotheses, contribution claims, and non-goals;
+- youth-safety scope, age assumptions, platform contexts, escalation taxonomy,
+  and a threat model for adversarial evasion;
+- data provenance, licensing, consent/ethics review, privacy handling, annotation
+  protocol, adjudication, quality controls, and demographic/language coverage;
+- unit of analysis, conversation-window construction, synthetic-data policy,
+  deduplication, leakage controls, and contamination audits;
+- static test sets plus a versioned temporal stream, immutable releases, changelog,
+  deprecation rules, and reproducible snapshots;
+- turn-level and conversation-level tasks, context ablations, early-warning or
+  time-to-detection measures, calibration, subgroup robustness, uncertainty, and
+  confidence intervals;
+- baseline systems, prompt/version pinning, decoding settings, hardware/API
+  metadata, repeated runs, judge reliability, and human evaluation;
+- algospeak perturbations with meaning-preserving safe and unsafe controls so that
+  robustness is not confounded with lexical novelty;
+- temporal drift and trend analyses with predeclared windows, minimum support,
+  multiple-comparison handling, and change-point or slope uncertainty;
+- safety controls for minors' data, redaction, access tiers, documentation,
+  incident response, and benchmark misuse;
+- milestones, dependencies, compute/cost estimates, artifact owners, acceptance
+  criteria, risks, and go/no-go decisions.
+
+Prefer primary sources: original papers, dataset cards, official documentation,
+and venue or institutional policies. Verify bibliographic metadata and URLs. Never
+invent a citation, dataset property, metric result, or legal/ethics claim. Separate
+facts, design decisions, estimates, and assumptions.
+
+## Validation
+
+Run proportionate checks after writing:
+
+```bash
+test -f /home/vitaly/uni/research/profanity_benchmark/plan.md
+git -C /home/vitaly/uni/research/profanity_benchmark diff --check
+git -C /home/vitaly/uni/research/profanity_benchmark status --short
+git -C /home/vitaly/uni/research/profanity_benchmark diff --no-index \
+  /dev/null /home/vitaly/uni/research/profanity_benchmark/plan.md
+```
+
+Interpret the results correctly:
+
+- An untracked file does not appear in ordinary `git diff` output.
+- Before staging, the expected clean-scope status is exactly `?? plan.md` unless
+  pre-existing changes were already present.
+- Use `git diff --no-index` to inspect an untracked file without staging it. Exit
+  status `1` means differences were found and is expected here.
+- Do not stage, commit, push, or open a pull request unless explicitly requested.
+
+Also compare the result against the canonical source section by section. Confirm
+that heading order, table dimensions, formulas, citations, versioning rules,
+trend-analysis methods, evaluation protocols, and assumptions are all present.
+If a Markdown renderer or linter is available, use it; otherwise inspect the raw
+structure and report that limitation.
+
+## Definition of done
+
+Do not claim completion until all applicable conditions hold:
+
+- The canonical source was available, or synthesis was explicitly authorized.
+- `profanity_benchmark/plan.md` exists at the exact required path.
+- Every required content class from `PLAN.md` was checked.
+- Markdown structural checks pass.
+- No unrelated file was changed by the task.
+- Repository status was reported accurately, including pre-existing changes.
+- Remaining assumptions, unverified citations, or blocked validations are listed.
+
+## Handoff format
+
+Keep the final report terse and evidence-based:
+
+1. State whether `plan.md` was created or updated.
+2. Link or name the exact path.
+3. Summarize validation actually performed and its result.
+4. Report repository status and unrelated pre-existing changes separately.
+5. State blockers or assumptions. If blocked by the missing canonical text, ask
+   for that text or explicit authorization to enter synthesis mode.
+
+Never claim to have read a source, rendered Markdown, verified a citation, or run a
+command unless that action actually occurred and its result was observed.
