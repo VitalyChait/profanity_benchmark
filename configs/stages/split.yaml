@@ -1,0 +1,7 @@
+stage: split
+benchmark_version: "0.1.0"
+random_seed: 42
+ratios:
+  train: 0.5
+  dev: 0.25
+  test: 0.25

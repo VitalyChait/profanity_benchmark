@@ -1,0 +1,6 @@
+stage: transform
+benchmark_version: "0.1.0"
+random_seed: 42
+families:
+  - leetspeak
+composition_depth: 1

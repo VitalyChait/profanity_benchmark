@@ -1,0 +1,5 @@
+{"conversation_id":"conv_002","turn_id":"t1","severity":"benign"}
+{"conversation_id":"conv_002","turn_id":"t2","severity":"actionable","harm_types":["targeted_insult"]}
+{"conversation_id":"conv_001","turn_id":"t1","severity":"benign"}
+{"conversation_id":"conv_001","turn_id":"t2","severity":"coarse_monitor"}
+{"conversation_id":"conv_001","turn_id":"t3","severity":"benign"}

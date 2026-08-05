@@ -1,0 +1,178 @@
+{
+  "$defs": {
+    "ContextDependence": {
+      "enum": [
+        "invariant",
+        "amplified",
+        "mitigated",
+        "label_flipped",
+        "insufficient_context"
+      ],
+      "title": "ContextDependence",
+      "type": "string"
+    },
+    "EscalationTransition": {
+      "enum": [
+        "de_escalating",
+        "stable",
+        "escalating",
+        "not_applicable"
+      ],
+      "title": "EscalationTransition",
+      "type": "string"
+    },
+    "HarmType": {
+      "enum": [
+        "targeted_insult",
+        "repeated_harassment",
+        "identity_attack",
+        "threat_intimidation",
+        "sexualized_harassment",
+        "self_harm_encouragement",
+        "exclusion_coercion",
+        "humiliation_rumor",
+        "dogpiling_mobilization"
+      ],
+      "title": "HarmType",
+      "type": "string"
+    },
+    "PragmaticUse": {
+      "enum": [
+        "absent",
+        "affiliative_banter",
+        "emotional_emphasis",
+        "quotation_reporting",
+        "reclaimed_self_reference",
+        "targeted_abuse",
+        "ambiguous"
+      ],
+      "title": "PragmaticUse",
+      "type": "string"
+    },
+    "ProfanityForm": {
+      "enum": [
+        "none",
+        "literal",
+        "orthographically_obfuscated",
+        "phonetic",
+        "euphemistic_algo_coded",
+        "acronym",
+        "emoji_rebus",
+        "code_switched"
+      ],
+      "title": "ProfanityForm",
+      "type": "string"
+    },
+    "Severity": {
+      "enum": [
+        "benign",
+        "coarse_monitor",
+        "actionable",
+        "urgent"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "TargetType": {
+      "enum": [
+        "none",
+        "self",
+        "individual_peer",
+        "non_protected_group",
+        "protected_group",
+        "indeterminate"
+      ],
+      "title": "TargetType",
+      "type": "string"
+    }
+  },
+  "description": "Gold labels for a single turn (private; never exposed at inference).",
+  "properties": {
+    "conversation_id": {
+      "title": "Conversation Id",
+      "type": "string"
+    },
+    "turn_id": {
+      "title": "Turn Id",
+      "type": "string"
+    },
+    "profanity_form": {
+      "$ref": "#/$defs/ProfanityForm",
+      "default": "none"
+    },
+    "pragmatic_use": {
+      "$ref": "#/$defs/PragmaticUse",
+      "default": "absent"
+    },
+    "harm_types": {
+      "items": {
+        "$ref": "#/$defs/HarmType"
+      },
+      "title": "Harm Types",
+      "type": "array"
+    },
+    "target_type": {
+      "$ref": "#/$defs/TargetType",
+      "default": "none"
+    },
+    "severity": {
+      "$ref": "#/$defs/Severity",
+      "default": "benign"
+    },
+    "escalation_transition": {
+      "$ref": "#/$defs/EscalationTransition",
+      "default": "not_applicable"
+    },
+    "context_dependence": {
+      "$ref": "#/$defs/ContextDependence",
+      "default": "invariant"
+    },
+    "evidence_spans": {
+      "items": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "integer"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "Evidence Spans",
+      "type": "array"
+    },
+    "evidence_turn_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Turn Ids",
+      "type": "array"
+    },
+    "annotator_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Annotator Id"
+    },
+    "adjudicated": {
+      "default": false,
+      "title": "Adjudicated",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "conversation_id",
+    "turn_id"
+  ],
+  "title": "AnnotationRecord",
+  "type": "object"
+}

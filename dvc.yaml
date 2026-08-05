@@ -1,0 +1,54 @@
+stages:
+  source_audit:
+    cmd: yeb run --stage source_audit --config configs/stages/source_audit.yaml
+      --output-dir data/processed
+    deps:
+      - configs/stages/source_audit.yaml
+      - configs/source_registry.yaml
+    outs:
+      - data/processed/source_audit/manifest.json
+
+  ingest:
+    cmd: yeb run --stage ingest --config configs/stages/ingest.yaml
+      --output-dir data/processed
+    deps:
+      - configs/stages/ingest.yaml
+      - tests/fixtures/sample_conversations.jsonl
+    outs:
+      - data/processed/ingest/conversations.parquet
+
+  redact:
+    cmd: yeb run --stage redact --config configs/stages/redact.yaml
+      --input-dir data/processed/ingest --output-dir data/processed
+    deps:
+      - data/processed/ingest/conversations.parquet
+    outs:
+      - data/processed/redact/conversations_redacted.parquet
+
+  thread:
+    cmd: yeb run --stage thread --config configs/stages/thread.yaml
+      --input-dir data/processed/redact --output-dir data/processed
+    deps:
+      - data/processed/redact/conversations_redacted.parquet
+    outs:
+      - data/processed/thread/conversations_threaded.parquet
+
+  split:
+    cmd: yeb run --stage split --config configs/stages/split.yaml
+      --input-dir data/processed/thread --output-dir data/processed
+    deps:
+      - data/processed/thread/conversations_threaded.parquet
+    outs:
+      - data/processed/split/split_train.parquet
+
+  evaluate:
+    cmd: yeb run --stage evaluate --config configs/stages/evaluate.yaml
+      --input-dir data/processed/split --output-dir data/processed
+    deps:
+      - data/processed/split/split_test.parquet
+      - tests/fixtures/sample_labels.jsonl
+    outs:
+      - data/processed/evaluate/metrics.yaml
+
+params:
+  - configs/default.yaml

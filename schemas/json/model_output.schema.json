@@ -1,0 +1,63 @@
+{
+  "description": "Strict JSON model output schema.",
+  "properties": {
+    "harm_probability": {
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Harm Probability",
+      "type": "number"
+    },
+    "harm_types": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Harm Types",
+      "type": "object"
+    },
+    "severity_probabilities": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Severity Probabilities",
+      "type": "object"
+    },
+    "target_type": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Target Type",
+      "type": "object"
+    },
+    "escalation_state": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Escalation State",
+      "type": "object"
+    },
+    "forecast_next_two_turns": {
+      "default": 0.0,
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Forecast Next Two Turns",
+      "type": "number"
+    },
+    "evidence_turn_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Turn Ids",
+      "type": "array"
+    },
+    "abstain": {
+      "default": false,
+      "title": "Abstain",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "harm_probability"
+  ],
+  "title": "ModelOutput",
+  "type": "object"
+}

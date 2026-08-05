@@ -1,0 +1,110 @@
+{
+  "$defs": {
+    "SourceTier": {
+      "enum": [
+        "organic",
+        "staged",
+        "synthetic",
+        "functional",
+        "live",
+        "fixture"
+      ],
+      "title": "SourceTier",
+      "type": "string"
+    },
+    "StoredTurn": {
+      "properties": {
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "speaker_id": {
+          "title": "Speaker Id",
+          "type": "string"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "relative_time": {
+          "title": "Relative Time",
+          "type": "string"
+        },
+        "parent_turn_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent Turn Id"
+        }
+      },
+      "required": [
+        "turn_id",
+        "speaker_id",
+        "role",
+        "text",
+        "relative_time"
+      ],
+      "title": "StoredTurn",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "conversation_id": {
+      "title": "Conversation Id",
+      "type": "string"
+    },
+    "source_id": {
+      "title": "Source Id",
+      "type": "string"
+    },
+    "source_tier": {
+      "$ref": "#/$defs/SourceTier"
+    },
+    "platform_style": {
+      "title": "Platform Style",
+      "type": "string"
+    },
+    "language_mode": {
+      "default": "english",
+      "title": "Language Mode",
+      "type": "string"
+    },
+    "turns": {
+      "items": {
+        "$ref": "#/$defs/StoredTurn"
+      },
+      "minItems": 1,
+      "title": "Turns",
+      "type": "array"
+    },
+    "benchmark_version": {
+      "default": "0.1.0",
+      "title": "Benchmark Version",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": true,
+      "title": "Metadata",
+      "type": "object"
+    }
+  },
+  "required": [
+    "conversation_id",
+    "source_id",
+    "source_tier",
+    "platform_style",
+    "turns"
+  ],
+  "title": "ConversationRecord",
+  "type": "object"
+}

@@ -1,0 +1,9 @@
+stage: ingest
+benchmark_version: "0.1.0"
+random_seed: 42
+enforce_gate: true
+allow_fixture_sources: true
+source_registry_path: configs/source_registry.yaml
+sources:
+  - source_id: fixture
+    input_path: tests/fixtures/sample_conversations.jsonl

@@ -1,0 +1,22 @@
+# Default pipeline configuration for YouthEscalateBench
+# Copy and customize per stage under configs/stages/
+
+benchmark_version: "0.1.0"
+random_seed: 42
+
+data:
+  raw_dir: data/raw
+  interim_dir: data/interim
+  processed_dir: data/processed
+
+splits:
+  public_train: 5000
+  public_dev: 2000
+  private_representative: 2000
+  private_diagnostic: 2000
+  quarterly_live: 1000
+
+quality_gates:
+  severity_alpha_min: 0.80
+  actionable_agreement_min: 0.90
+  synthetic_plausibility_min: 0.90

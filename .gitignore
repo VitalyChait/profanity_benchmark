@@ -1,0 +1,22 @@
+# Data artifacts (not versioned)
+data/raw/
+data/interim/
+data/processed/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+dist/
+*.egg-info/
+
+# DVC
+.dvc/cache/
+
+# IDE
+.idea/
+.vscode/

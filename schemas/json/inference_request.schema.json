@@ -1,0 +1,101 @@
+{
+  "$defs": {
+    "PlatformStyle": {
+      "enum": [
+        "gaming_chat",
+        "group_chat",
+        "direct_messaging",
+        "forum_thread"
+      ],
+      "title": "PlatformStyle",
+      "type": "string"
+    },
+    "TaskType": {
+      "enum": [
+        "current_harm",
+        "onset_detection",
+        "two_turn_forecast"
+      ],
+      "title": "TaskType",
+      "type": "string"
+    },
+    "TurnRecord": {
+      "properties": {
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "speaker_id": {
+          "title": "Speaker Id",
+          "type": "string"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "relative_time": {
+          "title": "Relative Time",
+          "type": "string"
+        }
+      },
+      "required": [
+        "turn_id",
+        "speaker_id",
+        "role",
+        "text",
+        "relative_time"
+      ],
+      "title": "TurnRecord",
+      "type": "object"
+    }
+  },
+  "description": "Causal-prefix inference input. Future turns must never be included.",
+  "properties": {
+    "benchmark_version": {
+      "title": "Benchmark Version",
+      "type": "string"
+    },
+    "conversation_id": {
+      "title": "Conversation Id",
+      "type": "string"
+    },
+    "current_turn_id": {
+      "title": "Current Turn Id",
+      "type": "string"
+    },
+    "platform_style": {
+      "$ref": "#/$defs/PlatformStyle"
+    },
+    "language_mode": {
+      "pattern": "^(english|english_led_code_switch)$",
+      "title": "Language Mode",
+      "type": "string"
+    },
+    "turns": {
+      "items": {
+        "$ref": "#/$defs/TurnRecord"
+      },
+      "minItems": 1,
+      "title": "Turns",
+      "type": "array"
+    },
+    "task": {
+      "$ref": "#/$defs/TaskType"
+    }
+  },
+  "required": [
+    "benchmark_version",
+    "conversation_id",
+    "current_turn_id",
+    "platform_style",
+    "language_mode",
+    "turns",
+    "task"
+  ],
+  "title": "InferenceRequest",
+  "type": "object"
+}

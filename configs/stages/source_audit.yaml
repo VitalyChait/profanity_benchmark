@@ -1,0 +1,6 @@
+stage: source_audit
+benchmark_version: "0.1.0"
+random_seed: 42
+strict: false
+
+source_registry_path: configs/source_registry.yaml
