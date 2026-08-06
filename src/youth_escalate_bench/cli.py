@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 
+from youth_escalate_bench.evaluator.server import serve
 from youth_escalate_bench.pipeline import get_runner, load_config, run_stage
 from youth_escalate_bench.schemas.export import export_all
 from youth_escalate_bench.schemas.taxonomy import PIPELINE_STAGES
@@ -71,6 +72,19 @@ def audit_sources(registry: Path) -> None:
         for f in failures:
             click.echo(f"  - {f}")
         raise SystemExit(1)
+
+
+@main.command("serve")
+@click.option("--host", default="127.0.0.1")
+@click.option("--port", default=8080, type=int)
+@click.option(
+    "--lexicon",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("configs/profanity_lexicon.txt"),
+)
+def serve_evaluator(host: str, port: int, lexicon: Path) -> None:
+    """Start private /predict evaluator server (baseline scorer default)."""
+    serve(host=host, port=port, lexicon_path=lexicon)
 
 
 @main.command("export-schemas")

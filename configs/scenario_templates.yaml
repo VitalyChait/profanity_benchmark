@@ -1,0 +1,60 @@
+# Adult-staged peer-chat scenario state machines (plan.md Section 3)
+# Used by stage_generate to produce scenario plans for 18-24 enactment.
+
+templates:
+  - template_id: gradual_escalation_gaming
+    platform_style: gaming_chat
+    transition_pattern: gradual_escalation
+    harm_type: targeted_insult
+    turns_min: 4
+    turns_max: 8
+    description: Friendly banter → trash talk → targeted insult
+
+  - template_id: immediate_abuse_dm
+    platform_style: direct_messaging
+    transition_pattern: immediate_abuse
+    harm_type: threat_intimidation
+    turns_min: 3
+    turns_max: 6
+    description: Opening message contains credible threat
+
+  - template_id: persistent_harassment_group
+    platform_style: group_chat
+    transition_pattern: persistent_harassment
+    harm_type: repeated_harassment
+    turns_min: 6
+    turns_max: 12
+    description: Low-grade repeated targeting across turns
+
+  - template_id: de_escalation_forum
+    platform_style: forum_thread
+    transition_pattern: de_escalation
+    harm_type: targeted_insult
+    turns_min: 4
+    turns_max: 8
+    description: Argument peaks then moderators/peers calm thread
+
+  - template_id: friendly_profanity_gaming
+    platform_style: gaming_chat
+    transition_pattern: false_alarm
+    harm_type: null
+    turns_min: 3
+    turns_max: 6
+    description: Affiliative banter with profanity only
+
+  - template_id: bystander_intervention
+    platform_style: group_chat
+    transition_pattern: oscillation
+    harm_type: exclusion_coercion
+    turns_min: 5
+    turns_max: 10
+    description: Bullying attempt with peer resistance
+
+  - template_id: code_switch_escalation
+    platform_style: group_chat
+    transition_pattern: gradual_escalation
+    harm_type: identity_attack
+    turns_min: 4
+    turns_max: 8
+    language_mode: english_led_code_switch
+    description: English-led code-switch with identity attack onset

@@ -1,0 +1,11 @@
+stage: sample
+benchmark_version: "0.1.0"
+random_seed: 42
+minhash_threshold: 0.8
+quotas:
+  organic: 4000
+  staged: 2000
+  synthetic: 3000
+  functional: 2000
+  live: 1000
+  fixture: 100

@@ -1,0 +1,40 @@
+{
+  "@context": {
+    "@vocab": "http://schema.org/",
+    "cr": "http://mlcommons.org/croissant/"
+  },
+  "@type": "Dataset",
+  "name": "YouthEscalateBench",
+  "description": "Dynamic multi-turn youth-safeguarding moderation benchmark",
+  "version": "0.1.0",
+  "license": "https://spdx.org/licenses/MIT",
+  "url": "https://github.com/youth-escalate-bench/profanity_benchmark",
+  "distribution": [
+    {
+      "@type": "DataDownload",
+      "contentUrl": "configs/source_registry.yaml",
+      "encodingFormat": "application/yaml"
+    }
+  ],
+  "cr:recordSet": [
+    {
+      "@type": "cr:RecordSet",
+      "name": "conversations",
+      "description": "Multi-turn peer conversations with causal-prefix evaluation",
+      "cr:field": [
+        {"@type": "cr:Field", "name": "conversation_id", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "name": "turn_id", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "name": "text", "dataType": "sc:Text"},
+        {"@type": "cr:Field", "name": "severity", "dataType": "sc:Text"}
+      ]
+    }
+  ],
+  "keywords": [
+    "cyberbullying",
+    "moderation",
+    "multi-turn",
+    "youth safety",
+    "algospeak",
+    "benchmark"
+  ]
+}

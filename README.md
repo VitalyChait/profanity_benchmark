@@ -6,41 +6,57 @@ Dynamic multi-turn youth-safeguarding benchmark for causal moderation detection.
 
 ```bash
 pip install -e ".[dev]"
-yeb stages
-yeb e2e                              # miniature fixture pipeline
+yeb e2e                              # miniature fixture pipeline (37 tests)
 yeb export-schemas                   # JSON Schema contracts
 yeb audit-sources                    # Phase 1 gate (fails until licenses approved)
+yeb serve --port 8080                # /predict evaluator (baseline default)
 pytest tests -v
-```
-
-## Project structure
-
-```
-configs/                 Versioned YAML configs and source registry
-docs/                    Threat model, IRB draft, annotation guidelines
-src/youth_escalate_bench/  Schemas, pipeline stages, adapters, metrics
-tests/                   28 pytest tests including E2E
-TASKS.md                 Structured execution plan with phase gates
-plan.md                  Canonical benchmark specification
 ```
 
 ## Pipeline
 
-`source_audit → ingest → redact → thread → transform → annotate_export → split → evaluate`
+`source_audit → ingest → redact → thread → sample → stage_generate → transform →
+annotate_export → adjudicate → split → evaluate → report`
 
-Each stage emits `manifest.json` with SHA-256 hashes.
+```bash
+yeb run --stage evaluate --config configs/stages/evaluate.yaml
+yeb run --stage stage_generate --config configs/stages/stage_generate.yaml
+yeb run --stage adjudicate --config configs/stages/adjudicate.yaml --input-dir data/annotations
+```
 
-## Current status
+## Baselines (bundled)
 
-| Phase | Status |
-|-------|--------|
-| 0 Repository foundation | complete |
-| 1 Governance | docs + tooling ready; **license/IRB sign-off pending** |
-| 2 Pilot | annotation tooling ready; data collection blocked on Phase 1 |
-| 3–6 | core stages scaffolded; production scale blocked on data + annotation |
+| Scorer | Description |
+|--------|-------------|
+| `lexicon_raw` | Raw profanity lexicon matcher |
+| `lexicon_normalized` | Normalized text lexicon |
+| `char_ngram_tfidf` | Char n-gram weighted scorer |
+| `lexicon_full_context` | Lexicon over full causal prefix |
 
-See [`TASKS.md`](TASKS.md) for full subtask tracker.
+## Evaluator container
+
+```bash
+docker build -f docker/evaluator/Dockerfile -t yeb-evaluator .
+docker run --network none -p 8080:8080 yeb-evaluator
+# POST http://localhost:8080/predict with InferenceRequest JSON
+```
+
+## Documentation
+
+| Doc | Purpose |
+|-----|---------|
+| [`TASKS.md`](TASKS.md) | Phase tracker |
+| [`docs/benchmark_card.md`](docs/benchmark_card.md) | NeurIPS E&D summary |
+| [`docs/datasheet.md`](docs/datasheet.md) | Datasheet |
+| [`docs/preregistration.md`](docs/preregistration.md) | OSF prereg draft |
+| [`metadata/croissant.json`](metadata/croissant.json) | Croissant metadata |
+
+## Status
+
+Engineering scaffold **complete** (37 tests). Human/legal steps remain: license sign-off, IRB, annotation, production data.
+
+See [`TASKS.md`](TASKS.md).
 
 ## License
 
-Code: MIT (see LICENSE). Data loaders enforce per-source restrictions in `configs/source_registry.yaml`.
+Code: MIT. Data: per-source restrictions in `configs/source_registry.yaml`.

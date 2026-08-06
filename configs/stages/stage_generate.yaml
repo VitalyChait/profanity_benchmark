@@ -1,0 +1,5 @@
+stage: stage_generate
+benchmark_version: "0.1.0"
+random_seed: 42
+templates_path: configs/scenario_templates.yaml
+plans_per_template: 2

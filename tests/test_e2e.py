@@ -59,7 +59,8 @@ def test_e2e_pipeline(e2e_output: Path) -> None:
     assert (processed / "transform" / "transform_pairs.parquet").exists()
     assert (processed / "split" / "split_train.parquet").exists()
     assert (processed / "annotate_export" / "annotation_packets.jsonl").exists()
-    assert (processed / "evaluate" / "metrics.yaml").exists()
+    assert (processed / "evaluate" / "evaluation_results.yaml").exists()
+    assert (processed / "evaluate" / "onset_metrics.yaml").exists()
 
 
 def test_redact_removes_email(e2e_output: Path) -> None:

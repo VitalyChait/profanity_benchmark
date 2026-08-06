@@ -1,0 +1,4 @@
+stage: adjudicate
+benchmark_version: "0.1.0"
+random_seed: 42
+require_adjudication: false
