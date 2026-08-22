@@ -66,9 +66,25 @@ def adjudicate_annotations(
     return gold
 
 
+def _find_annotations_file(input_dir: Path, config_path: str | None = None) -> Path:
+    if config_path:
+        p = Path(config_path)
+        if p.exists():
+            return p
+        if (input_dir / config_path).exists():
+            return input_dir / config_path
+    for candidate in ["annotations.jsonl", "generated_annotations.jsonl", "annotation_packets.jsonl"]:
+        if (input_dir / candidate).exists():
+            return input_dir / candidate
+    jsonl_files = [f for f in input_dir.glob("*.jsonl") if not f.name.endswith("plans.jsonl") and not f.name.endswith("specs.jsonl")]
+    if jsonl_files:
+        return jsonl_files[0]
+    return input_dir / "annotations.jsonl"
+
+
 def run_adjudicate(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
-    annotations_path = Path(config.get("annotations_path", input_dir / "annotations.jsonl"))
+    annotations_path = _find_annotations_file(input_dir, config.get("annotations_path"))
     if not annotations_path.exists():
         raise FileNotFoundError(f"Missing annotations: {annotations_path}")
 

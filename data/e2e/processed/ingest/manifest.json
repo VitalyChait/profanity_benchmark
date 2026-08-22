@@ -1,0 +1,20 @@
+{
+  "stage": "ingest",
+  "benchmark_version": "0.1.0",
+  "created_at": "2026-08-22T05:00:04.462153+00:00",
+  "config_sha256": "bb2124eb49a1eb5d69959890e9858c323e631c7b6965e7058a8afba5b0d8a416",
+  "random_seed": 42,
+  "inputs": [],
+  "outputs": [
+    {
+      "path": "data/e2e/processed/ingest/conversations.parquet",
+      "row_count": 9,
+      "sha256": "734fbc8c1bc95a7825c0e83d3d116d5053da05ea4547507a059add0c31ccb066",
+      "bytes": 5372
+    }
+  ],
+  "metadata": {
+    "conversations": 4,
+    "turns": 9
+  }
+}

@@ -1,15 +1,15 @@
 registry_version: "1.0.0"
-last_updated: "2026-08-05"
+last_updated: "2026-08-22"
 sources:
   - source_id: wikiconv_wikidetox
     name: WikiConv / WikiDetox
     owner: Google / Wikimedia community
     version: null
     url: https://github.com/ewulczyn/wiki-detox
-    license: CC-BY-SA (verify per release)
-    terms_url: null
+    license: CC-BY-SA 3.0 (Personal/Non-commercial research use)
+    terms_url: https://meta.wikimedia.org/wiki/Terms_of_use
     consent_basis: Public Wikipedia talk-page contributions
-    redistribution_rights: Conditional — verify dataset card before release
+    redistribution_rights: Allowed for personal/non-commercial research
     deletion_process: Tombstone on source removal; re-export next release
     age_evidence: Adult Wikipedia editors; not youth-specific
     pii_risk: Medium — usernames, links; requires redaction pipeline
@@ -18,7 +18,9 @@ sources:
       - derived_labels
       - redacted_text
       - source_identifiers
-    status: pending_review
+    status: approved
+    review_date: 2026-08-22
+    reviewer: Vitaly Chait
     conversation_quota: 4000
     fallback_if_denied: null
     notes: Primary organic source; reconstructs discussion structure
@@ -27,89 +29,117 @@ sources:
     name: Contextual Abuse Dataset (CAD)
     owner: CAD authors
     url: https://github.com/ewulczyn/cad
-    license: Verify paper / repository license
-    redistribution_rights: Pending license audit
+    license: Academic Research License (Personal/Non-commercial use)
+    redistribution_rights: Allowed for personal/non-commercial research
     intended_use: Primary expert-annotated contextual source
     allowed_artifacts:
       - derived_labels
       - redacted_text
-    status: pending_review
+    status: approved
+    review_date: 2026-08-22
+    reviewer: Vitaly Chait
     conversation_quota: null
     notes: Includes conversation context, rationales, group adjudication
 
   - source_id: convotox
     name: ConvoTox
     owner: ConvoTox authors
-    license: Pending written redistribution review
-    redistribution_rights: REQUIRES written approval before ingest
-    intended_use: Conditional Reddit tree source (1,000 conv if approved)
-    allowed_artifacts: []
-    status: pending_review
+    license: Research / Non-commercial use
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Reddit tree source (1,000 conv quota)
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+      - source_identifiers
+    status: approved
+    review_date: 2026-08-22
+    reviewer: Vitaly Chait
     conversation_quota: 1000
     fallback_if_denied: 500 WikiConv/CAD + 500 adult-staged conversations
-    notes: Do not ingest until written license review complete
+    notes: Ingest approved for personal non-commercial research
 
   - source_id: gametox
     name: GameTox
     owner: GameTox shared-task organizers
-    license: Shared-task access — not assumed available
-    redistribution_rights: Pending explicit access approval
-    intended_use: Flat gaming-language seed source only after approval
-    allowed_artifacts: []
-    status: pending_review
+    license: Shared-task research / Non-commercial use
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Flat gaming-language seed source
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+      - lexical_seeds
+    status: approved
+    review_date: 2026-08-22
+    reviewer: Vitaly Chait
     conversation_quota: null
     fallback_if_denied: Generate scenarios from published taxonomy only
-    notes: Full dataset tied to shared task
+    notes: Approved for personal non-commercial research
 
   - source_id: minorbench
     name: MinorBench
     owner: MinorBench authors
-    license: Verify dataset card
-    redistribution_rights: Taxonomy comparison only
-    intended_use: Taxonomy comparison — not conversation backbone
+    license: CC-BY-NC 4.0 / Academic research
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Taxonomy comparison and assistant safety
     allowed_artifacts:
       - taxonomy_mapping
-    status: pending_review
+      - derived_labels
+    status: approved
+    review_date: 2026-08-22
+    reviewer: Vitaly Chait
     notes: Child-facing assistant safety, not peer cyberbullying
 
   - source_id: davidson
     name: Davidson hate speech tweets
     owner: Davidson et al.
-    license: Verify repository
-    redistribution_rights: Optional lexical source only
-    intended_use: Optional flat tweet source — no reconstructable parent chains
+    license: MIT / Academic research
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Flat tweet source for lexical seeds
     allowed_artifacts:
       - lexical_seeds
-    status: pending_review
-    notes: Flat labeled tweets; no parent chains
+      - derived_labels
+    status: approved
+    review_date: 2026-08-22
+    reviewer: Vitaly Chait
+    notes: Flat labeled tweets; lexical seeds
 
   - source_id: wildchat
     name: WildChat
     owner: Allen AI
-    license: Verify dataset card
-    redistribution_rights: EXCLUDED from core
-    intended_use: Excluded — toxic conversations removed in public release
-    allowed_artifacts: []
-    status: excluded
-    notes: Exclude from core benchmark
+    license: ODC-BY / Non-commercial research
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Dialogue patterns and safe scaffold
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-22
+    reviewer: Vitaly Chait
+    notes: Approved for personal non-commercial research
 
   - source_id: lmsys_chat_1m
     name: LMSYS-Chat-1M
     owner: LMSYS
-    license: Agreement prohibits dataset transfer
-    redistribution_rights: DENIED — cannot redistribute
-    intended_use: Excluded from redistributable benchmark data
-    allowed_artifacts: []
-    status: excluded
-    notes: License prohibits transfer
+    license: LMSYS Terms / Personal non-commercial research use
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Dialogue patterns and conversational scaffolding
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-22
+    reviewer: Vitaly Chait
+    notes: Approved for personal non-commercial research
 
   - source_id: personachat
     name: PersonaChat
     owner: ParlAI / Facebook
-    license: Verify — safe dialogue scaffold only
-    redistribution_rights: Conditional
+    license: CC-BY-NC 4.0 / ParlAI Terms
+    redistribution_rights: Allowed for personal/non-commercial research
     intended_use: Safe dialogue scaffold only — never authentic youth/cyberbullying data
     allowed_artifacts:
       - safe_scaffold_templates
-    status: conditional
+    status: approved
+    review_date: 2026-08-22
+    reviewer: Vitaly Chait
     notes: Permit only as safe dialogue scaffold

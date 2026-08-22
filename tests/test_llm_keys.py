@@ -1,0 +1,45 @@
+"""Tests for LLM API key discovery and router."""
+
+import os
+from unittest.mock import patch
+
+from youth_escalate_bench.llm.keys import (
+    get_available_providers,
+    get_llm_config,
+    is_provider_configured,
+)
+from youth_escalate_bench.llm.router import LLMRouter
+
+
+def test_llm_config_structure():
+    config = get_llm_config()
+    assert "env_file" in config
+    assert "keys_detected" in config
+    assert "selected_provider" in config
+    assert "openai" in config["keys_detected"]
+    assert "anthropic" in config["keys_detected"]
+    assert "gemini" in config["keys_detected"]
+    assert "groq" in config["keys_detected"]
+
+
+def test_key_auto_detection():
+    with patch.dict(os.environ, {"OPENAI_API_KEY": "sk-test123456789"}, clear=False):
+        assert is_provider_configured("openai")
+        providers = get_available_providers()
+        assert "openai" in providers
+
+
+def test_groq_priority_auto_selection():
+    with patch.dict(os.environ, {"GROQ_API_KEY": "gsk-test123456789", "DEFAULT_LLM_PROVIDER": "auto"}, clear=False):
+        config = get_llm_config()
+        assert config["selected_provider"] == "groq"
+
+
+def test_router_missing_key_raises_helpful_error():
+    with patch.dict(os.environ, {}, clear=True):
+        router = LLMRouter()
+        try:
+            router.call_llm(prompt="test", provider="openai")
+            assert False, "Should raise RuntimeError"
+        except RuntimeError as e:
+            assert ".env" in str(e)

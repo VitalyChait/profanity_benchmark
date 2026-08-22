@@ -95,7 +95,10 @@ def run_sample(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
 
 
 def run_stage_generate(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dict[str, Any]:
-    """Emit scenario plan JSONL from templates for adult-staged collection."""
+    """Emit scenario plan JSONL from templates, plus full synthetic conversations and minimal pairs."""
+    from youth_escalate_bench.generation.generator import SyntheticDialogueGenerator
+    from youth_escalate_bench.transforms.minimal_pairs import build_minimal_pair_conversations
+
     templates_path = Path(config.get("templates_path", "configs/scenario_templates.yaml"))
     with templates_path.open(encoding="utf-8") as f:
         data = yaml.safe_load(f)
@@ -103,11 +106,16 @@ def run_stage_generate(config: dict[str, Any], input_dir: Path, output_dir: Path
     import json
     import random
 
-    random.Random(config.get("random_seed", 42))
+    seed = config.get("random_seed", 42)
+    random.Random(seed)
+    generator = SyntheticDialogueGenerator(seed=seed)
     count = config.get("plans_per_template", 2)
     plans_path = output_dir / "scenario_plans.jsonl"
 
     written = 0
+    generated_convs: list[ConversationRecord] = []
+    generated_anns: list[AnnotationRecord] = []
+
     with plans_path.open("w", encoding="utf-8") as f:
         for template in data.get("templates", []):
             for i in range(count):
@@ -127,7 +135,26 @@ def run_stage_generate(config: dict[str, Any], input_dir: Path, output_dir: Path
                 f.write(json.dumps(plan) + "\n")
                 written += 1
 
-    # Functional minimal-pair scaffold
+                # Synthesize dialogue for testing and development
+                conv, anns = generator.generate_conversation(plan)
+                generated_convs.append(conv)
+                generated_anns.extend(anns)
+
+    # Functional minimal-pair suite
+    mp_convs, mp_anns = build_minimal_pair_conversations()
+    generated_convs.extend(mp_convs)
+    generated_anns.extend(mp_anns)
+
+    # Write generated parquet and annotations
+    gen_parquet_path = output_dir / "generated_conversations.parquet"
+    write_conversations(gen_parquet_path, generated_convs)
+
+    gen_ann_path = output_dir / "generated_annotations.jsonl"
+    with gen_ann_path.open("w", encoding="utf-8") as f:
+        for ann in generated_anns:
+            f.write(json.dumps(ann.model_dump(mode="json")) + "\n")
+
+    # Functional minimal-pair scaffold specs
     pairs_path = output_dir / "minimal_pair_specs.jsonl"
     pair_specs = [
         {"group_id": "mp_targeted_vs_general", "factor": "targeting"},
@@ -141,8 +168,23 @@ def run_stage_generate(config: dict[str, Any], input_dir: Path, output_dir: Path
         for spec in pair_specs:
             f.write(json.dumps(spec) + "\n")
 
+    output_files = [
+        "scenario_plans.jsonl",
+        "minimal_pair_specs.jsonl",
+        "generated_conversations.parquet",
+        "generated_annotations.jsonl",
+    ]
     return {
-        "output_files": ["scenario_plans.jsonl", "minimal_pair_specs.jsonl"],
-        "row_counts": {"scenario_plans.jsonl": written},
-        "metadata": {"plans": written, "minimal_pair_groups": len(pair_specs)},
+        "output_files": output_files,
+        "row_counts": {
+            "scenario_plans.jsonl": written,
+            "generated_conversations.parquet": sum(len(c.turns) for c in generated_convs),
+        },
+        "metadata": {
+            "plans": written,
+            "generated_conversations": len(generated_convs),
+            "generated_turns": sum(len(c.turns) for c in generated_convs),
+            "minimal_pair_groups": len(pair_specs),
+        },
     }
+

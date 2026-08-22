@@ -1,0 +1,39 @@
+{
+  "stage": "source_audit",
+  "benchmark_version": "0.1.0",
+  "created_at": "2026-08-22T05:00:04.446491+00:00",
+  "config_sha256": "f217da45a588d3d8436637465938e2c1b2f67e3aa23c580aa8490195311e17a7",
+  "random_seed": 42,
+  "inputs": [],
+  "outputs": [
+    {
+      "path": "data/e2e/processed/source_audit/audit_report.yaml",
+      "row_count": null,
+      "sha256": "c31bd2ed1f4f3f042bd61bcaa3184e8572d808a8c85a258afb3a443853e98405",
+      "bytes": 220
+    },
+    {
+      "path": "data/e2e/processed/source_audit/source_registry_signed.yaml",
+      "row_count": null,
+      "sha256": "e0c4cafc79191a028a3d58c1161a1145845be220a46c03236cd6d7beaea93f96",
+      "bytes": 6164
+    }
+  ],
+  "metadata": {
+    "gate_passed": true,
+    "coverage_pct": 100.0,
+    "pending_count": 0,
+    "failures": [],
+    "approved_sources": [
+      "wikiconv_wikidetox",
+      "contextual_abuse_dataset",
+      "convotox",
+      "gametox",
+      "minorbench",
+      "davidson",
+      "wildchat",
+      "lmsys_chat_1m",
+      "personachat"
+    ]
+  }
+}

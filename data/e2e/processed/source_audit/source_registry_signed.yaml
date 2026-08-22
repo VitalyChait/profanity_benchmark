@@ -1,0 +1,204 @@
+registry_version: 1.0.0
+last_updated: '2026-08-22'
+sources:
+- source_id: wikiconv_wikidetox
+  name: WikiConv / WikiDetox
+  owner: Google / Wikimedia community
+  version: null
+  url: https://github.com/ewulczyn/wiki-detox
+  license: CC-BY-SA 3.0 (Personal/Non-commercial research use)
+  terms_url: https://meta.wikimedia.org/wiki/Terms_of_use
+  consent_basis: Public Wikipedia talk-page contributions
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: Tombstone on source removal; re-export next release
+  age_evidence: Adult Wikipedia editors; not youth-specific
+  pii_risk: "Medium \u2014 usernames, links; requires redaction pipeline"
+  intended_use: Primary organic conversation source (4,000 conv quota)
+  allowed_artifacts:
+  - derived_labels
+  - redacted_text
+  - source_identifiers
+  status: approved
+  review_date: '2026-08-22'
+  reviewer: Vitaly Chait
+  notes: Primary organic source; reconstructs discussion structure
+  conversation_quota: 4000
+  fallback_if_denied: null
+- source_id: contextual_abuse_dataset
+  name: Contextual Abuse Dataset (CAD)
+  owner: CAD authors
+  version: null
+  url: https://github.com/ewulczyn/cad
+  license: Academic Research License (Personal/Non-commercial use)
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Primary expert-annotated contextual source
+  allowed_artifacts:
+  - derived_labels
+  - redacted_text
+  status: approved
+  review_date: '2026-08-22'
+  reviewer: Vitaly Chait
+  notes: Includes conversation context, rationales, group adjudication
+  conversation_quota: null
+  fallback_if_denied: null
+- source_id: convotox
+  name: ConvoTox
+  owner: ConvoTox authors
+  version: null
+  url: null
+  license: Research / Non-commercial use
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Reddit tree source (1,000 conv quota)
+  allowed_artifacts:
+  - derived_labels
+  - redacted_text
+  - source_identifiers
+  status: approved
+  review_date: '2026-08-22'
+  reviewer: Vitaly Chait
+  notes: Ingest approved for personal non-commercial research
+  conversation_quota: 1000
+  fallback_if_denied: 500 WikiConv/CAD + 500 adult-staged conversations
+- source_id: gametox
+  name: GameTox
+  owner: GameTox shared-task organizers
+  version: null
+  url: null
+  license: Shared-task research / Non-commercial use
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Flat gaming-language seed source
+  allowed_artifacts:
+  - derived_labels
+  - redacted_text
+  - lexical_seeds
+  status: approved
+  review_date: '2026-08-22'
+  reviewer: Vitaly Chait
+  notes: Approved for personal non-commercial research
+  conversation_quota: null
+  fallback_if_denied: Generate scenarios from published taxonomy only
+- source_id: minorbench
+  name: MinorBench
+  owner: MinorBench authors
+  version: null
+  url: null
+  license: CC-BY-NC 4.0 / Academic research
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Taxonomy comparison and assistant safety
+  allowed_artifacts:
+  - taxonomy_mapping
+  - derived_labels
+  status: approved
+  review_date: '2026-08-22'
+  reviewer: Vitaly Chait
+  notes: Child-facing assistant safety, not peer cyberbullying
+  conversation_quota: null
+  fallback_if_denied: null
+- source_id: davidson
+  name: Davidson hate speech tweets
+  owner: Davidson et al.
+  version: null
+  url: null
+  license: MIT / Academic research
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Flat tweet source for lexical seeds
+  allowed_artifacts:
+  - lexical_seeds
+  - derived_labels
+  status: approved
+  review_date: '2026-08-22'
+  reviewer: Vitaly Chait
+  notes: Flat labeled tweets; lexical seeds
+  conversation_quota: null
+  fallback_if_denied: null
+- source_id: wildchat
+  name: WildChat
+  owner: Allen AI
+  version: null
+  url: null
+  license: ODC-BY / Non-commercial research
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Dialogue patterns and safe scaffold
+  allowed_artifacts:
+  - derived_labels
+  - redacted_text
+  status: approved
+  review_date: '2026-08-22'
+  reviewer: Vitaly Chait
+  notes: Approved for personal non-commercial research
+  conversation_quota: null
+  fallback_if_denied: null
+- source_id: lmsys_chat_1m
+  name: LMSYS-Chat-1M
+  owner: LMSYS
+  version: null
+  url: null
+  license: LMSYS Terms / Personal non-commercial research use
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Dialogue patterns and conversational scaffolding
+  allowed_artifacts:
+  - derived_labels
+  - redacted_text
+  status: approved
+  review_date: '2026-08-22'
+  reviewer: Vitaly Chait
+  notes: Approved for personal non-commercial research
+  conversation_quota: null
+  fallback_if_denied: null
+- source_id: personachat
+  name: PersonaChat
+  owner: ParlAI / Facebook
+  version: null
+  url: null
+  license: CC-BY-NC 4.0 / ParlAI Terms
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: "Safe dialogue scaffold only \u2014 never authentic youth/cyberbullying\
+    \ data"
+  allowed_artifacts:
+  - safe_scaffold_templates
+  status: approved
+  review_date: '2026-08-22'
+  reviewer: Vitaly Chait
+  notes: Permit only as safe dialogue scaffold
+  conversation_quota: null
+  fallback_if_denied: null

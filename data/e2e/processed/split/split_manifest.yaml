@@ -1,0 +1,16 @@
+conversation_ids:
+  dev:
+  - conv_004
+  test:
+  - conv_001
+  train:
+  - conv_003
+  - conv_002
+counts:
+  dev: 1
+  test: 1
+  train: 2
+leakage_clean: true
+leakage_findings: []
+near_duplicate_findings: []
+seed: 42

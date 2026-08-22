@@ -1,4 +1,8 @@
-"""Private benchmark evaluator HTTP server (/predict interface)."""
+"""Private benchmark evaluator HTTP server (/predict interface).
+
+KEY LOCATION:
+- Set LLM API keys in `.env` at repository root to serve live LLM-backed moderation models.
+"""
 
 import json
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer

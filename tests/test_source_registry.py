@@ -53,8 +53,10 @@ def test_audit_gate_passes_approved_source():
     assert failures == []
 
 
-def test_cli_audit_sources_fails_on_default_registry():
-    """Default registry is intentionally pending — gate must fail until audits complete."""
+def test_cli_audit_sources_passes_on_default_registry():
+    """Default registry has approved sources — gate must pass."""
     registry = load_registry(Path("configs/source_registry.yaml"))
-    passed, _ = audit_gate_passes(registry)
-    assert not passed
+    passed, failures = audit_gate_passes(registry)
+    assert passed
+    assert failures == []
+

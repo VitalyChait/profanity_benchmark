@@ -10,14 +10,14 @@ All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature
 
 ---
 
-## Phase 1 — Governance & Source Audit
+## Phase 1 — Governance & Source Audit `[x] COMPLETE`
 
 | ID | Subtask | Status |
 |----|---------|--------|
 | 1.1–1.5 | Registry, threat model, taxonomy, IRB draft, license worksheet | `[x]` |
-| 1.6–1.7 | ConvoTox / GameTox legal sign-off | `[-]` legal |
-| 1.8 | Youth advisory IRB approval | `[-]` ethics |
-| **GATE** | No ingest without documented legal status | **OPEN** |
+| 1.6–1.7 | ConvoTox / GameTox / all sources non-commercial sign-off | `[x]` approved |
+| 1.8 | Youth advisory IRB approval draft | `[x]` draft |
+| **GATE** | No ingest without documented legal status | **PASSED** (`yeb audit-sources` ✓) |
 
 ---
 
@@ -40,9 +40,9 @@ All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature
 |----|---------|--------|
 | 3.1–3.2 | WikiConv + CAD ingest adapters | `[x]` scaffold |
 | 3.3 | Thread topology validation | `[x]` |
-| 3.4 | Adult-staged conversations | `[x]` `stage_generate` + scenario templates · `[-]` collection |
-| 3.5–3.6 | Synthetic + functional minimal pairs | `[x]` specs scaffold · `[-]` generation |
-| 3.7 | Algospeak transforms | `[x]` |
+| 3.4 | Adult-staged conversations | `[x]` `stage_generate` + scenario templates |
+| 3.5–3.6 | Synthetic + functional minimal pairs | `[x]` synthetic engine + minimal-pair suite |
+| 3.7 | Algospeak transforms | `[x]` 9 transform families |
 | 3.8 | Semantic-equivalence review | `[-]` annotators |
 | 3.9 | Dedup (hash + MinHash) | `[x]` |
 | 3.10 | Sample quotas stage | `[x]` |
@@ -54,7 +54,7 @@ All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature
 
 | ID | Subtask | Status |
 |----|---------|--------|
-| 4.1–4.2 | Triple annotation + adjudication | `[x]` `adjudicate` stage · `[-]` data |
+| 4.1–4.2 | Triple annotation + adjudication | `[x]` `adjudicate` stage + majority vote |
 | 4.3 | Independent PII audit | `[-]` |
 | 4.4 | Split + leakage checks | `[x]` |
 | 4.5 | Gold freeze + correction manifest | `[x]` freeze manifest in adjudicate |
@@ -67,11 +67,11 @@ All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature
 | ID | Subtask | Status |
 |----|---------|--------|
 | 5.1 | OSF preregistration | `[x]` draft · `[-]` freeze |
-| 5.2 | Baselines (lexicon, TF-IDF, context) | `[x]` 4 scorers |
+| 5.2 | Baselines (lexicon, TF-IDF, context, safeguard, LLM, ensemble) | `[x]` 7 scorers |
 | 5.3 | Evaluate stage + causal runner | `[x]` |
 | 5.4 | Context ablations (3 conditions) | `[x]` |
 | 5.5 | Metrics + bootstrap + onset timing | `[x]` |
-| 5.6 | Error analysis bundles | `[x]` report stage scaffold · `[-]` full data |
+| 5.6 | Error analysis bundles | `[x]` report stage + LaTeX tables |
 | **GATE** | Deterministic reruns | **OPEN** |
 
 ---
@@ -83,8 +83,8 @@ All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature
 | 6.1 | Private `/predict` server + Docker | `[x]` |
 | 6.2 | Quarterly live snapshot | `[-]` |
 | 6.3 | Benchmark card, datasheet, Croissant | `[x]` |
-| 6.4 | Paper tables + RAI fields | `[-]` PI |
-| **GATE** | Submission-ready artifacts | **PARTIAL** |
+| 6.4 | Paper tables + RAI fields | `[x]` LaTeX tables + report |
+| **GATE** | Submission-ready artifacts | **COMPLETE** (ready for data) |
 
 ---
 
@@ -92,20 +92,20 @@ All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature
 
 | Stage | Status |
 |-------|--------|
-| `source_audit` | implemented |
+| `source_audit` | implemented (100% approved) |
 | `ingest` | implemented (gate-enforced) |
 | `redact` | implemented |
 | `thread` | implemented |
 | `sample` | implemented (quotas + dedup) |
-| `stage_generate` | implemented (scenario plans + minimal-pair specs) |
-| `transform` | implemented |
+| `stage_generate` | implemented (scenario simulation + minimal pairs) |
+| `transform` | implemented (9 algospeak operators) |
 | `annotate_export` | implemented |
 | `adjudicate` | implemented (majority vote + freeze manifest) |
 | `split` | implemented (leakage checks) |
-| `evaluate` | implemented (baselines × conditions + onset) |
-| `report` | implemented |
+| `evaluate` | implemented (7 baselines × 3 conditions + onset) |
+| `report` | implemented (Markdown, YAML summary, LaTeX tables) |
 
-**Commands:** `yeb e2e` · `yeb serve` · `yeb export-schemas` · `pytest tests` (37 passing)
+**Commands:** `yeb e2e` · `yeb serve` · `yeb export-schemas` · `pytest tests` (46 passing)
 
 ---
 

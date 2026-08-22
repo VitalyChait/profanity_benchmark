@@ -48,3 +48,31 @@ def test_full_context_scores_higher():
     s_turn = scorers["lexicon_full_context"].predict(turn_only).harm_probability
     s_full = scorers["lexicon_full_context"].predict(full).harm_probability
     assert s_full >= s_turn
+
+
+def test_rule_based_safeguard_distinguishes_banter_from_abuse():
+    scorers = build_default_scorers("configs/profanity_lexicon.txt")
+    safeguard = scorers["rule_based_safeguard"]
+
+    # Friendly banter with profanity
+    banter_req = _request("bro you're fucking cracked lmao that was insane")
+    banter_out = safeguard.predict(banter_req)
+    assert banter_out.harm_probability < 0.30
+
+    # Targeted abuse
+    abuse_req = _request("you are fucking trash delete the game")
+    abuse_out = safeguard.predict(abuse_req)
+    assert abuse_out.harm_probability > 0.60
+
+
+def test_prompted_llm_and_ensemble_scorers():
+    scorers = build_default_scorers("configs/profanity_lexicon.txt")
+    assert "prompted_llm_judge" in scorers
+    assert "ensemble_moderator" in scorers
+
+    req = _request("you are trash watch your back tomorrow or else")
+    prompt_out = scorers["prompted_llm_judge"].predict(req)
+    ensemble_out = scorers["ensemble_moderator"].predict(req)
+
+    assert prompt_out.harm_probability > 0.70
+    assert ensemble_out.harm_probability > 0.40

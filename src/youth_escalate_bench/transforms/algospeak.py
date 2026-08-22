@@ -13,6 +13,10 @@ class TransformFamily(StrEnum):
     REPEATED_CHARS = "repeated_chars"
     HOMOGLYPH = "homoglyph"
     EMOJI_SUBSTITUTION = "emoji_substitution"
+    EUPHEMISTIC_ALGO_CODED = "euphemistic_algo_coded"
+    PHONETIC_OBFUSCATION = "phonetic_obfuscation"
+    DELIMITER_INJECTION = "delimiter_injection"
+    ACRONYM_SUBSTITUTION = "acronym_substitution"
 
 
 LEET_MAP: dict[str, str] = {
@@ -29,12 +33,59 @@ HOMOGLYPH_MAP: dict[str, str] = {
     "e": "е",
     "o": "о",
     "c": "с",
+    "p": "р",
+    "x": "х",
 }
 
 EMOJI_MAP: dict[str, str] = {
     "trash": "🗑️",
     "skull": "💀",
     "fire": "🔥",
+    "clown": "🤡",
+    "toxic": "☣️",
+    "dead": "☠️",
+    "snake": "🐍",
+    "poop": "💩",
+    "knife": "🔪",
+}
+
+EUPHEMISM_MAP: dict[str, str] = {
+    "kill yourself": "go unalive your account",
+    "killed": "unalived",
+    "kill": "unalive",
+    "suicide": "sewerslide",
+    "porn": "corn",
+    "rape": "grape",
+    "raped": "graped",
+    "abuse": "mascara",
+    "sex": "seggs",
+    "drugs": "spices",
+    "murder": "game end",
+    "murdered": "game ended",
+    "die": "d1e",
+    "hate": "h8",
+}
+
+PHONETIC_MAP: dict[str, str] = {
+    "fuck": "fuk",
+    "fucking": "fukking",
+    "bitch": "biatch",
+    "bitches": "biatches",
+    "asshole": "ashole",
+    "dick": "dikk",
+    "crap": "krap",
+    "loser": "loozer",
+    "idiot": "idijot",
+    "stupid": "stoopid",
+}
+
+ACRONYM_MAP: dict[str, str] = {
+    "shut the fuck up": "stfu",
+    "get the fuck out": "gtfo",
+    "kill yourself": "kys",
+    "kill myself": "kms",
+    "piece of shit": "pos",
+    "what the fuck": "wtf",
 }
 
 
@@ -78,7 +129,41 @@ def apply_homoglyph(text: str) -> str:
 def apply_emoji_substitution(text: str) -> str:
     result = text
     for word, emoji in EMOJI_MAP.items():
-        result = re.sub(rf"\b{word}\b", emoji, result, flags=re.IGNORECASE)
+        result = re.sub(rf"\b{re.escape(word)}\b", emoji, result, flags=re.IGNORECASE)
+    return result
+
+
+def apply_euphemisms(text: str) -> str:
+    result = text
+    for word, repl in EUPHEMISM_MAP.items():
+        result = re.sub(rf"\b{re.escape(word)}\b", repl, result, flags=re.IGNORECASE)
+    return result
+
+
+def apply_phonetics(text: str) -> str:
+    result = text
+    for word, repl in PHONETIC_MAP.items():
+        result = re.sub(rf"\b{re.escape(word)}\b", repl, result, flags=re.IGNORECASE)
+    return result
+
+
+def apply_delimiter_injection(text: str, delimiter: str = "*") -> str:
+    words = text.split()
+    modified = []
+    for word in words:
+        if len(word) > 3 and word.isalpha():
+            # inject delimiter in middle
+            mid = len(word) // 2
+            modified.append(word[:mid] + delimiter + word[mid:])
+        else:
+            modified.append(word)
+    return " ".join(modified)
+
+
+def apply_acronyms(text: str) -> str:
+    result = text
+    for phrase, acr in ACRONYM_MAP.items():
+        result = re.sub(rf"\b{re.escape(phrase)}\b", acr, result, flags=re.IGNORECASE)
     return result
 
 
@@ -88,13 +173,18 @@ OPERATORS: dict[TransformFamily, Callable[[str], str]] = {
     TransformFamily.REPEATED_CHARS: apply_repeated_chars,
     TransformFamily.HOMOGLYPH: apply_homoglyph,
     TransformFamily.EMOJI_SUBSTITUTION: apply_emoji_substitution,
+    TransformFamily.EUPHEMISTIC_ALGO_CODED: apply_euphemisms,
+    TransformFamily.PHONETIC_OBFUSCATION: apply_phonetics,
+    TransformFamily.DELIMITER_INJECTION: apply_delimiter_injection,
+    TransformFamily.ACRONYM_SUBSTITUTION: apply_acronyms,
 }
 
 
 def transform_text(text: str, families: list[TransformFamily]) -> str:
     result = text
     for family in families:
-        result = OPERATORS[family](result)
+        if family in OPERATORS:
+            result = OPERATORS[family](result)
     return result
 
 

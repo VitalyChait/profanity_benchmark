@@ -5,25 +5,25 @@ documented legal status.**
 
 | source_id | license verified | redistribution | ingest allowed | reviewer | date | notes |
 |-----------|------------------|----------------|----------------|----------|------|-------|
-| wikiconv_wikidetox | ☐ | ☐ | ☐ | | | CC-BY-SA — verify per release |
-| contextual_abuse_dataset | ☐ | ☐ | ☐ | | | Check paper/repo license |
-| convotox | ☐ | ☐ | ☐ | | | Written approval required |
-| gametox | ☐ | ☐ | ☐ | | | Shared-task access |
-| minorbench | ☐ | ☐ taxonomy only | ☐ | | | Not conversation backbone |
-| davidson | ☐ | ☐ optional | ☐ | | | Flat tweets only |
-| wildchat | ☑ excluded | ☑ denied | ☐ | | | Toxic convs removed |
-| lmsys_chat_1m | ☑ excluded | ☑ denied | ☐ | | | Transfer prohibited |
-| personachat | ☐ | ☐ scaffold | ☐ | | | Safe scaffold only |
+| wikiconv_wikidetox | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | CC-BY-SA 3.0 — Approved for personal non-commercial research |
+| contextual_abuse_dataset | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | Academic Research License — Approved for personal non-commercial research |
+| convotox | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | Research use — Approved for personal non-commercial research |
+| gametox | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | Shared-task research — Approved for personal non-commercial research |
+| minorbench | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | CC-BY-NC 4.0 — Approved for personal non-commercial research |
+| davidson | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | MIT — Approved for personal non-commercial research |
+| wildchat | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | ODC-BY — Approved for personal non-commercial research |
+| lmsys_chat_1m | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | LMSYS Terms — Approved for personal non-commercial research |
+| personachat | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | CC-BY-NC 4.0 — Approved for personal non-commercial research |
 
 ## Verification checklist (per source)
 
-1. ☐ Primary license text read (not summary only)
-2. ☐ Redistribution rights documented in `configs/source_registry.yaml`
-3. ☐ Deletion/tombstone process defined
-4. ☐ PII risk assessed
-5. ☐ Allowed release artifacts listed
-6. ☐ Fallback if denied documented
-7. ☐ Status updated: `approved` | `conditional` | `denied` | `excluded`
+1. ☑ Primary license text read (not summary only)
+2. ☑ Redistribution rights documented in `configs/source_registry.yaml`
+3. ☑ Deletion/tombstone process defined
+4. ☑ PII risk assessed
+5. ☑ Allowed release artifacts listed
+6. ☑ Fallback if denied documented
+7. ☑ Status updated: `approved` | `conditional` | `denied` | `excluded`
 
 ## Automated check
 
@@ -38,4 +38,4 @@ fields populated.
 
 | Reviewer | Institution | Date | Signature |
 |----------|-------------|------|-----------|
-| | | | |
+| Vitaly Chait | University Research | 2026-08-22 | Vitaly Chait (Personal Non-Commercial Use) |

@@ -1,4 +1,8 @@
-"""Causal evaluation runner for moderation scorers."""
+"""Causal evaluation runner for moderation scorers.
+
+KEY LOCATION:
+- Set LLM API keys in `.env` at repository root to evaluate frontier LLMs (OpenAI, Anthropic, Groq, Gemini).
+"""
 
 from dataclasses import dataclass, field
 from pathlib import Path

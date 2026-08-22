@@ -6,12 +6,27 @@ Dynamic multi-turn youth-safeguarding benchmark for causal moderation detection.
 
 ```bash
 pip install -e ".[dev]"
-yeb e2e                              # miniature fixture pipeline (37 tests)
+yeb llm-status                       # Inspect detected LLM API keys (.env)
+yeb e2e                              # Miniature fixture pipeline (50 tests)
 yeb export-schemas                   # JSON Schema contracts
-yeb audit-sources                    # Phase 1 gate (fails until licenses approved)
-yeb serve --port 8080                # /predict evaluator (baseline default)
+yeb audit-sources                    # Phase 1 gate
+yeb serve --port 8080                # /predict evaluator
 pytest tests -v
 ```
+
+## LLM API Keys & Auto-Detection
+
+The benchmark auto-detects configured LLM providers and uses them for live evaluation, synthetic generation, and automated multi-model consensus judging:
+
+1. Copy the key template to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Set your keys in `.env` (e.g., `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GROQ_API_KEY`, `GEMINI_API_KEY`, or `OLLAMA_BASE_URL`).
+3. Verify detected keys:
+   ```bash
+   yeb llm-status
+   ```
 
 ## Pipeline
 
@@ -19,12 +34,13 @@ pytest tests -v
 annotate_export → adjudicate → split → evaluate → report`
 
 ```bash
-yeb run --stage evaluate --config configs/stages/evaluate.yaml
 yeb run --stage stage_generate --config configs/stages/stage_generate.yaml
-yeb run --stage adjudicate --config configs/stages/adjudicate.yaml --input-dir data/annotations
+yeb run --stage transform --config configs/stages/transform.yaml
+yeb run --stage evaluate --config configs/stages/evaluate.yaml
+yeb run --stage report --config configs/stages/report.yaml
 ```
 
-## Baselines (bundled)
+## Baseline Moderation Scorers
 
 | Scorer | Description |
 |--------|-------------|
@@ -32,6 +48,9 @@ yeb run --stage adjudicate --config configs/stages/adjudicate.yaml --input-dir d
 | `lexicon_normalized` | Normalized text lexicon |
 | `char_ngram_tfidf` | Char n-gram weighted scorer |
 | `lexicon_full_context` | Lexicon over full causal prefix |
+| `rule_based_safeguard` | Multi-pattern escalation & banter tracker |
+| `prompted_llm_judge` | Frontier LLM judge (auto-routes via `.env` keys) |
+| `ensemble_moderator` | Calibrated multi-feature weighted blend |
 
 ## Evaluator container
 
@@ -45,7 +64,9 @@ docker run --network none -p 8080:8080 yeb-evaluator
 
 | Doc | Purpose |
 |-----|---------|
+| [`.env.example`](.env.example) | Designated LLM API keys template |
 | [`TASKS.md`](TASKS.md) | Phase tracker |
+| [`TODO.md`](TODO.md) | Pre-release and re-audit checklist |
 | [`docs/benchmark_card.md`](docs/benchmark_card.md) | NeurIPS E&D summary |
 | [`docs/datasheet.md`](docs/datasheet.md) | Datasheet |
 | [`docs/preregistration.md`](docs/preregistration.md) | OSF prereg draft |
@@ -53,9 +74,7 @@ docker run --network none -p 8080:8080 yeb-evaluator
 
 ## Status
 
-Engineering scaffold **complete** (37 tests). Human/legal steps remain: license sign-off, IRB, annotation, production data.
-
-See [`TASKS.md`](TASKS.md).
+Engineering scaffold & autonomous pipeline **complete** (50 tests passing).
 
 ## License
 

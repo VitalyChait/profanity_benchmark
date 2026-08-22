@@ -1,4 +1,8 @@
-"""Pipeline stage registry and runners."""
+"""Pipeline stage registry and runners.
+
+KEY LOCATION:
+- Set LLM API keys in `.env` at repository root to enable live LLM evaluation & synthetic generation.
+"""
 
 from collections.abc import Callable
 from pathlib import Path

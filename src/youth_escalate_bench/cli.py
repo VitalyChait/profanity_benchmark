@@ -140,5 +140,30 @@ def validate_config(config_path: Path) -> None:
     click.echo(f"  random_seed: {cfg.get('random_seed')}")
 
 
+@main.command("llm-status")
+def show_llm_status() -> None:
+    """Show detected LLM API keys and active provider routing (set in .env)."""
+    from youth_escalate_bench.llm import get_active_keys, get_llm_config
+
+    config = get_llm_config()
+    active_keys = get_active_keys()
+
+    click.echo("=" * 60)
+    click.echo("YouthEscalateBench — LLM API Key Status")
+    click.echo("=" * 60)
+    click.echo(f"Designated key file: {config['env_file']}")
+    click.echo(f"File exists: {'✓ Yes' if config['env_exists'] else '✗ Missing (create from .env.example)'}")
+    click.echo(f"Active provider: {config['selected_provider']}")
+    click.echo("-" * 60)
+    click.echo("Detected Providers & Keys:")
+    for provider, detected in config["keys_detected"].items():
+        status = "✓ ACTIVE" if detected else "✗ Not set"
+        key_info = f" ({active_keys[provider]})" if detected and provider in active_keys else ""
+        click.echo(f"  - {provider:<12} : {status}{key_info}")
+    click.echo("=" * 60)
+    click.echo("To configure or change keys, edit the `.env` file at the repository root.")
+
+
+
 if __name__ == "__main__":
     main()
