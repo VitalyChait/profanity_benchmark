@@ -12,6 +12,10 @@ data/interim/
 data/interim/*
 data/processed/
 data/processed/*
+data/checkpoints/
+data/checkpoints/*
+reports/pipeline_errors/
+reports/pipeline_errors/*
 *.parquet
 *.pq
 *.tar.gz

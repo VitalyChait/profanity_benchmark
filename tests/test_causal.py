@@ -34,7 +34,7 @@ def test_build_inference_requests_no_future_turns():
         assert len(req.turns) == i + 1
         assert req.current_turn_id == turns[i].turn_id
         visible = req.visible_turn_ids()
-        assert visible == {t.turn_id for t in turns[:i + 1]}
+        assert visible == {t.turn_id for t in turns[: i + 1]}
 
 
 def test_validate_no_future_evidence():

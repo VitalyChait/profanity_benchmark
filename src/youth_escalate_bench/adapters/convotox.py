@@ -24,16 +24,29 @@ class ConvoToxAdapter(IngestAdapter):
                     continue
                 data = json.loads(line)
 
-                cid = str(data.get("conversation_id") or data.get("thread_id") or f"convotox_{idx+1}")
+                cid = str(
+                    data.get("conversation_id") or data.get("thread_id") or f"convotox_{idx + 1}"
+                )
                 raw_turns = data.get("turns") or data.get("comments") or data.get("messages") or []
 
                 turns: list[StoredTurn] = []
                 for t_idx, item in enumerate(raw_turns):
-                    tid = str(item.get("turn_id") or item.get("id") or item.get("comment_id") or f"t{t_idx+1}")
-                    spk = str(item.get("speaker_id") or item.get("author") or f"reddit_user_{t_idx%2+1}")
+                    tid = str(
+                        item.get("turn_id")
+                        or item.get("id")
+                        or item.get("comment_id")
+                        or f"t{t_idx + 1}"
+                    )
+                    spk = str(
+                        item.get("speaker_id")
+                        or item.get("author")
+                        or f"reddit_user_{t_idx % 2 + 1}"
+                    )
                     txt = str(item.get("text") or item.get("body") or "").strip()
                     parent_id = item.get("parent_id") or item.get("parent_turn_id")
-                    rel_time = str(item.get("relative_time") or item.get("created_utc") or f"+{t_idx*60}s")
+                    rel_time = str(
+                        item.get("relative_time") or item.get("created_utc") or f"+{t_idx * 60}s"
+                    )
 
                     if txt and txt not in ("[deleted]", "[removed]"):
                         turns.append(

@@ -63,7 +63,7 @@ class InferenceRequest(BaseModel):
             raise ValueError(
                 "turns must be causal prefix only: current_turn_id must be the last turn"
             )
-        if turn_ids[:current_idx + 1] != [t.turn_id for t in self.turns[:current_idx + 1]]:
+        if turn_ids[: current_idx + 1] != [t.turn_id for t in self.turns[: current_idx + 1]]:
             raise ValueError("turns must be ordered; only causal prefix is valid")
         return self
 
@@ -71,7 +71,7 @@ class InferenceRequest(BaseModel):
         """Return turns up to and including current_turn_id."""
         turn_ids = [t.turn_id for t in self.turns]
         idx = turn_ids.index(self.current_turn_id)
-        return self.turns[:idx + 1]
+        return self.turns[: idx + 1]
 
     def visible_turn_ids(self) -> set[str]:
         return {t.turn_id for t in self.causal_prefix()}

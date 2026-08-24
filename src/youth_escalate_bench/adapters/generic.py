@@ -63,9 +63,19 @@ class GenericConversationAdapter(IngestAdapter):
                 item = json.loads(line)
 
                 # Check if nested conversation structure
-                turns_raw = item.get("turns") or item.get("messages") or item.get("dialog") or item.get("conversation")
+                turns_raw = (
+                    item.get("turns")
+                    or item.get("messages")
+                    or item.get("dialog")
+                    or item.get("conversation")
+                )
                 if isinstance(turns_raw, list):
-                    cid = str(item.get("conversation_id") or item.get("id") or item.get("thread_id") or f"{self.source_id}_{idx+1}")
+                    cid = str(
+                        item.get("conversation_id")
+                        or item.get("id")
+                        or item.get("thread_id")
+                        or f"{self.source_id}_{idx + 1}"
+                    )
                     turns = self.normalize_turns(turns_raw)
                     if turns:
                         conversations.append(
@@ -76,7 +86,11 @@ class GenericConversationAdapter(IngestAdapter):
                                 platform_style=item.get("platform_style", self.platform_style),
                                 language_mode=item.get("language_mode", self.language_mode),
                                 turns=turns,
-                                metadata={k: v for k, v in item.items() if k not in ("turns", "messages", "dialog")},
+                                metadata={
+                                    k: v
+                                    for k, v in item.items()
+                                    if k not in ("turns", "messages", "dialog")
+                                },
                             )
                         )
                 else:
@@ -99,7 +113,11 @@ class GenericConversationAdapter(IngestAdapter):
             for idx, item in enumerate(data):
                 turns_raw = item.get("turns") or item.get("messages") or item.get("dialog")
                 if isinstance(turns_raw, list):
-                    cid = str(item.get("conversation_id") or item.get("id") or f"{self.source_id}_{idx+1}")
+                    cid = str(
+                        item.get("conversation_id")
+                        or item.get("id")
+                        or f"{self.source_id}_{idx + 1}"
+                    )
                     turns = self.normalize_turns(turns_raw)
                     if turns:
                         conversations.append(
@@ -110,7 +128,11 @@ class GenericConversationAdapter(IngestAdapter):
                                 platform_style=item.get("platform_style", self.platform_style),
                                 language_mode=item.get("language_mode", self.language_mode),
                                 turns=turns,
-                                metadata={k: v for k, v in item.items() if k not in ("turns", "messages", "dialog")},
+                                metadata={
+                                    k: v
+                                    for k, v in item.items()
+                                    if k not in ("turns", "messages", "dialog")
+                                },
                             )
                         )
                 else:
@@ -132,7 +154,11 @@ class GenericConversationAdapter(IngestAdapter):
                         platform_style=data.get("platform_style", self.platform_style),
                         language_mode=data.get("language_mode", self.language_mode),
                         turns=turns,
-                        metadata={k: v for k, v in data.items() if k not in ("turns", "messages", "dialog")},
+                        metadata={
+                            k: v
+                            for k, v in data.items()
+                            if k not in ("turns", "messages", "dialog")
+                        },
                     )
                 ]
         return []
@@ -155,7 +181,11 @@ class GenericConversationAdapter(IngestAdapter):
             if rows and "turns" in rows[0] and isinstance(rows[0]["turns"], list):
                 conversations: list[ConversationRecord] = []
                 for idx, item in enumerate(rows):
-                    cid = str(item.get("conversation_id") or item.get("id") or f"{self.source_id}_{idx+1}")
+                    cid = str(
+                        item.get("conversation_id")
+                        or item.get("id")
+                        or f"{self.source_id}_{idx + 1}"
+                    )
                     turns = self.normalize_turns(item["turns"])
                     if turns:
                         conversations.append(
@@ -182,11 +212,11 @@ class GenericConversationAdapter(IngestAdapter):
                 if line:
                     turns.append(
                         StoredTurn(
-                            turn_id=f"t{idx+1}",
-                            speaker_id=f"user_{idx%2+1}",
+                            turn_id=f"t{idx + 1}",
+                            speaker_id=f"user_{idx % 2 + 1}",
                             role="user" if idx % 2 == 0 else "peer",
                             text=line,
-                            relative_time=f"+{idx*5}s",
+                            relative_time=f"+{idx * 5}s",
                         )
                     )
         if not turns:
@@ -211,10 +241,21 @@ class GenericConversationAdapter(IngestAdapter):
         # Detect columns
         sample = rows[0]
         cid_key = self.conv_id_col or self._find_matching_key(
-            sample, ["conversation_id", "thread_id", "dialog_id", "dialogue_id", "post_id", "session_id", "context_id", "id"]
+            sample,
+            [
+                "conversation_id",
+                "thread_id",
+                "dialog_id",
+                "dialogue_id",
+                "post_id",
+                "session_id",
+                "context_id",
+                "id",
+            ],
         )
         text_key = self.text_col or self._find_matching_key(
-            sample, ["text", "comment_text", "body", "message", "utterance", "content", "cleaned_text"]
+            sample,
+            ["text", "comment_text", "body", "message", "utterance", "content", "cleaned_text"],
         )
         speaker_key = self.speaker_col or self._find_matching_key(
             sample, ["speaker_id", "speaker", "author", "user", "username", "sender", "role"]
@@ -224,7 +265,9 @@ class GenericConversationAdapter(IngestAdapter):
         )
 
         if not text_key:
-            raise ValueError(f"Could not automatically identify a 'text' column in data fields: {list(sample.keys())}")
+            raise ValueError(
+                f"Could not automatically identify a 'text' column in data fields: {list(sample.keys())}"
+            )
 
         # Group by conversation ID
         grouped: dict[str, list[dict[str, Any]]] = {}
@@ -238,13 +281,18 @@ class GenericConversationAdapter(IngestAdapter):
         for cid, group in grouped.items():
             turns: list[StoredTurn] = []
             for t_idx, r in enumerate(group):
-                tid = str(r.get(turn_id_key) or f"t{t_idx+1}")
+                tid = str(r.get(turn_id_key) or f"t{t_idx + 1}")
                 # Ensure unique turn IDs within conversation
                 if any(t.turn_id == tid for t in turns):
-                    tid = f"t{t_idx+1}_{tid}"
-                spk = str(r.get(speaker_key) or f"user_{t_idx%2+1}")
+                    tid = f"t{t_idx + 1}_{tid}"
+                spk = str(r.get(speaker_key) or f"user_{t_idx % 2 + 1}")
                 txt = str(r.get(text_key) or "").strip()
-                rel_time = str(r.get("relative_time") or r.get("timestamp") or r.get("created_utc") or f"+{t_idx*5}s")
+                rel_time = str(
+                    r.get("relative_time")
+                    or r.get("timestamp")
+                    or r.get("created_utc")
+                    or f"+{t_idx * 5}s"
+                )
                 parent = r.get("parent_id") or r.get("parent_turn_id")
                 if txt:
                     turns.append(

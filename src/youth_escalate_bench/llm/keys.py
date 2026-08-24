@@ -199,4 +199,3 @@ def get_provider_model(provider: str) -> str:
         if val:
             return val
     return DEFAULT_MODELS.get(p, "default")
-

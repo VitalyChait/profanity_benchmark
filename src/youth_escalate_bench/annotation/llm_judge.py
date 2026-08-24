@@ -5,7 +5,6 @@ KEY CONFIGURATION LOCATION:
 - When multiple keys are configured, this judge queries all active models and performs majority consensus.
 """
 
-
 from youth_escalate_bench.llm import (
     get_available_providers,
     get_default_router,
@@ -40,7 +39,6 @@ class MultiLLMJudge:
             self.providers = get_available_providers()
         self.router = get_default_router()
 
-
     def judge_turn(self, request: InferenceRequest) -> list[AnnotationRecord]:
         """Query each active LLM provider for a turn annotation."""
         if not self.providers:
@@ -57,10 +55,20 @@ class MultiLLMJudge:
                 AnnotationRecord(
                     conversation_id=request.conversation_id,
                     turn_id=request.current_turn_id,
-                    profanity_form=ProfanityForm.LITERAL if out.harm_probability >= 0.3 else ProfanityForm.NONE,
-                    pragmatic_use=PragmaticUse.TARGETED_ABUSE if sev == Severity.ACTIONABLE else PragmaticUse.AFFILIATIVE_BANTER,
-                    harm_types=[HarmType(ht) for ht, p in out.harm_types.items() if p > 0.4 and ht in HarmType],
-                    target_type=TargetType.INDIVIDUAL_PEER if sev == Severity.ACTIONABLE else TargetType.NONE,
+                    profanity_form=ProfanityForm.LITERAL
+                    if out.harm_probability >= 0.3
+                    else ProfanityForm.NONE,
+                    pragmatic_use=PragmaticUse.TARGETED_ABUSE
+                    if sev == Severity.ACTIONABLE
+                    else PragmaticUse.AFFILIATIVE_BANTER,
+                    harm_types=[
+                        HarmType(ht)
+                        for ht, p in out.harm_types.items()
+                        if p > 0.4 and ht in HarmType
+                    ],
+                    target_type=TargetType.INDIVIDUAL_PEER
+                    if sev == Severity.ACTIONABLE
+                    else TargetType.NONE,
                     severity=sev,
                     adjudicated=True,
                 )
@@ -79,19 +87,27 @@ class MultiLLMJudge:
             "}"
         )
 
-        turns_text = "\n".join(f"[{t.speaker_id}] ({t.turn_id}): {t.text}" for t in request.causal_prefix())
-        prompt = f"Conversation:\n{turns_text}\n\nTarget Turn ID to moderate: {request.current_turn_id}"
+        turns_text = "\n".join(
+            f"[{t.speaker_id}] ({t.turn_id}): {t.text}" for t in request.causal_prefix()
+        )
+        prompt = (
+            f"Conversation:\n{turns_text}\n\nTarget Turn ID to moderate: {request.current_turn_id}"
+        )
 
         for provider in self.providers:
             try:
-                data = self.router.call_llm_json(prompt=prompt, system_prompt=system_prompt, provider=provider)
+                data = self.router.call_llm_json(
+                    prompt=prompt, system_prompt=system_prompt, provider=provider
+                )
                 results.append(
                     AnnotationRecord(
                         conversation_id=request.conversation_id,
                         turn_id=request.current_turn_id,
                         profanity_form=ProfanityForm.LITERAL,
                         pragmatic_use=PragmaticUse(data.get("pragmatic_use", "targeted_abuse")),
-                        harm_types=[HarmType(ht) for ht in data.get("harm_types", []) if ht in HarmType],
+                        harm_types=[
+                            HarmType(ht) for ht in data.get("harm_types", []) if ht in HarmType
+                        ],
                         target_type=TargetType(data.get("target_type", "individual_peer")),
                         severity=Severity(data.get("severity", "actionable")),
                         adjudicated=False,

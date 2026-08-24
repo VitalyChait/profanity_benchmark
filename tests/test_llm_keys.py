@@ -46,9 +46,12 @@ def test_key_auto_detection():
         assert is_provider_configured("openrouter")
 
 
-
 def test_groq_priority_auto_selection():
-    with patch.dict(os.environ, {"GROQ_API_KEY": "gsk-test123456789", "DEFAULT_LLM_PROVIDER": "auto"}, clear=False):
+    with patch.dict(
+        os.environ,
+        {"GROQ_API_KEY": "gsk-test123456789", "DEFAULT_LLM_PROVIDER": "auto"},
+        clear=False,
+    ):
         config = get_llm_config()
         assert config["selected_provider"] == "groq"
 
@@ -61,4 +64,3 @@ def test_router_missing_key_raises_helpful_error():
             assert False, "Should raise RuntimeError"
         except RuntimeError as e:
             assert ".env" in str(e)
-

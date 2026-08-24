@@ -58,7 +58,6 @@ class LLMRouter:
             "openrouter",
         ):
             return self._call_openai_compatible(
-
                 prompt=prompt,
                 system_prompt=system_prompt,
                 provider=active_provider,
@@ -100,8 +99,12 @@ class LLMRouter:
         model: str | None = None,
     ) -> dict[str, Any]:
         """Query LLM and parse JSON response reliably."""
-        json_sys = (system_prompt or "") + "\nYou MUST return valid JSON strictly adhering to the requested format."
-        raw_text = self.call_llm(prompt=prompt, system_prompt=json_sys, provider=provider, model=model, temperature=0.0)
+        json_sys = (
+            system_prompt or ""
+        ) + "\nYou MUST return valid JSON strictly adhering to the requested format."
+        raw_text = self.call_llm(
+            prompt=prompt, system_prompt=json_sys, provider=provider, model=model, temperature=0.0
+        )
 
         # Clean markdown codeblocks if present
         clean_text = raw_text.strip()
@@ -208,7 +211,9 @@ class LLMRouter:
         contents: list[dict[str, Any]] = []
         if system_prompt:
             contents.append({"role": "user", "parts": [{"text": f"SYSTEM: {system_prompt}"}]})
-            contents.append({"role": "model", "parts": [{"text": "Understood. Proceeding with instructions."}]})
+            contents.append(
+                {"role": "model", "parts": [{"text": "Understood. Proceeding with instructions."}]}
+            )
         contents.append({"role": "user", "parts": [{"text": prompt}]})
 
         payload = {

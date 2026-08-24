@@ -51,15 +51,19 @@ class FlatToMultiTurnJoiner(IngestAdapter):
     def load(self, input_path: Path) -> list[ConversationRecord]:
         suffix = input_path.suffix.lower()
         if suffix in (".csv", ".tsv"):
-            flat_items = self._load_csv_seeds(input_path, delimiter="\t" if suffix == ".tsv" else ",")
+            flat_items = self._load_csv_seeds(
+                input_path, delimiter="\t" if suffix == ".tsv" else ","
+            )
         else:
             flat_items = self._load_jsonl_seeds(input_path)
 
         conversations: list[ConversationRecord] = []
         for idx, item in enumerate(flat_items):
-            cid = f"{self.source_id}_scaffold_{idx+1}"
+            cid = f"{self.source_id}_scaffold_{idx + 1}"
             target_text = item["text"]
-            turns = self._scaffold_dialogue(target_text, item.get("speaker_id", "user_aggressor"), idx)
+            turns = self._scaffold_dialogue(
+                target_text, item.get("speaker_id", "user_aggressor"), idx
+            )
 
             conversations.append(
                 ConversationRecord(
@@ -84,13 +88,26 @@ class FlatToMultiTurnJoiner(IngestAdapter):
         with path.open("r", encoding="utf-8", errors="replace") as f:
             reader = csv.DictReader(f, delimiter=delimiter)
             for row in reader:
-                text = row.get("text") or row.get("comment_text") or row.get("tweet") or row.get("body")
+                text = (
+                    row.get("text")
+                    or row.get("comment_text")
+                    or row.get("tweet")
+                    or row.get("body")
+                )
                 if text and text.strip():
-                    seeds.append({
-                        "text": text.strip(),
-                        "speaker_id": row.get("speaker_id") or row.get("author") or "seed_speaker",
-                        "metadata": {k: v for k, v in row.items() if k not in ("text", "comment_text", "tweet", "body")},
-                    })
+                    seeds.append(
+                        {
+                            "text": text.strip(),
+                            "speaker_id": row.get("speaker_id")
+                            or row.get("author")
+                            or "seed_speaker",
+                            "metadata": {
+                                k: v
+                                for k, v in row.items()
+                                if k not in ("text", "comment_text", "tweet", "body")
+                            },
+                        }
+                    )
         return seeds
 
     def _load_jsonl_seeds(self, path: Path) -> list[dict[str, Any]]:
@@ -103,14 +120,24 @@ class FlatToMultiTurnJoiner(IngestAdapter):
                 row = json.loads(line)
                 text = row.get("text") or row.get("comment_text") or row.get("body")
                 if text and text.strip():
-                    seeds.append({
-                        "text": text.strip(),
-                        "speaker_id": row.get("speaker_id") or row.get("author") or "seed_speaker",
-                        "metadata": {k: v for k, v in row.items() if k not in ("text", "comment_text", "body")},
-                    })
+                    seeds.append(
+                        {
+                            "text": text.strip(),
+                            "speaker_id": row.get("speaker_id")
+                            or row.get("author")
+                            or "seed_speaker",
+                            "metadata": {
+                                k: v
+                                for k, v in row.items()
+                                if k not in ("text", "comment_text", "body")
+                            },
+                        }
+                    )
         return seeds
 
-    def _scaffold_dialogue(self, target_text: str, aggressor_id: str, seed_index: int) -> list[StoredTurn]:
+    def _scaffold_dialogue(
+        self, target_text: str, aggressor_id: str, seed_index: int
+    ) -> list[StoredTurn]:
         """Construct multi-turn sequence: 2 prefix turns -> target seed turn -> 1 reaction turn."""
         turns: list[StoredTurn] = []
         prefix_pair = self.DEFAULT_PREFIXES[seed_index % len(self.DEFAULT_PREFIXES)]

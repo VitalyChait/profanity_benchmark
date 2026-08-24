@@ -170,21 +170,21 @@ def build_minimal_pair_conversations(
         for idx, ctx in enumerate(pair.context_prefix):
             benign_turns.append(
                 StoredTurn(
-                    turn_id=f"t{idx+1}",
-                    speaker_id=f"user_{idx+1}",
+                    turn_id=f"t{idx + 1}",
+                    speaker_id=f"user_{idx + 1}",
                     role="user",
                     text=ctx,
-                    relative_time=f"+{idx*5}s",
+                    relative_time=f"+{idx * 5}s",
                 )
             )
-        target_turn_id = f"t{len(benign_turns)+1}"
+        target_turn_id = f"t{len(benign_turns) + 1}"
         benign_turns.append(
             StoredTurn(
                 turn_id=target_turn_id,
                 speaker_id="speaker_target",
                 role="user",
                 text=pair.benign_text,
-                relative_time=f"+{len(benign_turns)*5}s",
+                relative_time=f"+{len(benign_turns) * 5}s",
             )
         )
         conversations.append(
@@ -201,7 +201,9 @@ def build_minimal_pair_conversations(
             AnnotationRecord(
                 conversation_id=benign_cid,
                 turn_id=target_turn_id,
-                profanity_form=ProfanityForm.LITERAL if pair.shared_trigger_words else ProfanityForm.NONE,
+                profanity_form=ProfanityForm.LITERAL
+                if pair.shared_trigger_words
+                else ProfanityForm.NONE,
                 pragmatic_use=pair.benign_pragmatic_use,
                 harm_types=[],
                 severity=Severity.BENIGN,
@@ -216,21 +218,21 @@ def build_minimal_pair_conversations(
         for idx, ctx in enumerate(pair.context_prefix):
             harmful_turns.append(
                 StoredTurn(
-                    turn_id=f"t{idx+1}",
-                    speaker_id=f"user_{idx+1}",
+                    turn_id=f"t{idx + 1}",
+                    speaker_id=f"user_{idx + 1}",
                     role="user",
                     text=ctx,
-                    relative_time=f"+{idx*5}s",
+                    relative_time=f"+{idx * 5}s",
                 )
             )
-        harmful_target_turn_id = f"t{len(harmful_turns)+1}"
+        harmful_target_turn_id = f"t{len(harmful_turns) + 1}"
         harmful_turns.append(
             StoredTurn(
                 turn_id=harmful_target_turn_id,
                 speaker_id="speaker_target",
                 role="user",
                 text=pair.harmful_text,
-                relative_time=f"+{len(harmful_turns)*5}s",
+                relative_time=f"+{len(harmful_turns) * 5}s",
             )
         )
         conversations.append(
@@ -247,7 +249,9 @@ def build_minimal_pair_conversations(
             AnnotationRecord(
                 conversation_id=harmful_cid,
                 turn_id=harmful_target_turn_id,
-                profanity_form=ProfanityForm.LITERAL if pair.shared_trigger_words else ProfanityForm.NONE,
+                profanity_form=ProfanityForm.LITERAL
+                if pair.shared_trigger_words
+                else ProfanityForm.NONE,
                 pragmatic_use=pair.harmful_pragmatic_use,
                 harm_types=pair.harm_types,
                 severity=Severity.ACTIONABLE,

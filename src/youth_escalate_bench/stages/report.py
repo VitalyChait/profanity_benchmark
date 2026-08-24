@@ -64,7 +64,6 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
         with onset_path.open(encoding="utf-8") as f:
             onset_data = yaml.safe_load(f) or {}
 
-
     # Agreement quality if annotations available
     ann_path = Path(config.get("annotations_path", input_dir / "annotations.jsonl"))
     quality: dict[str, Any] = {}

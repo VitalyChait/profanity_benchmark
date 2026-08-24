@@ -160,7 +160,7 @@ def run_transform(config: dict[str, Any], input_dir: Path, output_dir: Path) -> 
     conversations = read_conversations(find_parquet(input_dir, "conversations_threaded.parquet"))
     default_families = [TransformFamily.LEETSPEAK.value]
     families = [TransformFamily(f) for f in config.get("families", default_families)]
-    selected = families[:config.get("composition_depth", 1)]
+    selected = families[: config.get("composition_depth", 1)]
 
     transformed_rows: list[ConversationRecord] = []
     for conv in conversations:

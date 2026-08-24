@@ -48,9 +48,7 @@ def run_stage(
         out_path = output_dir / rel_path
         if out_path.exists():
             row_counts = result_meta.get("row_counts", {})
-            outputs.append(
-                manifest_entry_from_file(out_path, row_count=row_counts.get(rel_path))
-            )
+            outputs.append(manifest_entry_from_file(out_path, row_count=row_counts.get(rel_path)))
 
     manifest = StageManifest(
         stage=stage_name,

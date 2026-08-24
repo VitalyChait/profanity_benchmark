@@ -73,10 +73,18 @@ def _find_annotations_file(input_dir: Path, config_path: str | None = None) -> P
             return p
         if (input_dir / config_path).exists():
             return input_dir / config_path
-    for candidate in ["annotations.jsonl", "generated_annotations.jsonl", "annotation_packets.jsonl"]:
+    for candidate in [
+        "annotations.jsonl",
+        "generated_annotations.jsonl",
+        "annotation_packets.jsonl",
+    ]:
         if (input_dir / candidate).exists():
             return input_dir / candidate
-    jsonl_files = [f for f in input_dir.glob("*.jsonl") if not f.name.endswith("plans.jsonl") and not f.name.endswith("specs.jsonl")]
+    jsonl_files = [
+        f
+        for f in input_dir.glob("*.jsonl")
+        if not f.name.endswith("plans.jsonl") and not f.name.endswith("specs.jsonl")
+    ]
     if jsonl_files:
         return jsonl_files[0]
     return input_dir / "annotations.jsonl"

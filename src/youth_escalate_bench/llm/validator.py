@@ -47,7 +47,11 @@ class ValidationReport:
     @property
     def working_models(self) -> list[dict[str, str]]:
         return [
-            {"provider": r.provider, "model": r.model, "latency_ms": f"{r.latency_ms:.1f}ms" if r.latency_ms else "N/A"}
+            {
+                "provider": r.provider,
+                "model": r.model,
+                "latency_ms": f"{r.latency_ms:.1f}ms" if r.latency_ms else "N/A",
+            }
             for r in self.results
             if r.is_working
         ]
@@ -55,7 +59,12 @@ class ValidationReport:
     @property
     def failing_models(self) -> list[dict[str, str]]:
         return [
-            {"provider": r.provider, "model": r.model, "status": r.status, "error": r.error_message or "Unknown error"}
+            {
+                "provider": r.provider,
+                "model": r.model,
+                "status": r.status,
+                "error": r.error_message or "Unknown error",
+            }
             for r in self.results
             if r.is_configured and not r.is_working
         ]
@@ -91,7 +100,11 @@ class ValidationReport:
             "| :--- | :--- | :--- | :--- | :--- |",
         ]
         for r in self.results:
-            status_icon = "🟢 WORKING" if r.is_working else ("⚪ NOT SET" if not r.is_configured else "🔴 FAILED")
+            status_icon = (
+                "🟢 WORKING"
+                if r.is_working
+                else ("⚪ NOT SET" if not r.is_configured else "🔴 FAILED")
+            )
             latency = f"{r.latency_ms:.0f} ms" if r.latency_ms is not None else "-"
             if r.is_working:
                 detail = f"`{(r.response_sample or '').strip()[:45]}`"
@@ -100,7 +113,9 @@ class ValidationReport:
             else:
                 err_clean = (r.error_message or r.status).replace("\n", " ")[:60]
                 detail = f"*{err_clean}*"
-            lines.append(f"| **{r.provider}** | `{r.model}` | {status_icon} | {latency} | {detail} |")
+            lines.append(
+                f"| **{r.provider}** | `{r.model}` | {status_icon} | {latency} | {detail} |"
+            )
         return "\n".join(lines)
 
     def summary_text(self) -> str:
@@ -117,14 +132,18 @@ class ValidationReport:
         if self.working_models:
             lines.append("🟢 WORKING MODELS:")
             for m in self.working_models:
-                lines.append(f"   ✓ {m['provider']:<12} -> {m['model']} (Latency: {m['latency_ms']})")
+                lines.append(
+                    f"   ✓ {m['provider']:<12} -> {m['model']} (Latency: {m['latency_ms']})"
+                )
         else:
             lines.append("🟢 WORKING MODELS: (None detected or responding)")
 
         if self.failing_models:
             lines.append("\n🔴 FAILING MODELS:")
             for f in self.failing_models:
-                lines.append(f"   ✗ {f['provider']:<12} -> {f['model']} [{f['status']}]: {f['error']}")
+                lines.append(
+                    f"   ✗ {f['provider']:<12} -> {f['model']} [{f['status']}]: {f['error']}"
+                )
 
         if self.unconfigured_models:
             lines.append("\n⚪ UNCONFIGURED (Set in .env to activate):")

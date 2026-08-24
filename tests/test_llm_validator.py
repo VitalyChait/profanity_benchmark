@@ -130,7 +130,10 @@ def test_get_working_providers():
 
 def test_multi_llm_judge_preflight():
     with patch.dict(os.environ, {"MISTRAL_API_KEY": "mock_key"}, clear=True):
-        with patch("youth_escalate_bench.annotation.llm_judge.get_working_providers", return_value=["mistral"]):
+        with patch(
+            "youth_escalate_bench.annotation.llm_judge.get_working_providers",
+            return_value=["mistral"],
+        ):
             judge = MultiLLMJudge(validate_preflight=True)
             assert judge.providers == ["mistral"]
 
@@ -141,5 +144,3 @@ def test_validate_all_providers_function():
             report = validate_all_providers(providers=["mistral", "openai"], only_configured=False)
             assert len(report.results) == 2
             assert report.working_models[0]["provider"] == "mistral"
-
-

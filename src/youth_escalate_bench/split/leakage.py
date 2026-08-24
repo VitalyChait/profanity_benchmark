@@ -23,7 +23,7 @@ def check_split_leakage(splits: dict[str, list[ConversationRecord]]) -> list[Lea
     # Conversation ID overlap
     id_sets = {name: {c.conversation_id for c in convs} for name, convs in splits.items()}
     for i, a in enumerate(names):
-        for b in names[i + 1:]:
+        for b in names[i + 1 :]:
             overlap = id_sets[a] & id_sets[b]
             if overlap:
                 findings.append(
@@ -43,7 +43,7 @@ def check_split_leakage(splits: dict[str, list[ConversationRecord]]) -> list[Lea
         hash_sets[name] = hashes
 
     for i, a in enumerate(names):
-        for b in names[i + 1:]:
+        for b in names[i + 1 :]:
             overlap = hash_sets[a] & hash_sets[b]
             if overlap:
                 findings.append(
@@ -86,7 +86,7 @@ def check_near_duplicates_across_splits(
             sigs[name].append((conv.conversation_id, minhash_signature(text)))
 
     for i, a in enumerate(names):
-        for b in names[i + 1:]:
+        for b in names[i + 1 :]:
             count = 0
             for id_a, sig_a in sigs[a]:
                 for id_b, sig_b in sigs[b]:

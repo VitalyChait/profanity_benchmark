@@ -23,7 +23,6 @@ def run_sample(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
     )
     conversations = read_conversations(in_path)
 
-
     quotas = config.get(
         "quotas",
         {
@@ -195,4 +194,3 @@ def run_stage_generate(config: dict[str, Any], input_dir: Path, output_dir: Path
             "minimal_pair_groups": len(pair_specs),
         },
     }
-

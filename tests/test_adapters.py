@@ -39,8 +39,18 @@ def test_generic_adapter_jsonl_nested(tmp_path: Path):
             "conversation_id": "conv_101",
             "platform_style": "group_chat",
             "turns": [
-                {"turn_id": "t1", "speaker_id": "alex", "text": "hey everyone", "relative_time": "+0s"},
-                {"turn_id": "t2", "speaker_id": "sam", "text": "yo alex what's up", "relative_time": "+5s"},
+                {
+                    "turn_id": "t1",
+                    "speaker_id": "alex",
+                    "text": "hey everyone",
+                    "relative_time": "+0s",
+                },
+                {
+                    "turn_id": "t2",
+                    "speaker_id": "sam",
+                    "text": "yo alex what's up",
+                    "relative_time": "+5s",
+                },
             ],
         },
         {
@@ -73,9 +83,30 @@ def test_generic_adapter_csv_flat(tmp_path: Path):
     with file_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["thread_id", "author", "comment_text", "timestamp"])
         writer.writeheader()
-        writer.writerow({"thread_id": "thread_A", "author": "user1", "comment_text": "First comment", "timestamp": "1000"})
-        writer.writerow({"thread_id": "thread_A", "author": "user2", "comment_text": "Reply to first", "timestamp": "1015"})
-        writer.writerow({"thread_id": "thread_B", "author": "user3", "comment_text": "Separate thread", "timestamp": "2000"})
+        writer.writerow(
+            {
+                "thread_id": "thread_A",
+                "author": "user1",
+                "comment_text": "First comment",
+                "timestamp": "1000",
+            }
+        )
+        writer.writerow(
+            {
+                "thread_id": "thread_A",
+                "author": "user2",
+                "comment_text": "Reply to first",
+                "timestamp": "1015",
+            }
+        )
+        writer.writerow(
+            {
+                "thread_id": "thread_B",
+                "author": "user3",
+                "comment_text": "Separate thread",
+                "timestamp": "2000",
+            }
+        )
 
     adapter = GenericConversationAdapter(source_id="csv_test")
     records = adapter.load(file_path)
@@ -97,8 +128,18 @@ def test_generic_adapter_parquet(tmp_path: Path):
         {
             "conversation_id": "pq_conv_1",
             "turns": [
-                {"turn_id": "t1", "speaker_id": "user1", "text": "hello parquet", "relative_time": "+0s"},
-                {"turn_id": "t2", "speaker_id": "user2", "text": "parquet reply", "relative_time": "+10s"},
+                {
+                    "turn_id": "t1",
+                    "speaker_id": "user1",
+                    "text": "hello parquet",
+                    "relative_time": "+0s",
+                },
+                {
+                    "turn_id": "t2",
+                    "speaker_id": "user2",
+                    "text": "parquet reply",
+                    "relative_time": "+10s",
+                },
             ],
         }
     ]
@@ -120,8 +161,19 @@ def test_convotox_adapter(tmp_path: Path):
         "conversation_id": "reddit_post_999",
         "subreddit": "gaming",
         "comments": [
-            {"turn_id": "c1", "author": "redditor_1", "body": "Who is excited for the new update?", "created_utc": "+0s"},
-            {"turn_id": "c2", "author": "redditor_2", "body": "It looks terrible tbh", "parent_id": "c1", "created_utc": "+60s"},
+            {
+                "turn_id": "c1",
+                "author": "redditor_1",
+                "body": "Who is excited for the new update?",
+                "created_utc": "+0s",
+            },
+            {
+                "turn_id": "c2",
+                "author": "redditor_2",
+                "body": "It looks terrible tbh",
+                "parent_id": "c1",
+                "created_utc": "+60s",
+            },
             {"turn_id": "c3", "author": "redditor_3", "body": "[deleted]", "created_utc": "+120s"},
         ],
     }
@@ -145,9 +197,24 @@ def test_gametox_adapter(tmp_path: Path):
         "match_id": "match_555",
         "game_title": "Valorant",
         "chat_log": [
-            {"turn_id": "t1", "player_id": "JettMain", "text": "rush B site", "relative_time": "+0s"},
-            {"turn_id": "t2", "player_id": "Sova77", "text": "i have dart ready", "relative_time": "+5s"},
-            {"turn_id": "t3", "player_id": "JettMain", "text": "nice flash bro", "relative_time": "+15s"},
+            {
+                "turn_id": "t1",
+                "player_id": "JettMain",
+                "text": "rush B site",
+                "relative_time": "+0s",
+            },
+            {
+                "turn_id": "t2",
+                "player_id": "Sova77",
+                "text": "i have dart ready",
+                "relative_time": "+5s",
+            },
+            {
+                "turn_id": "t3",
+                "player_id": "JettMain",
+                "text": "nice flash bro",
+                "relative_time": "+15s",
+            },
         ],
     }
     with file_path.open("w", encoding="utf-8") as f:
@@ -168,7 +235,13 @@ def test_flat_joiner_adapter(tmp_path: Path):
     with file_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["tweet", "author", "class"])
         writer.writeheader()
-        writer.writerow({"tweet": "you are absolute trash get out of here", "author": "troll_user", "class": "offensive"})
+        writer.writerow(
+            {
+                "tweet": "you are absolute trash get out of here",
+                "author": "troll_user",
+                "class": "offensive",
+            }
+        )
 
     joiner = FlatToMultiTurnJoiner(source_id="davidson_scaffold")
     records = joiner.load(file_path)

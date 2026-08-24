@@ -7,13 +7,11 @@ and cyberbullying benchmark datasets directly into data/raw/ (which is git-ignor
 from __future__ import annotations
 
 import argparse
-import json
 import sys
-import zipfile
-from dataclasses import asdict, dataclass
-from pathlib import Path
-from typing import Any
 import urllib.request
+import zipfile
+from dataclasses import dataclass
+from pathlib import Path
 
 
 @dataclass
@@ -172,7 +170,9 @@ def download_file(url: str, dest: Path) -> None:
             percent = min(100.0, block_num * block_size * 100.0 / total_size)
             downloaded_mb = (block_num * block_size) / (1024 * 1024)
             total_mb = total_size / (1024 * 1024)
-            sys.stdout.write(f"\r  Progress: {percent:.1f}% ({downloaded_mb:.1f}/{total_mb:.1f} MB)")
+            sys.stdout.write(
+                f"\r  Progress: {percent:.1f}% ({downloaded_mb:.1f}/{total_mb:.1f} MB)"
+            )
             sys.stdout.flush()
 
     urllib.request.urlretrieve(url, dest, reporthook=reporthook)
@@ -191,7 +191,9 @@ def extract_archive(zip_path: Path, extract_to: Path) -> None:
 def download_source(source_id: str, raw_dir: Path) -> Path:
     """Download and optionally extract a dataset source."""
     if source_id not in DATASET_CATALOG:
-        raise ValueError(f"Unknown source_id '{source_id}'. Available: {list(DATASET_CATALOG.keys())}")
+        raise ValueError(
+            f"Unknown source_id '{source_id}'. Available: {list(DATASET_CATALOG.keys())}"
+        )
 
     ds = DATASET_CATALOG[source_id]
     target_dir = raw_dir / (ds.subfolder or ds.source_id)
@@ -225,11 +227,17 @@ def list_catalog() -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Download public real-world datasets for YouthEscalateBench.")
-    parser.add_argument("--list", "-l", action="store_true", help="List all available datasets in catalog.")
+    parser = argparse.ArgumentParser(
+        description="Download public real-world datasets for YouthEscalateBench."
+    )
+    parser.add_argument(
+        "--list", "-l", action="store_true", help="List all available datasets in catalog."
+    )
     parser.add_argument("--all", "-a", action="store_true", help="Download all available datasets.")
     parser.add_argument("--source", "-s", nargs="+", help="Specific source ID(s) to download.")
-    parser.add_argument("--raw-dir", default="data/raw", help="Destination folder for raw data (default: data/raw).")
+    parser.add_argument(
+        "--raw-dir", default="data/raw", help="Destination folder for raw data (default: data/raw)."
+    )
 
     args = parser.parse_args()
 
@@ -238,7 +246,9 @@ def main() -> None:
         if not args.all and not args.source:
             print("\nUsage example:")
             print("  python scripts/download_datasets.py --all")
-            print("  python scripts/download_datasets.py --source conversations_gone_awry_wikipedia davidson_hate_speech")
+            print(
+                "  python scripts/download_datasets.py --source conversations_gone_awry_wikipedia davidson_hate_speech"
+            )
         return
 
     raw_path = Path(args.raw_dir)

@@ -191,7 +191,9 @@ class RuleBasedSafeguardScorer(ModerationScorer):
         evidence_turns = [current_turn.turn_id]
         for prev in prefix[:-1]:
             prev_text = prev.text.lower()
-            if any(term in prev_text for term in self._lexicon) or any(pat.search(prev_text) for pat in self._threat_patterns):
+            if any(term in prev_text for term in self._lexicon) or any(
+                pat.search(prev_text) for pat in self._threat_patterns
+            ):
                 prior_toxic_turns += 1
                 evidence_turns.append(prev.turn_id)
 
@@ -200,7 +202,9 @@ class RuleBasedSafeguardScorer(ModerationScorer):
             harm_types = ["targeted_insult"]
             if prior_toxic_turns > 0:
                 harm_types.append("repeated_harassment")
-            return _score_to_output(min(0.95, base_prob), harm_types=harm_types, evidence_ids=evidence_turns)
+            return _score_to_output(
+                min(0.95, base_prob), harm_types=harm_types, evidence_ids=evidence_turns
+            )
 
         if lex_hits > 0 and has_banter_marker:
             # Benign profanity / friendly banter
@@ -235,10 +239,14 @@ class PromptedLLMScorer(ModerationScorer):
             "}"
         )
         self.provider = provider
-        self._fallback_scorer = RuleBasedSafeguardScorer(load_lexicon("configs/profanity_lexicon.txt"))
+        self._fallback_scorer = RuleBasedSafeguardScorer(
+            load_lexicon("configs/profanity_lexicon.txt")
+        )
 
     def build_prompt(self, request: InferenceRequest) -> str:
-        turns_text = "\n".join(f"[{t.speaker_id}] ({t.turn_id}): {t.text}" for t in request.causal_prefix())
+        turns_text = "\n".join(
+            f"[{t.speaker_id}] ({t.turn_id}): {t.text}" for t in request.causal_prefix()
+        )
         return f"{self.prompt_template}\n\nConversation:\n{turns_text}\n\nTarget Turn ID to moderate: {request.current_turn_id}"
 
     def predict(self, request: InferenceRequest) -> ModelOutput:
@@ -252,7 +260,9 @@ class PromptedLLMScorer(ModerationScorer):
                 data = router.call_llm_json(prompt=prompt, provider=self.provider)
                 prob = float(data.get("harm_probability", 0.0))
                 harm_types = data.get("harm_types", [])
-                return _score_to_output(prob, harm_types=harm_types, evidence_ids=[request.current_turn_id])
+                return _score_to_output(
+                    prob, harm_types=harm_types, evidence_ids=[request.current_turn_id]
+                )
             except Exception:
                 # Graceful fallback on network/quota issues
                 return self._fallback_scorer.predict(request)

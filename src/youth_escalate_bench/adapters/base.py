@@ -26,11 +26,19 @@ class IngestAdapter(ABC):
         """Convert raw turn dicts to validated StoredTurn objects with sensible defaults."""
         turns: list[StoredTurn] = []
         for idx, t in enumerate(raw_turns):
-            turn_id = str(t.get("turn_id") or t.get("id") or f"t{idx+1}")
-            speaker_id = str(t.get("speaker_id") or t.get("user") or t.get("author") or t.get("speaker") or f"user_{idx%2+1}")
+            turn_id = str(t.get("turn_id") or t.get("id") or f"t{idx + 1}")
+            speaker_id = str(
+                t.get("speaker_id")
+                or t.get("user")
+                or t.get("author")
+                or t.get("speaker")
+                or f"user_{idx % 2 + 1}"
+            )
             role = str(t.get("role") or ("user" if idx % 2 == 0 else "peer"))
-            text = str(t.get("text") or t.get("content") or t.get("body") or t.get("message") or "").strip()
-            rel_time = str(t.get("relative_time") or t.get("timestamp") or f"+{idx*5}s")
+            text = str(
+                t.get("text") or t.get("content") or t.get("body") or t.get("message") or ""
+            ).strip()
+            rel_time = str(t.get("relative_time") or t.get("timestamp") or f"+{idx * 5}s")
             parent_id = t.get("parent_turn_id") or t.get("parent_id") or t.get("reply_to")
             if parent_id is not None:
                 parent_id = str(parent_id)

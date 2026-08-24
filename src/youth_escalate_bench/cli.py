@@ -75,10 +75,32 @@ def audit_sources(registry: Path) -> None:
 
 
 @main.command("ingest-data")
-@click.option("--input", "-i", "input_path", type=click.Path(exists=True, path_type=Path), required=True, help="Path to raw data file (CSV, JSONL, Parquet).")
-@click.option("--source-id", "-s", default="generic", help="Source ID in source_registry.yaml (e.g. wikiconv_wikidetox, contextual_abuse_dataset, convotox, gametox, davidson, generic).")
-@click.option("--output-dir", "-o", type=click.Path(path_type=Path), default=Path("data/processed/ingest"), help="Destination directory for ingested parquet.")
-@click.option("--platform-style", default="group_chat", help="Platform style (gaming_chat, group_chat, direct_messaging, forum_thread).")
+@click.option(
+    "--input",
+    "-i",
+    "input_path",
+    type=click.Path(exists=True, path_type=Path),
+    required=True,
+    help="Path to raw data file (CSV, JSONL, Parquet).",
+)
+@click.option(
+    "--source-id",
+    "-s",
+    default="generic",
+    help="Source ID in source_registry.yaml (e.g. wikiconv_wikidetox, contextual_abuse_dataset, convotox, gametox, davidson, generic).",
+)
+@click.option(
+    "--output-dir",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path("data/processed/ingest"),
+    help="Destination directory for ingested parquet.",
+)
+@click.option(
+    "--platform-style",
+    default="group_chat",
+    help="Platform style (gaming_chat, group_chat, direct_messaging, forum_thread).",
+)
 @click.option("--enforce-gate/--skip-gate", default=True, help="Enforce source legal audit gate.")
 def ingest_data_command(
     input_path: Path,
@@ -102,7 +124,9 @@ def ingest_data_command(
         reg = load_registry(Path("configs/source_registry.yaml"))
         approved = {s.source_id for s in reg.approved_sources()}
         if source_id not in approved:
-            click.echo(f"❌ Source '{source_id}' not found or not approved in configs/source_registry.yaml.")
+            click.echo(
+                f"❌ Source '{source_id}' not found or not approved in configs/source_registry.yaml."
+            )
             raise SystemExit(1)
 
     adapter = get_adapter(source_id, platform_style=platform_style)
@@ -128,16 +152,84 @@ def ingest_data_command(
         random_seed=42,
         inputs=[manifest_entry_from_file(input_path)],
         outputs=[manifest_entry_from_file(out_parquet, row_count=total_turns)],
-        metadata={"conversations_count": len(convs), "turns_count": total_turns, "speakers_count": unique_speakers},
+        metadata={
+            "conversations_count": len(convs),
+            "turns_count": total_turns,
+            "speakers_count": unique_speakers,
+        },
     )
     write_manifest(manifest, output_dir / "manifest.json")
 
     click.echo("=" * 60)
-    click.echo(f"✓ Ingestion Complete: {len(convs)} conversations, {total_turns} turns, {unique_speakers} unique speakers.")
+    click.echo(
+        f"✓ Ingestion Complete: {len(convs)} conversations, {total_turns} turns, {unique_speakers} unique speakers."
+    )
     click.echo(f"  Parquet output: {out_parquet}")
     click.echo(f"  Manifest: {output_dir / 'manifest.json'}")
     click.echo("=" * 60)
 
+
+@main.command("pipeline")
+@click.option(
+    "--all", "-a", "run_all", is_flag=True, default=False, help="Run all pipeline stages."
+)
+@click.option(
+    "--resume",
+    "-r",
+    is_flag=True,
+    default=False,
+    help="Auto-resume from earliest incomplete checkpoint.",
+)
+@click.option("--step", "-s", "steps", multiple=True, help="Specific pipeline step(s) to run.")
+@click.option("--from-step", help="Start execution from this step.")
+@click.option("--to-step", help="Stop execution after this step.")
+@click.option(
+    "--force", "-f", is_flag=True, default=False, help="Force re-execution of completed steps."
+)
+@click.option("--status", is_flag=True, default=False, help="Show checkpoint status table.")
+@click.option("--reset", is_flag=True, default=False, help="Reset all checkpoints.")
+@click.option("--dry-run", is_flag=True, default=False, help="Simulate pipeline without executing.")
+def pipeline_command(
+    run_all: bool,
+    resume: bool,
+    steps: tuple[str, ...],
+    from_step: str | None,
+    to_step: str | None,
+    force: bool,
+    status: bool,
+    reset: bool,
+    dry_run: bool,
+) -> None:
+    """Execute pipeline with automated checkpoints, state recovery, and error diagnostics."""
+    from youth_escalate_bench.orchestrator import PipelineRunner
+
+    runner = PipelineRunner()
+
+    if status:
+        runner.checkpoint_mgr.display_status()
+        return
+
+    if reset:
+        runner.checkpoint_mgr.reset_all()
+        click.echo("✓ All pipeline checkpoints reset to PENDING.")
+        runner.checkpoint_mgr.display_status()
+        return
+
+    if not run_all and not resume and not steps and not from_step and not dry_run:
+        runner.checkpoint_mgr.display_status()
+        click.echo("Run with --all to start full execution, or --resume to continue.")
+        return
+
+    success = runner.run(
+        target_steps=list(steps) if steps else None,
+        from_step=from_step,
+        to_step=to_step,
+        resume=resume or (not force and not steps),
+        force=force,
+        dry_run=dry_run,
+    )
+    if not success:
+        raise SystemExit(1)
 
 
 @main.command("serve")
@@ -218,7 +310,9 @@ def show_llm_status() -> None:
     click.echo("YouthEscalateBench — LLM API Key Status")
     click.echo("=" * 60)
     click.echo(f"Designated key file: {config['env_file']}")
-    click.echo(f"File exists: {'✓ Yes' if config['env_exists'] else '✗ Missing (create from .env.example)'}")
+    click.echo(
+        f"File exists: {'✓ Yes' if config['env_exists'] else '✗ Missing (create from .env.example)'}"
+    )
     click.echo(f"Active provider: {config['selected_provider']}")
     click.echo("-" * 60)
     click.echo("Detected Providers & Keys:")
@@ -227,12 +321,29 @@ def show_llm_status() -> None:
         key_info = f" ({active_keys[provider]})" if detected and provider in active_keys else ""
         click.echo(f"  - {provider:<12} : {status}{key_info}")
     click.echo("=" * 60)
+
+
 @main.command("validate-llms")
-@click.option("--all", "test_all", is_flag=True, default=False, help="Test all providers (including unconfigured).")
-@click.option("--provider", "-p", "providers", multiple=True, help="Specific provider(s) to validate.")
+@click.option(
+    "--all",
+    "test_all",
+    is_flag=True,
+    default=False,
+    help="Test all providers (including unconfigured).",
+)
+@click.option(
+    "--provider", "-p", "providers", multiple=True, help="Specific provider(s) to validate."
+)
 @click.option("--timeout", default=10.0, type=float, help="Timeout in seconds per provider probe.")
-@click.option("--output", "-o", type=click.Path(path_type=Path), help="Optional path to export JSON/Markdown validation report.")
-def validate_llms_command(test_all: bool, providers: tuple[str, ...], timeout: float, output: Path | None) -> None:
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    help="Optional path to export JSON/Markdown validation report.",
+)
+def validate_llms_command(
+    test_all: bool, providers: tuple[str, ...], timeout: float, output: Path | None
+) -> None:
     """Run sanity validation probe against configured LLM APIs before real inference."""
     from youth_escalate_bench.llm.validator import validate_all_providers
 
@@ -240,7 +351,9 @@ def validate_llms_command(test_all: bool, providers: tuple[str, ...], timeout: f
     only_configured = not test_all and not bool(providers)
 
     click.echo("Running LLM validation sanity checks...")
-    report = validate_all_providers(providers=target_list, only_configured=only_configured, timeout=timeout)
+    report = validate_all_providers(
+        providers=target_list, only_configured=only_configured, timeout=timeout
+    )
     click.echo(report.summary_text())
 
     if output:
@@ -256,4 +369,3 @@ def validate_llms_command(test_all: bool, providers: tuple[str, ...], timeout: f
 
 if __name__ == "__main__":
     main()
-

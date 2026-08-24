@@ -59,4 +59,3 @@ def test_cli_audit_sources_passes_on_default_registry():
     passed, failures = audit_gate_passes(registry)
     assert passed
     assert failures == []
-

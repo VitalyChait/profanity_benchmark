@@ -115,7 +115,9 @@ def test_full_12_stage_pipeline(e2e_output: Path) -> None:
         elif stage == "redact":
             in_dir = processed / "ingest"
         elif stage in ("thread", "sample", "transform", "annotate_export", "split"):
-            in_dir = processed / "thread" if (processed / "thread").exists() else processed / "redact"
+            in_dir = (
+                processed / "thread" if (processed / "thread").exists() else processed / "redact"
+            )
         elif stage == "adjudicate":
             in_dir = processed / "stage_generate"
         elif stage == "evaluate":
@@ -133,5 +135,3 @@ def test_full_12_stage_pipeline(e2e_output: Path) -> None:
     assert (processed / "report" / "report_summary.yaml").exists()
     assert (processed / "report" / "table_main_results.tex").exists()
     assert (processed / "adjudicate" / "gold_labels.jsonl").exists()
-
-

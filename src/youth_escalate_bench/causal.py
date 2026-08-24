@@ -21,7 +21,7 @@ def build_inference_requests(
     """Build one causal-prefix request per turn (no future-turn exposure)."""
     requests: list[InferenceRequest] = []
     for i in range(len(turns)):
-        prefix = turns[:i + 1]
+        prefix = turns[: i + 1]
         req = InferenceRequest(
             benchmark_version=benchmark_version,
             conversation_id=conversation_id,

@@ -107,7 +107,7 @@ class SyntheticDialogueGenerator:
         if p.transition_pattern == "gradual_escalation":
             # Turns 1..2 benign, 3 coarse, 4+ actionable
             for idx in range(num_turns):
-                tid = f"t{idx+1}"
+                tid = f"t{idx + 1}"
                 spk = aggressor if idx % 2 == 0 else target_speaker
                 if idx < 2:
                     text = self.rng.choice(GAMING_BANTER)
@@ -134,14 +134,16 @@ class SyntheticDialogueGenerator:
                         speaker_id=spk,
                         role="user",
                         text=text,
-                        relative_time=f"+{idx*8}s",
+                        relative_time=f"+{idx * 8}s",
                     )
                 )
                 annotations.append(
                     AnnotationRecord(
                         conversation_id=cid,
                         turn_id=tid,
-                        profanity_form=ProfanityForm.LITERAL if sev >= Severity.COARSE_MONITOR else ProfanityForm.NONE,
+                        profanity_form=ProfanityForm.LITERAL
+                        if sev >= Severity.COARSE_MONITOR
+                        else ProfanityForm.NONE,
                         pragmatic_use=prag,
                         harm_types=harm,
                         target_type=target,
@@ -152,7 +154,7 @@ class SyntheticDialogueGenerator:
 
         elif p.transition_pattern == "immediate_abuse":
             for idx in range(num_turns):
-                tid = f"t{idx+1}"
+                tid = f"t{idx + 1}"
                 spk = aggressor if idx % 2 == 0 else target_speaker
                 if idx == 0:
                     text = self.rng.choice(THREATS)
@@ -161,7 +163,11 @@ class SyntheticDialogueGenerator:
                     harm = [HarmType.THREAT_INTIMIDATION]
                     target = TargetType.INDIVIDUAL_PEER
                 else:
-                    text = "leave me alone" if spk == target_speaker else self.rng.choice(TARGETED_INSULTS)
+                    text = (
+                        "leave me alone"
+                        if spk == target_speaker
+                        else self.rng.choice(TARGETED_INSULTS)
+                    )
                     sev = Severity.ACTIONABLE if spk == aggressor else Severity.BENIGN
                     prag = PragmaticUse.TARGETED_ABUSE if spk == aggressor else PragmaticUse.ABSENT
                     harm = [HarmType.REPEATED_HARASSMENT] if spk == aggressor else []
@@ -173,7 +179,7 @@ class SyntheticDialogueGenerator:
                         speaker_id=spk,
                         role="user",
                         text=text,
-                        relative_time=f"+{idx*5}s",
+                        relative_time=f"+{idx * 5}s",
                     )
                 )
                 annotations.append(
@@ -191,7 +197,7 @@ class SyntheticDialogueGenerator:
 
         elif p.transition_pattern == "de_escalation":
             for idx in range(num_turns):
-                tid = f"t{idx+1}"
+                tid = f"t{idx + 1}"
                 if idx == 0:
                     spk = aggressor
                     text = self.rng.choice(TARGETED_INSULTS)
@@ -220,14 +226,16 @@ class SyntheticDialogueGenerator:
                         speaker_id=spk,
                         role="user",
                         text=text,
-                        relative_time=f"+{idx*10}s",
+                        relative_time=f"+{idx * 10}s",
                     )
                 )
                 annotations.append(
                     AnnotationRecord(
                         conversation_id=cid,
                         turn_id=tid,
-                        profanity_form=ProfanityForm.NONE if sev == Severity.BENIGN else ProfanityForm.LITERAL,
+                        profanity_form=ProfanityForm.NONE
+                        if sev == Severity.BENIGN
+                        else ProfanityForm.LITERAL,
                         pragmatic_use=prag,
                         harm_types=harm,
                         target_type=target,
@@ -238,7 +246,7 @@ class SyntheticDialogueGenerator:
 
         else:  # false_alarm / friendly profanity
             for idx in range(num_turns):
-                tid = f"t{idx+1}"
+                tid = f"t{idx + 1}"
                 spk = self.rng.choice(speakers)
                 text = self.rng.choice(
                     [
@@ -254,7 +262,7 @@ class SyntheticDialogueGenerator:
                         speaker_id=spk,
                         role="user",
                         text=text,
-                        relative_time=f"+{idx*6}s",
+                        relative_time=f"+{idx * 6}s",
                     )
                 )
                 annotations.append(
@@ -276,6 +284,10 @@ class SyntheticDialogueGenerator:
             source_tier=SourceTier.SYNTHETIC,
             platform_style=p.platform_style,
             turns=turns,
-            metadata={"plan_id": p.plan_id, "template_id": p.template_id, "pattern": p.transition_pattern},
+            metadata={
+                "plan_id": p.plan_id,
+                "template_id": p.template_id,
+                "pattern": p.transition_pattern,
+            },
         )
         return conv, annotations

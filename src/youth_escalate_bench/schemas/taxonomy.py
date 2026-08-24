@@ -15,10 +15,10 @@ HARM_TYPES: Final[tuple[str, ...]] = (
 )
 
 SEVERITY_LEVELS: Final[tuple[str, ...]] = (
-    "benign",       # 0
+    "benign",  # 0
     "coarse_monitor",  # 1
-    "actionable",   # 2
-    "urgent",       # 3
+    "actionable",  # 2
+    "urgent",  # 3
 )
 
 TARGET_TYPES: Final[tuple[str, ...]] = (

@@ -44,7 +44,7 @@ def redact_text(text: str, replacement: str = "[REDACTED]") -> tuple[str, list[P
     # Redact from end to start to preserve indices
     redacted = text
     for hit in sorted(hits, key=lambda h: h.start, reverse=True):
-        redacted = redacted[:hit.start] + replacement + redacted[hit.end:]
+        redacted = redacted[: hit.start] + replacement + redacted[hit.end :]
     return redacted, hits
 
 
