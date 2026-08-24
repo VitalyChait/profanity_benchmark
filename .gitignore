@@ -3,10 +3,25 @@
 *.env
 .env.local
 
-# Data artifacts (not versioned)
+# Data artifacts & raw downloaded corpora (Never commit large raw data)
 data/raw/
+data/raw/*
+data/downloads/
+data/downloads/*
 data/interim/
+data/interim/*
 data/processed/
+data/processed/*
+*.parquet
+*.pq
+*.tar.gz
+*.zip
+*.7z
+*.tsv
+*.csv
+!configs/*.txt
+!configs/*.yaml
+!tests/fixtures/*.jsonl
 
 # Python
 .venv/

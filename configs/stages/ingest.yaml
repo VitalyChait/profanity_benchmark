@@ -4,6 +4,27 @@ random_seed: 42
 enforce_gate: true
 allow_fixture_sources: true
 source_registry_path: configs/source_registry.yaml
+
+# List of sources to ingest into data/processed/ingest/conversations.parquet
 sources:
   - source_id: fixture
     input_path: tests/fixtures/sample_conversations.jsonl
+
+  # Real-world source examples (uncomment when files are placed in data/raw/):
+  # - source_id: wikiconv_wikidetox
+  #   input_path: data/raw/wikiconv.jsonl
+
+  # - source_id: contextual_abuse_dataset
+  #   input_path: data/raw/cad.jsonl
+
+  # - source_id: convotox
+  #   input_path: data/raw/convotox.jsonl
+
+  # - source_id: gametox
+  #   input_path: data/raw/gametox.jsonl
+
+  # - source_id: davidson
+  #   input_path: data/raw/davidson_tweets.csv
+
+  # - source_id: generic
+  #   input_path: data/raw/custom_corpus.jsonl

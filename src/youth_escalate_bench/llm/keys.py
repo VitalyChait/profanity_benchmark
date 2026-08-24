@@ -75,7 +75,7 @@ DEFAULT_MODELS: dict[str, str] = {
     "groq": "llama-3.1-8b-instant",
     "deepseek": "deepseek-chat",
     "mistral": "mistral-small-latest",
-    "openrouter": "meta-llama/llama-3.3-70b-instruct:free",
+    "openrouter": "meta-llama/llama-3.3-70b-instruct",
     "huggingface": "meta-llama/Llama-Guard-3-1B",
     "together": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
     "cohere": "command-r-08-2024",

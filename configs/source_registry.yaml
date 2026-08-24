@@ -143,3 +143,182 @@ sources:
     review_date: 2026-08-22
     reviewer: Vitaly Chait
     notes: Permit only as safe dialogue scaffold
+
+  - source_id: generic
+    name: Generic Corpus Ingest
+    owner: User provided / Research corpus
+    license: Academic / Non-commercial research
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Research corpus ingestion
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: Universal ingestion adapter for local research corpora
+
+  - source_id: flat_joiner
+    name: Flat Seed Dialogue Scaffolder
+    owner: YouthEscalateBench Internal
+    license: MIT / Research use
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Contextual scaffolding for flat utterance seeds
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: Dialogue scaffolding for single-turn toxic seeds
+
+  - source_id: conversations_gone_awry_wikipedia
+    name: Conversations Gone Awry (Wikipedia)
+    owner: Cornell University / Zhang et al. (ACL 2018)
+    url: https://zissou.infosci.cornell.edu/convokit/datasets/conversations-gone-awry-corpus/conversations-gone-awry-corpus.zip
+    license: CC-BY 4.0 / Academic Research
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Multi-turn Wikipedia talk-page escalation threads
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: Conversations leading up to personal attacks
+
+  - source_id: conversations_gone_awry_cmv
+    name: Conversations Gone Awry (Reddit CMV)
+    owner: Cornell University / Chang et al. (EMNLP 2019)
+    url: https://zissou.infosci.cornell.edu/convokit/datasets/conversations-gone-awry-cmv-corpus/conversations-gone-awry-cmv-corpus.zip
+    license: Academic Research License
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Multi-turn Reddit conversation trees with toxicity escalation
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: Multi-turn Reddit escalation threads
+
+  - source_id: lmsys_toxic_chat_train
+    name: LMSYS ToxicChat (Train)
+    owner: LMSYS / Lin et al. (EMNLP 2023)
+    url: https://huggingface.co/datasets/lmsys/toxic-chat
+    license: LMSYS Terms / Academic Research
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Multi-turn toxic and adversarial user queries
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: Human annotated multi-turn queries
+
+  - source_id: lmsys_toxic_chat_test
+    name: LMSYS ToxicChat (Test)
+    owner: LMSYS / Lin et al. (EMNLP 2023)
+    url: https://huggingface.co/datasets/lmsys/toxic-chat
+    license: LMSYS Terms / Academic Research
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Multi-turn toxic and adversarial user queries (test split)
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: Test split for ToxicChat
+
+  - source_id: davidson_hate_speech
+    name: Davidson Hate Speech & Offensive Tweets
+    owner: Davidson et al. (ICWSM 2017)
+    url: https://raw.githubusercontent.com/t-davidson/hate-speech-and-offensive-language/master/data/labeled_data.csv
+    license: MIT License
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Labeled hate speech and offensive seeds
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: 24,783 labeled tweets
+
+  - source_id: dynabench_hate_speech
+    name: Dynamically Generated Hate Speech (Dynabench)
+    owner: Vidgen et al. (ACL 2021)
+    url: https://raw.githubusercontent.com/bvidgen/Dynamically-Generated-Hate-Speech-Dataset/main/Dynamically%20Generated%20Hate%20Dataset%20v0.2.3.csv
+    license: CC-BY-NC 4.0
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Dynamic model-in-the-loop adversarial abusive examples
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: 41,255 dynamically generated adversarial examples
+
+  - source_id: hatexplain
+    name: HateXplain Benchmark
+    owner: Mathew et al. (AAAI 2021)
+    url: https://raw.githubusercontent.com/hate-alert/HateXplain/master/Data/dataset.json
+    license: Academic Research License
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Multi-label hate speech with rationale spans
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: 20,148 multi-label posts with rationales
+
+  - source_id: tweeteval_offensive
+    name: TweetEval Offensive Language
+    owner: CardiffNLP / Barbieri et al. (EMNLP 2020)
+    url: https://raw.githubusercontent.com/cardiffnlp/tweeteval/main/datasets/offensive/train_text.txt
+    license: MIT / Research
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Offensive language benchmark
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: TweetEval offensive subset
+
+  - source_id: tweeteval_hate
+    name: TweetEval Hate Speech
+    owner: CardiffNLP / Barbieri et al. (EMNLP 2020)
+    url: https://raw.githubusercontent.com/cardiffnlp/tweeteval/main/datasets/hate/train_text.txt
+    license: MIT / Research
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Hate speech benchmark
+    allowed_artifacts:
+      - derived_labels
+      - redacted_text
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: TweetEval hate speech subset
+
+  - source_id: profanity_en_lexicon
+    name: Expanded Profanity & Slur Lexicon
+    owner: LDNOOBW Open Database
+    url: https://raw.githubusercontent.com/LDNOOBW/List-of-Dirty-Naughty-Obscene-and-Otherwise-Bad-Words/master/en
+    license: CC0 / Public Domain
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Lexical filter and algospeak seed detection
+    allowed_artifacts:
+      - derived_labels
+    status: approved
+    review_date: 2026-08-24
+    reviewer: Vitaly Chait
+    notes: Expanded unigram profanity list
+
+

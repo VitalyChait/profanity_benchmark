@@ -74,6 +74,72 @@ def audit_sources(registry: Path) -> None:
         raise SystemExit(1)
 
 
+@main.command("ingest-data")
+@click.option("--input", "-i", "input_path", type=click.Path(exists=True, path_type=Path), required=True, help="Path to raw data file (CSV, JSONL, Parquet).")
+@click.option("--source-id", "-s", default="generic", help="Source ID in source_registry.yaml (e.g. wikiconv_wikidetox, contextual_abuse_dataset, convotox, gametox, davidson, generic).")
+@click.option("--output-dir", "-o", type=click.Path(path_type=Path), default=Path("data/processed/ingest"), help="Destination directory for ingested parquet.")
+@click.option("--platform-style", default="group_chat", help="Platform style (gaming_chat, group_chat, direct_messaging, forum_thread).")
+@click.option("--enforce-gate/--skip-gate", default=True, help="Enforce source legal audit gate.")
+def ingest_data_command(
+    input_path: Path,
+    source_id: str,
+    output_dir: Path,
+    platform_style: str,
+    enforce_gate: bool,
+) -> None:
+    """Ingest a real-world dataset directly into normalized conversation parquet."""
+    from youth_escalate_bench.adapters import get_adapter
+    from youth_escalate_bench.io.parquet import write_conversations
+    from youth_escalate_bench.manifest import (
+        StageManifest,
+        config_digest,
+        manifest_entry_from_file,
+        write_manifest,
+    )
+
+    # Gate check
+    if enforce_gate and source_id not in ("fixture", "fixture_wikiconv", "fixture_cad"):
+        reg = load_registry(Path("configs/source_registry.yaml"))
+        approved = {s.source_id for s in reg.approved_sources()}
+        if source_id not in approved:
+            click.echo(f"❌ Source '{source_id}' not found or not approved in configs/source_registry.yaml.")
+            raise SystemExit(1)
+
+    adapter = get_adapter(source_id, platform_style=platform_style)
+    click.echo(f"Ingesting '{input_path}' using adapter for '{source_id}'...")
+    convs = adapter.load(input_path)
+
+    if not convs:
+        click.echo("⚠️ No conversations could be parsed from input file.")
+        raise SystemExit(1)
+
+    total_turns = sum(len(c.turns) for c in convs)
+    unique_speakers = len({t.speaker_id for c in convs for t in c.turns})
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    out_parquet = output_dir / "conversations.parquet"
+    write_conversations(out_parquet, convs)
+
+    cfg = {"source_id": source_id, "input_path": str(input_path), "platform_style": platform_style}
+    manifest = StageManifest(
+        stage="ingest",
+        benchmark_version="0.1.0",
+        config_sha256=config_digest(cfg),
+        random_seed=42,
+        inputs=[manifest_entry_from_file(input_path)],
+        outputs=[manifest_entry_from_file(out_parquet, row_count=total_turns)],
+        metadata={"conversations_count": len(convs), "turns_count": total_turns, "speakers_count": unique_speakers},
+    )
+    write_manifest(manifest, output_dir / "manifest.json")
+
+    click.echo("=" * 60)
+    click.echo(f"✓ Ingestion Complete: {len(convs)} conversations, {total_turns} turns, {unique_speakers} unique speakers.")
+    click.echo(f"  Parquet output: {out_parquet}")
+    click.echo(f"  Manifest: {output_dir / 'manifest.json'}")
+    click.echo("=" * 60)
+
+
+
 @main.command("serve")
 @click.option("--host", default="127.0.0.1")
 @click.option("--port", default=8080, type=int)
