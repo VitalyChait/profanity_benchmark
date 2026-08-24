@@ -47,7 +47,13 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
     results: list[dict] = []
     if eval_path.exists():
         with eval_path.open(encoding="utf-8") as f:
-            results = yaml.safe_load(f) or []
+            raw = yaml.safe_load(f) or []
+            if isinstance(raw, dict):
+                results = raw.get("results", [])
+            elif isinstance(raw, list):
+                results = raw
+            else:
+                results = []
 
     # Onset metrics if available
     onset_path = input_dir / "onset_metrics.yaml"
@@ -57,6 +63,7 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
     if onset_path.exists():
         with onset_path.open(encoding="utf-8") as f:
             onset_data = yaml.safe_load(f) or {}
+
 
     # Agreement quality if annotations available
     ann_path = Path(config.get("annotations_path", input_dir / "annotations.jsonl"))

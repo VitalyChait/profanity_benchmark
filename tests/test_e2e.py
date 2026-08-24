@@ -73,3 +73,65 @@ def test_redact_removes_email(e2e_output: Path) -> None:
     all_text = " ".join(t.text for c in redacted for t in c.turns)
     assert "test@example.com" not in all_text
     assert "[REDACTED]" in all_text
+
+
+def test_full_12_stage_pipeline(e2e_output: Path) -> None:
+    """Validate all 12 pipeline stages run and produce verified outputs."""
+    processed = e2e_output / "processed_all"
+    configs = {
+        "source_audit": Path("configs/stages/source_audit.yaml"),
+        "ingest": Path("configs/stages/ingest.yaml"),
+        "redact": Path("configs/stages/redact.yaml"),
+        "thread": Path("configs/stages/thread.yaml"),
+        "stage_generate": Path("configs/stages/stage_generate.yaml"),
+        "sample": Path("configs/stages/sample.yaml"),
+        "transform": Path("configs/stages/transform.yaml"),
+        "annotate_export": Path("configs/stages/annotate_export.yaml"),
+        "adjudicate": Path("configs/stages/adjudicate.yaml"),
+        "split": Path("configs/stages/split.yaml"),
+        "evaluate": Path("configs/stages/evaluate.yaml"),
+        "report": Path("configs/stages/report.yaml"),
+    }
+
+    all_12 = [
+        "source_audit",
+        "ingest",
+        "redact",
+        "thread",
+        "stage_generate",
+        "sample",
+        "transform",
+        "annotate_export",
+        "adjudicate",
+        "split",
+        "evaluate",
+        "report",
+    ]
+
+    for stage in all_12:
+        runner = get_runner(stage)
+        if stage in ("source_audit", "ingest"):
+            in_dir = Path("data/raw")
+        elif stage == "redact":
+            in_dir = processed / "ingest"
+        elif stage in ("thread", "sample", "transform", "annotate_export", "split"):
+            in_dir = processed / "thread" if (processed / "thread").exists() else processed / "redact"
+        elif stage == "adjudicate":
+            in_dir = processed / "stage_generate"
+        elif stage == "evaluate":
+            in_dir = processed / "split"
+        elif stage == "report":
+            in_dir = processed / "evaluate"
+        else:
+            in_dir = processed
+
+        manifest = run_stage(stage, configs[stage], in_dir, processed / stage, runner)
+        assert manifest.stage == stage
+        assert (processed / stage / "manifest.json").exists()
+
+    assert (processed / "report" / "evaluation_report.md").exists()
+    assert (processed / "report" / "report_summary.yaml").exists()
+    assert (processed / "report" / "table_main_results.tex").exists()
+    assert (processed / "adjudicate" / "gold_labels.jsonl").exists()
+
+

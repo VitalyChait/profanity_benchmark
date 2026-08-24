@@ -20,6 +20,10 @@ def test_llm_config_structure():
     assert "anthropic" in config["keys_detected"]
     assert "gemini" in config["keys_detected"]
     assert "groq" in config["keys_detected"]
+    assert "xai" in config["keys_detected"]
+    assert "qwen" in config["keys_detected"]
+    assert "glm" in config["keys_detected"]
+    assert "openrouter" in config["keys_detected"]
 
 
 def test_key_auto_detection():
@@ -27,6 +31,20 @@ def test_key_auto_detection():
         assert is_provider_configured("openai")
         providers = get_available_providers()
         assert "openai" in providers
+
+    with patch.dict(os.environ, {"XAI_API_KEY": "xai-test123456789"}, clear=False):
+        assert is_provider_configured("xai")
+        assert is_provider_configured("grok")
+
+    with patch.dict(os.environ, {"DASHSCOPE_API_KEY": "sk-qwen123456789"}, clear=False):
+        assert is_provider_configured("qwen")
+
+    with patch.dict(os.environ, {"GLM_API_KEY": "glm-test123456789"}, clear=False):
+        assert is_provider_configured("glm")
+
+    with patch.dict(os.environ, {"OPENROUTER_API_KEY": "sk-or-v1-test123456789"}, clear=False):
+        assert is_provider_configured("openrouter")
+
 
 
 def test_groq_priority_auto_selection():
@@ -43,3 +61,4 @@ def test_router_missing_key_raises_helpful_error():
             assert False, "Should raise RuntimeError"
         except RuntimeError as e:
             assert ".env" in str(e)
+

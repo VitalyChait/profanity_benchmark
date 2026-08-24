@@ -9,12 +9,20 @@ import yaml
 from youth_escalate_bench.dedup.minhash import find_near_duplicates, normalized_text_hash
 from youth_escalate_bench.io.parquet import read_conversations, write_conversations
 from youth_escalate_bench.schemas.conversation import ConversationRecord, SourceTier
+from youth_escalate_bench.schemas.labels import AnnotationRecord
 from youth_escalate_bench.stages.common import find_parquet
 
 
 def run_sample(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dict[str, Any]:
-    in_path = find_parquet(input_dir, "conversations_threaded.parquet", "conversations.parquet")
+    in_path = find_parquet(
+        input_dir,
+        "conversations_threaded.parquet",
+        "conversations.parquet",
+        "generated_conversations.parquet",
+        "conversations_redacted.parquet",
+    )
     conversations = read_conversations(in_path)
+
 
     quotas = config.get(
         "quotas",

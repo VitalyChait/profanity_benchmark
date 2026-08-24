@@ -51,9 +51,13 @@ PROVIDER_KEY_MAP: dict[str, list[str]] = {
     "openai": ["OPENAI_API_KEY"],
     "anthropic": ["ANTHROPIC_API_KEY"],
     "gemini": ["GEMINI_API_KEY", "GOOGLE_API_KEY"],
+    "xai": ["XAI_API_KEY", "GROK_API_KEY"],
+    "qwen": ["DASHSCOPE_API_KEY", "QWEN_API_KEY", "ALIBABA_API_KEY"],
+    "glm": ["GLM_API_KEY", "ZHIPUAI_API_KEY", "BIGMODEL_API_KEY"],
     "groq": ["GROQ_API_KEY"],
     "deepseek": ["DEEPSEEK_API_KEY"],
     "mistral": ["MISTRAL_API_KEY"],
+    "openrouter": ["OPENROUTER_API_KEY", "OPEN_ROUTER_API_KEY"],
     "huggingface": ["HF_TOKEN", "HUGGINGFACE_API_KEY"],
     "together": ["TOGETHER_API_KEY"],
     "cohere": ["COHERE_API_KEY"],
@@ -64,9 +68,14 @@ DEFAULT_MODELS: dict[str, str] = {
     "openai": "gpt-4o-mini",
     "anthropic": "claude-3-5-haiku-20241022",
     "gemini": "gemini-1.5-flash",
+    "xai": "grok-2-latest",
+    "grok": "grok-2-latest",
+    "qwen": "qwen-plus",
+    "glm": "glm-4-flash",
     "groq": "llama-3.1-8b-instant",
     "deepseek": "deepseek-chat",
     "mistral": "mistral-small-latest",
+    "openrouter": "meta-llama/llama-3.3-70b-instruct:free",
     "huggingface": "meta-llama/Llama-Guard-3-1B",
     "together": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
     "cohere": "command-r-08-2024",
@@ -95,7 +104,22 @@ def get_llm_config() -> dict[str, Any]:
     selected_provider = default_provider
     if default_provider == "auto":
         # Priority order
-        priority = ["groq", "openai", "anthropic", "gemini", "ollama", "huggingface", "together", "deepseek", "cohere"]
+        priority = [
+            "groq",
+            "openai",
+            "anthropic",
+            "gemini",
+            "xai",
+            "qwen",
+            "glm",
+            "openrouter",
+            "ollama",
+            "huggingface",
+            "together",
+            "deepseek",
+            "mistral",
+            "cohere",
+        ]
         for p in priority:
             if keys_detected.get(p):
                 selected_provider = p
@@ -136,14 +160,20 @@ def get_available_providers() -> list[str]:
 def is_provider_configured(provider: str) -> bool:
     """Check whether a specific provider has a valid key/endpoint configured."""
     load_env_file()
-    env_vars = PROVIDER_KEY_MAP.get(provider.lower(), [])
+    p = provider.lower()
+    if p == "grok":
+        p = "xai"
+    env_vars = PROVIDER_KEY_MAP.get(p, [])
     return any(bool(os.environ.get(var, "").strip()) for var in env_vars)
 
 
 def get_provider_key(provider: str) -> str | None:
     """Get raw key for a provider."""
     load_env_file()
-    for var in PROVIDER_KEY_MAP.get(provider.lower(), []):
+    p = provider.lower()
+    if p == "grok":
+        p = "xai"
+    for var in PROVIDER_KEY_MAP.get(p, []):
         val = os.environ.get(var, "").strip()
         if val:
             return val
@@ -153,5 +183,20 @@ def get_provider_key(provider: str) -> str | None:
 def get_provider_model(provider: str) -> str:
     """Get model name configured for a provider."""
     load_env_file()
-    env_model_var = f"{provider.upper()}_MODEL"
-    return os.environ.get(env_model_var, DEFAULT_MODELS.get(provider.lower(), "default"))
+    p = provider.lower()
+    model_env_aliases = {
+        "xai": ["XAI_MODEL", "GROK_MODEL"],
+        "grok": ["GROK_MODEL", "XAI_MODEL"],
+        "qwen": ["QWEN_MODEL", "DASHSCOPE_MODEL"],
+        "glm": ["GLM_MODEL", "ZHIPUAI_MODEL", "BIGMODEL_MODEL"],
+        "openrouter": ["OPENROUTER_MODEL", "OPEN_ROUTER_MODEL"],
+        "gemini": ["GEMINI_MODEL", "GOOGLE_MODEL"],
+        "huggingface": ["HUGGINGFACE_MODEL", "HF_MODEL"],
+    }
+    candidates = model_env_aliases.get(p, [f"{provider.upper()}_MODEL"])
+    for var in candidates:
+        val = os.environ.get(var, "").strip()
+        if val:
+            return val
+    return DEFAULT_MODELS.get(p, "default")
+

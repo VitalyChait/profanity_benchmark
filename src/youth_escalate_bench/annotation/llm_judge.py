@@ -5,9 +5,12 @@ KEY CONFIGURATION LOCATION:
 - When multiple keys are configured, this judge queries all active models and performs majority consensus.
 """
 
-from typing import Any
 
-from youth_escalate_bench.llm import get_available_providers, get_default_router
+from youth_escalate_bench.llm import (
+    get_available_providers,
+    get_default_router,
+    get_working_providers,
+)
 from youth_escalate_bench.schemas.conversation import ConversationRecord
 from youth_escalate_bench.schemas.inference import InferenceRequest
 from youth_escalate_bench.schemas.labels import (
@@ -23,15 +26,29 @@ from youth_escalate_bench.schemas.labels import (
 class MultiLLMJudge:
     """Queries all active frontier LLMs and computes consensus annotations."""
 
-    def __init__(self, providers: list[str] | None = None) -> None:
-        self.providers = providers or get_available_providers()
+    def __init__(
+        self,
+        providers: list[str] | None = None,
+        validate_preflight: bool = False,
+        timeout: float = 10.0,
+    ) -> None:
+        if providers:
+            self.providers = providers
+        elif validate_preflight:
+            self.providers = get_working_providers(timeout=timeout)
+        else:
+            self.providers = get_available_providers()
         self.router = get_default_router()
+
 
     def judge_turn(self, request: InferenceRequest) -> list[AnnotationRecord]:
         """Query each active LLM provider for a turn annotation."""
         if not self.providers:
             # Fallback to local rule-based annotation if no keys are in .env
-            from youth_escalate_bench.baselines.scorers import RuleBasedSafeguardScorer, load_lexicon
+            from youth_escalate_bench.baselines.scorers import (
+                RuleBasedSafeguardScorer,
+                load_lexicon,
+            )
 
             scorer = RuleBasedSafeguardScorer(load_lexicon("configs/profanity_lexicon.txt"))
             out = scorer.predict(request)

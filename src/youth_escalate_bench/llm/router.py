@@ -45,8 +45,20 @@ class LLMRouter:
         active_model = model or get_provider_model(active_provider)
         key = get_provider_key(active_provider) or ""
 
-        if active_provider in ("openai", "groq", "together", "deepseek", "mistral"):
+        if active_provider in (
+            "openai",
+            "groq",
+            "together",
+            "deepseek",
+            "mistral",
+            "xai",
+            "grok",
+            "qwen",
+            "glm",
+            "openrouter",
+        ):
             return self._call_openai_compatible(
+
                 prompt=prompt,
                 system_prompt=system_prompt,
                 provider=active_provider,
@@ -127,6 +139,11 @@ class LLMRouter:
             "together": "https://api.together.xyz/v1/chat/completions",
             "deepseek": "https://api.deepseek.com/v1/chat/completions",
             "mistral": "https://api.mistral.ai/v1/chat/completions",
+            "xai": "https://api.x.ai/v1/chat/completions",
+            "grok": "https://api.x.ai/v1/chat/completions",
+            "qwen": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+            "glm": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+            "openrouter": "https://openrouter.ai/api/v1/chat/completions",
         }
         url = endpoints.get(provider, "https://api.openai.com/v1/chat/completions")
         headers = {

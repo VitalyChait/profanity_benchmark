@@ -1,10 +1,8 @@
 """Baseline moderation scorers."""
 
-import math
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any
 
 from youth_escalate_bench.schemas.inference import InferenceRequest, ModelOutput
 from youth_escalate_bench.schemas.taxonomy import HARM_TYPES, SEVERITY_LEVELS

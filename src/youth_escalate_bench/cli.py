@@ -161,9 +161,33 @@ def show_llm_status() -> None:
         key_info = f" ({active_keys[provider]})" if detected and provider in active_keys else ""
         click.echo(f"  - {provider:<12} : {status}{key_info}")
     click.echo("=" * 60)
-    click.echo("To configure or change keys, edit the `.env` file at the repository root.")
+@main.command("validate-llms")
+@click.option("--all", "test_all", is_flag=True, default=False, help="Test all providers (including unconfigured).")
+@click.option("--provider", "-p", "providers", multiple=True, help="Specific provider(s) to validate.")
+@click.option("--timeout", default=10.0, type=float, help="Timeout in seconds per provider probe.")
+@click.option("--output", "-o", type=click.Path(path_type=Path), help="Optional path to export JSON/Markdown validation report.")
+def validate_llms_command(test_all: bool, providers: tuple[str, ...], timeout: float, output: Path | None) -> None:
+    """Run sanity validation probe against configured LLM APIs before real inference."""
+    from youth_escalate_bench.llm.validator import validate_all_providers
 
+    target_list = list(providers) if providers else None
+    only_configured = not test_all and not bool(providers)
+
+    click.echo("Running LLM validation sanity checks...")
+    report = validate_all_providers(providers=target_list, only_configured=only_configured, timeout=timeout)
+    click.echo(report.summary_text())
+
+    if output:
+        if output.suffix.lower() == ".json":
+            report.save_json(output)
+            click.echo(f"Report saved to JSON: {output}")
+        else:
+            output.parent.mkdir(parents=True, exist_ok=True)
+            with output.open("w", encoding="utf-8") as f:
+                f.write(report.to_markdown_table())
+            click.echo(f"Report saved to Markdown table: {output}")
 
 
 if __name__ == "__main__":
     main()
+
