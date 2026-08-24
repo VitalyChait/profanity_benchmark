@@ -260,10 +260,19 @@ def run_split(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dict
 
 
 def run_evaluate(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dict[str, Any]:
-    labels_path = Path(config.get("labels_path", "tests/fixtures/sample_labels.jsonl"))
+    configured_labels = Path(config.get("labels_path", "data/processed/adjudicate/gold_labels.jsonl"))
+    if configured_labels.exists():
+        labels_path = configured_labels
+    elif (input_dir / "gold_labels.jsonl").exists():
+        labels_path = input_dir / "gold_labels.jsonl"
+    elif Path("data/processed/adjudicate/gold_labels.jsonl").exists():
+        labels_path = Path("data/processed/adjudicate/gold_labels.jsonl")
+    else:
+        labels_path = Path("tests/fixtures/sample_labels.jsonl")
+
     split_name = config.get("split", "test")
     parquet_path = find_parquet(
-        input_dir, f"split_{split_name}.parquet", "conversations_threaded.parquet"
+        input_dir, f"split_{split_name}.parquet", "split_test.parquet", "conversations_threaded.parquet"
     )
 
     lexicon_path = Path(config.get("lexicon_path", "configs/profanity_lexicon.txt"))

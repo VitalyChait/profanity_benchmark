@@ -1,7 +1,7 @@
 stage: evaluate
 benchmark_version: "0.1.0"
 random_seed: 42
-labels_path: tests/fixtures/sample_labels.jsonl
+labels_path: data/processed/adjudicate/gold_labels.jsonl
 lexicon_path: configs/profanity_lexicon.txt
 split: test
 conditions:

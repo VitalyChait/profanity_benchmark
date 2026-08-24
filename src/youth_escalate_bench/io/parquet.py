@@ -36,17 +36,22 @@ def frame_to_conversations(df: pl.DataFrame) -> list[ConversationRecord]:
     for conv_id in df["conversation_id"].unique(maintain_order=True).to_list():
         sub = df.filter(pl.col("conversation_id") == conv_id)
         first = sub.row(0, named=True)
-        turns = [
-            StoredTurn(
-                turn_id=row["turn_id"],
-                speaker_id=row["speaker_id"],
-                role=row["role"],
-                text=row["text"],
-                relative_time=row["relative_time"],
-                parent_turn_id=row.get("parent_turn_id"),
-            )
-            for row in sub.iter_rows(named=True)
-        ]
+        seen_tids: set[str] = set()
+        turns = []
+        for row in sub.iter_rows(named=True):
+            tid = str(row["turn_id"])
+            if tid not in seen_tids:
+                seen_tids.add(tid)
+                turns.append(
+                    StoredTurn(
+                        turn_id=tid,
+                        speaker_id=row["speaker_id"],
+                        role=row["role"],
+                        text=row["text"],
+                        relative_time=row["relative_time"],
+                        parent_turn_id=row.get("parent_turn_id"),
+                    )
+                )
         meta = _parse_metadata(first.get("metadata_json"))
         conversations.append(
             ConversationRecord(

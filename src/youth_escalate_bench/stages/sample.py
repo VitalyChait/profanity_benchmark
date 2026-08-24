@@ -61,9 +61,18 @@ def run_sample(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
             "gap": max(0, target - take),
         }
 
-    # Include fixture tier if present (not in quotas)
-    if by_tier.get("fixture"):
+    # Include fixture tier if present and not already in quotas
+    if by_tier.get("fixture") and "fixture" not in quotas:
         selected.extend(by_tier["fixture"])
+
+    # Deduplicate selected conversations by conversation_id
+    seen_convs: set[str] = set()
+    deduped_selected: list[ConversationRecord] = []
+    for c in selected:
+        if c.conversation_id not in seen_convs:
+            seen_convs.add(c.conversation_id)
+            deduped_selected.append(c)
+    selected = deduped_selected
 
     out_path = output_dir / "conversations_sampled.parquet"
     write_conversations(out_path, selected)
