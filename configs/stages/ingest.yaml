@@ -10,21 +10,30 @@ sources:
   - source_id: fixture
     input_path: tests/fixtures/sample_conversations.jsonl
 
-  # Real-world source examples (uncomment when files are placed in data/raw/):
-  # - source_id: wikiconv_wikidetox
-  #   input_path: data/raw/wikiconv.jsonl
+  - source_id: conversations_gone_awry_wikipedia
+    input_path: data/raw/conversations_gone_awry_wikipedia/conversations-gone-awry-corpus/utterances.jsonl
 
-  # - source_id: contextual_abuse_dataset
-  #   input_path: data/raw/cad.jsonl
+  - source_id: conversations_gone_awry_cmv
+    input_path: data/raw/conversations_gone_awry_cmv/conversations-gone-awry-cmv-corpus/utterances.jsonl
 
-  # - source_id: convotox
-  #   input_path: data/raw/convotox.jsonl
+  - source_id: lmsys_toxic_chat_train
+    input_path: data/raw/lmsys_toxic_chat_train/toxic-chat_annotation_train.csv
 
-  # - source_id: gametox
-  #   input_path: data/raw/gametox.jsonl
+  - source_id: lmsys_toxic_chat_test
+    input_path: data/raw/lmsys_toxic_chat_test/toxic-chat_annotation_test.csv
 
-  # - source_id: davidson
-  #   input_path: data/raw/davidson_tweets.csv
+  - source_id: davidson_hate_speech
+    input_path: data/raw/davidson_hate_speech/davidson_labeled_data.csv
 
-  # - source_id: generic
-  #   input_path: data/raw/custom_corpus.jsonl
+  - source_id: dynabench_hate_speech
+    input_path: data/raw/dynabench_hate_speech/dynabench_hate_speech.csv
+
+  - source_id: hatexplain
+    input_path: data/raw/hatexplain/hatexplain.json
+
+  - source_id: tweeteval_offensive
+    input_path: data/raw/tweeteval_offensive/tweeteval_offensive_train.txt
+
+  - source_id: tweeteval_hate
+    input_path: data/raw/tweeteval_hate/tweeteval_hate_train.txt
+

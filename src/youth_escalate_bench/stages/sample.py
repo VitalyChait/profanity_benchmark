@@ -23,6 +23,11 @@ def run_sample(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
     )
     conversations = read_conversations(in_path)
 
+    # If synthetic/staged conversations exist from stage_generate, include them
+    syn_path = Path("data/processed/stage_generate/generated_conversations.parquet")
+    if syn_path.exists():
+        conversations.extend(read_conversations(syn_path))
+
     quotas = config.get(
         "quotas",
         {

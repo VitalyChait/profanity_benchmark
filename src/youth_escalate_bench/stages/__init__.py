@@ -294,6 +294,7 @@ def run_evaluate(config: dict[str, Any], input_dir: Path, output_dir: Path) -> d
         scorers=scorers,
         conditions=conditions,
         seed=config.get("random_seed", 42),
+        max_samples=config.get("max_samples", 20),
     )
 
     meta = write_evaluation_bundle(bundle, output_dir)

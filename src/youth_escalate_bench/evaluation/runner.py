@@ -19,6 +19,8 @@ from youth_escalate_bench.io.parquet import read_conversations
 from youth_escalate_bench.metrics.detection import compute_binary_metrics
 from youth_escalate_bench.schemas.conversation import ConversationRecord
 from youth_escalate_bench.schemas.inference import (
+    InferenceRequest,
+    ModelOutput,
     PlatformStyle,
     TaskType,
     TurnRecord,
@@ -75,52 +77,76 @@ def run_evaluation(
     task: TaskType = TaskType.CURRENT_HARM,
     seed: int = 42,
     threshold: float = 0.5,
+    max_samples: int | None = None,
 ) -> EvaluationBundle:
+    from concurrent.futures import ThreadPoolExecutor
+
     bundle = EvaluationBundle()
 
+    # Pre-collect labeled inference requests per condition
+    target_requests: dict[ContextCondition, list[tuple[InferenceRequest, bool]]] = {}
     for condition in conditions:
-        for scorer_name, scorer in scorers.items():
-            y_true: list[bool] = []
-            y_score: list[float] = []
-
-            for conv in conversations:
-                turn_records = [
-                    TurnRecord(
-                        turn_id=t.turn_id,
-                        speaker_id=t.speaker_id,
-                        role=t.role,
-                        text=t.text,
-                        relative_time=t.relative_time,
-                    )
-                    for t in conv.turns
-                ]
-                requests = build_requests_for_conversation(
-                    conversation_id=conv.conversation_id,
-                    turns=turn_records,
-                    benchmark_version=conv.benchmark_version,
-                    platform_style=PlatformStyle(conv.platform_style),
-                    language_mode=conv.language_mode,
-                    task=task,
-                    condition=condition,
-                    seed=seed,
+        pairs: list[tuple[InferenceRequest, bool]] = []
+        for conv in conversations:
+            if max_samples and len(pairs) >= max_samples:
+                break
+            turn_records = [
+                TurnRecord(
+                    turn_id=t.turn_id,
+                    speaker_id=t.speaker_id,
+                    role=t.role,
+                    text=t.text,
+                    relative_time=t.relative_time,
                 )
-                for req in requests:
-                    key = (req.conversation_id, req.current_turn_id)
-                    if key not in labels:
-                        continue
-                    out = scorer.predict(req)
-                    y_true.append(labels[key])
-                    y_score.append(out.harm_probability)
-                    bundle.predictions.append(
-                        PredictionRow(
-                            conversation_id=req.conversation_id,
-                            turn_id=req.current_turn_id,
-                            scorer=scorer_name,
-                            condition=condition.value,
-                            harm_probability=out.harm_probability,
-                            actionable=out.harm_probability >= threshold,
-                        )
+                for t in conv.turns
+            ]
+            requests = build_requests_for_conversation(
+                conversation_id=conv.conversation_id,
+                turns=turn_records,
+                benchmark_version=conv.benchmark_version,
+                platform_style=PlatformStyle(conv.platform_style),
+                language_mode=conv.language_mode,
+                task=task,
+                condition=condition,
+                seed=seed,
+            )
+            for req in requests:
+                if max_samples and len(pairs) >= max_samples:
+                    break
+                key = (req.conversation_id, req.current_turn_id)
+                if key in labels:
+                    pairs.append((req, labels[key]))
+        target_requests[condition] = pairs
+
+    # Run predictions concurrently per scorer
+    for condition in conditions:
+        pairs = target_requests.get(condition, [])
+        if not pairs:
+            continue
+
+        for scorer_name, scorer in scorers.items():
+            def _score_one(pair: tuple[InferenceRequest, bool]) -> tuple[InferenceRequest, bool, ModelOutput]:
+                req, label = pair
+                out = scorer.predict(req)
+                return req, label, out
+
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                scored = list(pool.map(_score_one, pairs))
+
+            y_true = [s[1] for s in scored]
+            y_score = [s[2].harm_probability for s in scored]
+
+            for req, _, out in scored:
+                bundle.predictions.append(
+                    PredictionRow(
+                        conversation_id=req.conversation_id,
+                        turn_id=req.current_turn_id,
+                        scorer=scorer_name,
+                        condition=condition.value,
+                        harm_probability=out.harm_probability,
+                        actionable=out.harm_probability >= threshold,
                     )
+                )
 
             if not y_true:
                 continue
@@ -149,10 +175,14 @@ def evaluate_from_parquet(
     scorers: dict[str, ModerationScorer],
     conditions: list[ContextCondition],
     seed: int = 42,
+    max_samples: int | None = None,
 ) -> EvaluationBundle:
     conversations = read_conversations(parquet_path)
     labels = load_labels(labels_path)
-    return run_evaluation(conversations, scorers, labels, conditions, seed=seed)
+    return run_evaluation(
+        conversations, scorers, labels, conditions, seed=seed, max_samples=max_samples
+    )
+
 
 
 def write_evaluation_bundle(bundle: EvaluationBundle, output_dir: Path) -> dict[str, Any]:

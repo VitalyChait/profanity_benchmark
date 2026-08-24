@@ -141,6 +141,18 @@ class GenericConversationAdapter(IngestAdapter):
                 conversations.extend(self._group_flat_rows(flat_rows))
             return conversations
         elif isinstance(data, dict):
+            # Check if dict of {post_id: {post_tokens: [...]}} (e.g. HateXplain)
+            items_list = []
+            for post_id, val in data.items():
+                if isinstance(val, dict):
+                    row_dict = dict(val)
+                    row_dict["post_id"] = str(post_id)
+                    if "post_tokens" in row_dict and isinstance(row_dict["post_tokens"], list):
+                        row_dict["text"] = " ".join(str(tok) for tok in row_dict["post_tokens"])
+                    items_list.append(row_dict)
+            if items_list:
+                return self._group_flat_rows(items_list)
+
             # Single conversation or keyed dict
             turns_raw = data.get("turns") or data.get("messages") or data.get("dialog")
             if isinstance(turns_raw, list):
@@ -205,33 +217,31 @@ class GenericConversationAdapter(IngestAdapter):
             raise RuntimeError(f"Failed to read parquet file {path}: {e}") from e
 
     def _load_flat_text(self, path: Path) -> list[ConversationRecord]:
-        turns: list[StoredTurn] = []
+        conversations: list[ConversationRecord] = []
         with path.open("r", encoding="utf-8", errors="replace") as f:
             for idx, line in enumerate(f):
                 line = line.strip()
                 if line:
-                    turns.append(
-                        StoredTurn(
-                            turn_id=f"t{idx + 1}",
-                            speaker_id=f"user_{idx % 2 + 1}",
-                            role="user" if idx % 2 == 0 else "peer",
-                            text=line,
-                            relative_time=f"+{idx * 5}s",
+                    conversations.append(
+                        ConversationRecord(
+                            conversation_id=f"{self.source_id}_{idx + 1}",
+                            source_id=self.source_id,
+                            source_tier=self.source_tier,
+                            platform_style=self.platform_style,
+                            language_mode=self.language_mode,
+                            turns=[
+                                StoredTurn(
+                                    turn_id="t1",
+                                    speaker_id="user_1",
+                                    role="user",
+                                    text=line,
+                                    relative_time="+0s",
+                                )
+                            ],
+                            metadata={"filename": path.name, "line": idx + 1},
                         )
                     )
-        if not turns:
-            return []
-        return [
-            ConversationRecord(
-                conversation_id=f"{self.source_id}_{path.stem}",
-                source_id=self.source_id,
-                source_tier=self.source_tier,
-                platform_style=self.platform_style,
-                language_mode=self.language_mode,
-                turns=turns,
-                metadata={"filename": path.name},
-            )
-        ]
+        return conversations
 
     def _group_flat_rows(self, rows: list[dict[str, Any]]) -> list[ConversationRecord]:
         """Group tabular flat message rows by conversation/thread ID into multi-turn records."""
@@ -244,6 +254,7 @@ class GenericConversationAdapter(IngestAdapter):
             sample,
             [
                 "conversation_id",
+                "conv_id",
                 "thread_id",
                 "dialog_id",
                 "dialogue_id",
@@ -255,7 +266,20 @@ class GenericConversationAdapter(IngestAdapter):
         )
         text_key = self.text_col or self._find_matching_key(
             sample,
-            ["text", "comment_text", "body", "message", "utterance", "content", "cleaned_text"],
+            [
+                "text",
+                "tweet",
+                "user_input",
+                "comment_text",
+                "body",
+                "message",
+                "utterance",
+                "content",
+                "cleaned_text",
+                "post",
+                "sentence",
+                "prompt",
+            ],
         )
         speaker_key = self.speaker_col or self._find_matching_key(
             sample, ["speaker_id", "speaker", "author", "user", "username", "sender", "role"]
@@ -269,10 +293,12 @@ class GenericConversationAdapter(IngestAdapter):
                 f"Could not automatically identify a 'text' column in data fields: {list(sample.keys())}"
             )
 
+        has_model_output = "model_output" in sample or "assistant_response" in sample
+
         # Group by conversation ID
         grouped: dict[str, list[dict[str, Any]]] = {}
         for idx, row in enumerate(rows):
-            cid = str(row.get(cid_key) if cid_key and row.get(cid_key) else f"conv_{idx // 6 + 1}")
+            cid = str(row.get(cid_key) if cid_key and row.get(cid_key) else f"conv_{idx + 1}")
             if cid not in grouped:
                 grouped[cid] = []
             grouped[cid].append(row)
@@ -280,11 +306,12 @@ class GenericConversationAdapter(IngestAdapter):
         conversations: list[ConversationRecord] = []
         for cid, group in grouped.items():
             turns: list[StoredTurn] = []
+            seen_tids: set[str] = set()
             for t_idx, r in enumerate(group):
-                tid = str(r.get(turn_id_key) or f"t{t_idx + 1}")
-                # Ensure unique turn IDs within conversation
-                if any(t.turn_id == tid for t in turns):
-                    tid = f"t{t_idx + 1}_{tid}"
+                tid = str(r.get(turn_id_key) or f"t{t_idx * 2 + 1 if has_model_output else t_idx + 1}")
+                if tid in seen_tids:
+                    tid = f"t{len(turns) + 1}_{tid}"
+                seen_tids.add(tid)
                 spk = str(r.get(speaker_key) or f"user_{t_idx % 2 + 1}")
                 txt = str(r.get(text_key) or "").strip()
                 rel_time = str(
@@ -303,6 +330,22 @@ class GenericConversationAdapter(IngestAdapter):
                             text=txt,
                             relative_time=rel_time,
                             parent_turn_id=str(parent) if parent else None,
+                        )
+                    )
+
+                # If dialogue has user_input + model_output (e.g. ToxicChat)
+                model_txt = str(r.get("model_output") or r.get("assistant_response") or "").strip()
+                if model_txt:
+                    m_tid = f"t{len(turns) + 1}"
+                    seen_tids.add(m_tid)
+                    turns.append(
+                        StoredTurn(
+                            turn_id=m_tid,
+                            speaker_id="assistant",
+                            role="assistant",
+                            text=model_txt,
+                            relative_time=f"+{t_idx * 5 + 2}s",
+                            parent_turn_id=tid,
                         )
                     )
 

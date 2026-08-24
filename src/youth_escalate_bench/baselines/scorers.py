@@ -255,6 +255,7 @@ class PromptedLLMScorer(ModerationScorer):
         self._fallback_scorer = RuleBasedSafeguardScorer(
             load_lexicon("configs/profanity_lexicon.txt")
         )
+        self._cache: dict[tuple[str, str, str], ModelOutput] = {}
 
     def build_prompt(self, request: InferenceRequest) -> str:
         turns_text = "\n".join(
@@ -263,6 +264,10 @@ class PromptedLLMScorer(ModerationScorer):
         return f"{self.prompt_template}\n\nConversation:\n{turns_text}\n\nTarget Turn ID to moderate: {request.current_turn_id}"
 
     def predict(self, request: InferenceRequest) -> ModelOutput:
+        cache_key = (request.conversation_id, request.current_turn_id, len(request.turns))
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+
         from youth_escalate_bench.llm import get_available_providers, get_default_router
 
         active_providers = get_available_providers()
@@ -275,15 +280,22 @@ class PromptedLLMScorer(ModerationScorer):
                 )
                 prob = float(data.get("harm_probability", 0.0))
                 harm_types = data.get("harm_types", [])
-                return _score_to_output(
+                out = _score_to_output(
                     prob, harm_types=harm_types, evidence_ids=[request.current_turn_id]
                 )
+                self._cache[cache_key] = out
+                return out
             except Exception:
                 # Graceful fallback on network/quota issues
-                return self._fallback_scorer.predict(request)
+                out = self._fallback_scorer.predict(request)
+                self._cache[cache_key] = out
+                return out
 
         # Fallback when no keys are in .env
-        return self._fallback_scorer.predict(request)
+        out = self._fallback_scorer.predict(request)
+        self._cache[cache_key] = out
+        return out
+
 
 
 class EnsembleScorer(ModerationScorer):

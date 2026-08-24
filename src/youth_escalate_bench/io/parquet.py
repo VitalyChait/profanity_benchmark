@@ -28,34 +28,59 @@ def conversations_to_frame(conversations: list[ConversationRecord]) -> pl.DataFr
                     "metadata_json": _metadata_json(conv.metadata),
                 }
             )
-    return pl.DataFrame(rows)
+    schema = {
+        "conversation_id": pl.Utf8,
+        "source_id": pl.Utf8,
+        "source_tier": pl.Utf8,
+        "platform_style": pl.Utf8,
+        "language_mode": pl.Utf8,
+        "benchmark_version": pl.Utf8,
+        "turn_id": pl.Utf8,
+        "speaker_id": pl.Utf8,
+        "role": pl.Utf8,
+        "text": pl.Utf8,
+        "relative_time": pl.Utf8,
+        "parent_turn_id": pl.Utf8,
+        "metadata_json": pl.Utf8,
+    }
+    return pl.DataFrame(rows, schema=schema)
+
 
 
 def frame_to_conversations(df: pl.DataFrame) -> list[ConversationRecord]:
+    if df.is_empty():
+        return []
+
+    by_conv: dict[str, list[dict]] = {}
+    for row in df.iter_rows(named=True):
+        cid = str(row["conversation_id"])
+        if cid not in by_conv:
+            by_conv[cid] = []
+        by_conv[cid].append(row)
+
     conversations: list[ConversationRecord] = []
-    for conv_id in df["conversation_id"].unique(maintain_order=True).to_list():
-        sub = df.filter(pl.col("conversation_id") == conv_id)
-        first = sub.row(0, named=True)
+    for cid, rows in by_conv.items():
+        first = rows[0]
         seen_tids: set[str] = set()
-        turns = []
-        for row in sub.iter_rows(named=True):
-            tid = str(row["turn_id"])
+        turns: list[StoredTurn] = []
+        for r in rows:
+            tid = str(r["turn_id"])
             if tid not in seen_tids:
                 seen_tids.add(tid)
                 turns.append(
                     StoredTurn(
                         turn_id=tid,
-                        speaker_id=row["speaker_id"],
-                        role=row["role"],
-                        text=row["text"],
-                        relative_time=row["relative_time"],
-                        parent_turn_id=row.get("parent_turn_id"),
+                        speaker_id=r["speaker_id"],
+                        role=r["role"],
+                        text=r["text"],
+                        relative_time=r["relative_time"],
+                        parent_turn_id=r.get("parent_turn_id"),
                     )
                 )
         meta = _parse_metadata(first.get("metadata_json"))
         conversations.append(
             ConversationRecord(
-                conversation_id=conv_id,
+                conversation_id=cid,
                 source_id=first["source_id"],
                 source_tier=first["source_tier"],
                 platform_style=first["platform_style"],
