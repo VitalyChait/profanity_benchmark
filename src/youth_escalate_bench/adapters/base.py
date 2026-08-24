@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
-from youth_escalate_bench.schemas.conversation import ConversationRecord, SourceTier, StoredTurn
+from youth_escalate_bench.schemas.conversation import ConversationRecord, StoredTurn
 
 
 class IngestAdapter(ABC):

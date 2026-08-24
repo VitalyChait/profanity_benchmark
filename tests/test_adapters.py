@@ -6,10 +6,8 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
-import pytest
 
 from youth_escalate_bench.adapters import (
-    ADAPTERS,
     CADAdapter,
     ConvoToxAdapter,
     FlatToMultiTurnJoiner,
@@ -18,7 +16,6 @@ from youth_escalate_bench.adapters import (
     WikiConvAdapter,
     get_adapter,
 )
-from youth_escalate_bench.schemas.conversation import ConversationRecord, SourceTier
 
 
 def test_adapter_registry_retrieval():

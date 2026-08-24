@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 from youth_escalate_bench.adapters.base import IngestAdapter
 from youth_escalate_bench.schemas.conversation import ConversationRecord, SourceTier, StoredTurn
