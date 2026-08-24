@@ -9,7 +9,10 @@ from youth_escalate_bench.llm.keys import (
     ENV_FILE_PATH,
     get_active_keys,
     get_available_providers,
+    get_expanded_eval_targets,
     get_llm_config,
+    get_openrouter_models,
+    get_provider_model,
     is_provider_configured,
 )
 from youth_escalate_bench.llm.router import LLMRouter, get_default_router
@@ -25,7 +28,10 @@ __all__ = [
     "ENV_FILE_PATH",
     "get_active_keys",
     "get_available_providers",
+    "get_expanded_eval_targets",
     "get_llm_config",
+    "get_openrouter_models",
+    "get_provider_model",
     "is_provider_configured",
     "LLMRouter",
     "get_default_router",
@@ -35,3 +41,4 @@ __all__ = [
     "validate_all_providers",
     "get_working_providers",
 ]
+

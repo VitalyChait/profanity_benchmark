@@ -6,8 +6,9 @@ KEY CONFIGURATION LOCATION:
 """
 
 from youth_escalate_bench.llm import (
-    get_available_providers,
     get_default_router,
+    get_expanded_eval_targets,
+    get_provider_model,
     get_working_providers,
 )
 from youth_escalate_bench.schemas.conversation import ConversationRecord
@@ -28,20 +29,32 @@ class MultiLLMJudge:
     def __init__(
         self,
         providers: list[str] | None = None,
+        targets: list[tuple[str, str]] | None = None,
         validate_preflight: bool = False,
         timeout: float = 10.0,
     ) -> None:
-        if providers:
-            self.providers = providers
-        elif validate_preflight:
-            self.providers = get_working_providers(timeout=timeout)
-        else:
-            self.providers = get_available_providers()
         self.router = get_default_router()
+        if targets:
+            self.targets = targets
+        elif providers:
+            self.targets = []
+            for p in providers:
+                if ":" in p:
+                    prov, mdl = p.split(":", 1)
+                    self.targets.append((prov, mdl))
+                else:
+                    self.targets.append((p, get_provider_model(p)))
+        elif validate_preflight:
+            working = get_working_providers(timeout=timeout)
+            self.targets = [(p, get_provider_model(p)) for p in working]
+        else:
+            self.targets = get_expanded_eval_targets()
+
+        self.providers = [t[0] for t in self.targets]
 
     def judge_turn(self, request: InferenceRequest) -> list[AnnotationRecord]:
-        """Query each active LLM provider for a turn annotation."""
-        if not self.providers:
+        """Query each active LLM model target for a turn annotation."""
+        if not self.targets:
             # Fallback to local rule-based annotation if no keys are in .env
             from youth_escalate_bench.baselines.scorers import (
                 RuleBasedSafeguardScorer,
@@ -94,10 +107,10 @@ class MultiLLMJudge:
             f"Conversation:\n{turns_text}\n\nTarget Turn ID to moderate: {request.current_turn_id}"
         )
 
-        for provider in self.providers:
+        for provider, model in self.targets:
             try:
                 data = self.router.call_llm_json(
-                    prompt=prompt, system_prompt=system_prompt, provider=provider
+                    prompt=prompt, system_prompt=system_prompt, provider=provider, model=model
                 )
                 results.append(
                     AnnotationRecord(

@@ -199,3 +199,35 @@ def get_provider_model(provider: str) -> str:
         if val:
             return val
     return DEFAULT_MODELS.get(p, "default")
+
+
+def get_openrouter_models() -> list[str]:
+    """Get list of all configured OpenRouter models for multi-model usage."""
+    load_env_file()
+    multi = os.environ.get("OPENROUTER_MODELS", "").strip()
+    if multi:
+        models = [m.strip() for m in multi.split(",") if m.strip()]
+        if models:
+            return models
+    single = get_provider_model("openrouter")
+    return [single] if single else [DEFAULT_MODELS["openrouter"]]
+
+
+def get_expanded_eval_targets() -> list[tuple[str, str]]:
+    """Return expanded list of (provider, model) pairs across all active keys.
+
+    If OpenRouter is configured with multiple models in OPENROUTER_MODELS,
+    each OpenRouter model is included as an independent evaluation/judge target.
+    """
+    config = get_llm_config()
+    targets: list[tuple[str, str]] = []
+
+    for provider in config["active_providers"]:
+        if provider == "openrouter":
+            for model in get_openrouter_models():
+                targets.append(("openrouter", model))
+        else:
+            targets.append((provider, get_provider_model(provider)))
+
+    return targets
+

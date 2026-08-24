@@ -64,3 +64,29 @@ def test_router_missing_key_raises_helpful_error():
             assert False, "Should raise RuntimeError"
         except RuntimeError as e:
             assert ".env" in str(e)
+
+
+def test_openrouter_multi_model_configuration():
+    from youth_escalate_bench.llm.keys import (
+        get_expanded_eval_targets,
+        get_openrouter_models,
+    )
+
+    with patch.dict(
+        os.environ,
+        {
+            "OPENROUTER_API_KEY": "sk-or-v1-test",
+            "OPENROUTER_MODELS": "meta-llama/llama-3.3-70b-instruct, mistralai/mistral-small-24b-instruct-2501, openai/gpt-4o-mini",
+        },
+        clear=False,
+    ):
+        models = get_openrouter_models()
+        assert len(models) == 3
+        assert "openai/gpt-4o-mini" in models
+        assert "mistralai/mistral-small-24b-instruct-2501" in models
+
+        targets = get_expanded_eval_targets()
+        or_targets = [t for t in targets if t[0] == "openrouter"]
+        assert len(or_targets) == 3
+        assert ("openrouter", "openai/gpt-4o-mini") in or_targets
+

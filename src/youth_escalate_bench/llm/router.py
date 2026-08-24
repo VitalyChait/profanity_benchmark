@@ -36,6 +36,18 @@ class LLMRouter:
         config = get_llm_config()
         active_provider = provider or config["selected_provider"]
 
+        # Support compound provider strings like "openrouter:openai/gpt-4o-mini"
+        if active_provider and ":" in active_provider:
+            parts = active_provider.split(":", 1)
+            active_provider = parts[0]
+            if not model:
+                model = parts[1]
+        elif active_provider and active_provider.startswith("openrouter/") and "/" in active_provider[11:]:
+            parts_model = active_provider[11:]
+            active_provider = "openrouter"
+            if not model:
+                model = parts_model
+
         if active_provider == "none" or not is_provider_configured(active_provider):
             raise RuntimeError(
                 f"No API key configured for provider '{active_provider}'. "
