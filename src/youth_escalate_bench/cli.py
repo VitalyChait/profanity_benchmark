@@ -46,7 +46,7 @@ def run_pipeline_stage(
     output_dir: Path,
 ) -> None:
     """Run a single pipeline stage."""
-    stage_output = output_dir / stage
+    stage_output = output_dir if output_dir.name == stage else (output_dir / stage)
     runner = get_runner(stage)
     manifest = run_stage(stage, config, input_dir, stage_output, runner)
     click.echo(f"Stage {stage} complete. Manifest: {stage_output / 'manifest.json'}")
