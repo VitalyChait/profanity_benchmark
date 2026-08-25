@@ -8,6 +8,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+import structlog
+
+logger = structlog.get_logger()
 
 
 def _get_display_name(scorer_id: str) -> tuple[str, str]:
@@ -27,6 +30,19 @@ def _get_display_name(scorer_id: str) -> tuple[str, str]:
         "rule_based_safeguard": ("Rule Safeguard Expert", "Rule Baseline"),
     }
     return mapping.get(scorer_id, (scorer_id.replace("_", " ").title(), "Custom"))
+
+
+def _get_float(d: dict[str, Any] | None, key: str, default: float = 0.0) -> float:
+    """Safely extract float from metric dict handling None, missing keys, and invalid types."""
+    if not isinstance(d, dict):
+        return default
+    val = d.get(key)
+    if val is None:
+        return default
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return default
 
 
 def generate_all_infographics(
@@ -50,25 +66,30 @@ def generate_all_infographics(
     if not data_by_scorer:
         return generated_files
 
-    # 1. Main Multi-Panel Infographic
-    p1 = _generate_multipanel_infographic(data_by_scorer, output_dir / "infographic_models_comparison.png")
-    generated_files.append(p1)
+    # Try generating figures with matplotlib
+    try:
+        f1 = _generate_multipanel_infographic(data_by_scorer, output_dir / "infographic_models_comparison.png")
+        if f1:
+            generated_files.append(f1)
+        f2 = _generate_heatmap_infographic(data_by_scorer, output_dir / "figure_auprc_heatmap.png")
+        if f2:
+            generated_files.append(f2)
+        f3 = _generate_context_trajectory(data_by_scorer, output_dir / "figure_context_trajectory.png")
+        if f3:
+            generated_files.append(f3)
+        f4 = _generate_llm_leaderboard(data_by_scorer, output_dir / "figure_llm_leaderboard.png")
+        if f4:
+            generated_files.append(f4)
+    except Exception as e:
+        logger.warning("infographics_matplotlib_error", error=str(e))
 
-    # 2. AUPRC & AUROC Performance Heatmap
-    p2 = _generate_heatmap_infographic(data_by_scorer, output_dir / "figure_auprc_heatmap.png")
-    generated_files.append(p2)
-
-    # 3. Causal Context Trajectory Plot
-    p3 = _generate_context_trajectory(data_by_scorer, output_dir / "figure_context_trajectory.png")
-    generated_files.append(p3)
-
-    # 4. Dedicated LLM Leaderboard Chart
-    p4 = _generate_llm_leaderboard(data_by_scorer, output_dir / "figure_llm_leaderboard.png")
-    generated_files.append(p4)
-
-    # 5. Interactive Standalone HTML Infographic Dashboard
-    p5 = _generate_html_dashboard(data_by_scorer, onset_data, output_dir / "infographic_dashboard.html")
-    generated_files.append(p5)
+    # Generate interactive standalone HTML dashboard
+    try:
+        f_html = _generate_html_dashboard(data_by_scorer, onset_data, output_dir / "infographic_dashboard.html")
+        if f_html:
+            generated_files.append(f_html)
+    except Exception as e:
+        logger.warning("infographics_html_dashboard_error", error=str(e))
 
     return generated_files
 
@@ -99,7 +120,7 @@ def _generate_multipanel_infographic(
     scorers = list(data.keys())
     def sort_key(s: str) -> tuple[int, float]:
         name, family = _get_display_name(s)
-        pref = data[s].get("full_prefix", {}).get("auprc", 0.0)
+        pref = _get_float(data[s].get("full_prefix"), "auprc", 0.0)
         fam_order = 0 if "LLM" in family else (1 if "Ensemble" in family else 2)
         return (fam_order, -pref)
 
@@ -111,9 +132,9 @@ def _generate_multipanel_infographic(
     y = np.arange(len(sorted_scorers))
     height = 0.26
 
-    auprc_turn = [data[s].get("current_turn_only", {}).get("auprc", 0.0) for s in sorted_scorers]
-    auprc_pair = [data[s].get("prev_plus_current", {}).get("auprc", 0.0) for s in sorted_scorers]
-    auprc_pref = [data[s].get("full_prefix", {}).get("auprc", 0.0) for s in sorted_scorers]
+    auprc_turn = [_get_float(data[s].get("current_turn_only"), "auprc", 0.0) for s in sorted_scorers]
+    auprc_pair = [_get_float(data[s].get("prev_plus_current"), "auprc", 0.0) for s in sorted_scorers]
+    auprc_pref = [_get_float(data[s].get("full_prefix"), "auprc", 0.0) for s in sorted_scorers]
 
     ax1.barh(y + height, auprc_turn, height, label="Turn Only", color=c_turn, alpha=0.9, edgecolor="#0284c7")
     ax1.barh(y, auprc_pair, height, label="Prev + Turn", color=c_pair, alpha=0.9, edgecolor="#6366f1")
@@ -129,16 +150,16 @@ def _generate_multipanel_infographic(
 
     # --- Panel 2: AUROC across Conditions ---
     ax2 = axes[0, 1]
-    auroc_turn = [data[s].get("current_turn_only", {}).get("auroc", 0.0) or 0.0 for s in sorted_scorers]
-    auroc_pair = [data[s].get("prev_plus_current", {}).get("auroc", 0.0) or 0.0 for s in sorted_scorers]
-    auroc_pref = [data[s].get("full_prefix", {}).get("auroc", 0.0) or 0.0 for s in sorted_scorers]
+    auroc_turn = [_get_float(data[s].get("current_turn_only"), "auroc", 0.0) for s in sorted_scorers]
+    auroc_pair = [_get_float(data[s].get("prev_plus_current"), "auroc", 0.0) for s in sorted_scorers]
+    auroc_pref = [_get_float(data[s].get("full_prefix"), "auroc", 0.0) for s in sorted_scorers]
 
     ax2.barh(y + height, auroc_turn, height, label="Turn Only", color=c_turn, alpha=0.9, edgecolor="#0284c7")
     ax2.barh(y, auroc_pair, height, label="Prev + Turn", color=c_pair, alpha=0.9, edgecolor="#6366f1")
     ax2.barh(y - height, auroc_pref, height, label="Full Prefix", color=c_prefix, alpha=0.9, edgecolor="#059669")
 
     ax2.set_yticks(y)
-    ax2.set_yticklabels([])  # Share visual with panel 1
+    ax2.set_yticklabels([])
     ax2.set_xlim(0.4, 1.05)
     ax2.set_xlabel("AUROC (Area Under ROC Curve)", color="#cbd5e1", fontsize=10, fontweight="bold")
     ax2.set_title("B. Discrimination Power (AUROC) across Context Conditions", color="#f8fafc", fontsize=12, fontweight="bold", pad=12)
@@ -171,18 +192,19 @@ def _generate_multipanel_infographic(
     llm_names = [_get_display_name(s)[0] for s in llm_scorers]
     llm_y = np.arange(len(llm_scorers))
 
-    p95 = [data[s].get("full_prefix", {}).get("precision_at_recall_95", 0.0) for s in llm_scorers]
-    rfpr1 = [data[s].get("full_prefix", {}).get("recall_at_fpr_1pct", 0.0) for s in llm_scorers]
+    p95 = [_get_float(data[s].get("full_prefix"), "precision_at_recall_95", 0.0) for s in llm_scorers]
+    rfpr1 = [_get_float(data[s].get("full_prefix"), "recall_at_fpr_1pct", 0.0) for s in llm_scorers]
 
     w = 0.35
-    ax4.barh(llm_y + w / 2, p95, w, label="Precision @ Recall 95%", color="#f59e0b", alpha=0.9, edgecolor="#d97706")
-    ax4.barh(llm_y - w / 2, rfpr1, w, label="Recall @ FPR 1%", color="#ec4899", alpha=0.9, edgecolor="#db2777")
-    ax4.set_yticks(llm_y)
-    ax4.set_yticklabels(llm_names, fontsize=9, color="#f1f5f9", fontweight="medium")
+    if len(llm_scorers) > 0:
+        ax4.barh(llm_y + w / 2, p95, w, label="Precision @ Recall 95%", color="#f59e0b", alpha=0.9, edgecolor="#d97706")
+        ax4.barh(llm_y - w / 2, rfpr1, w, label="Recall @ FPR 1%", color="#ec4899", alpha=0.9, edgecolor="#db2777")
+        ax4.set_yticks(llm_y)
+        ax4.set_yticklabels(llm_names, fontsize=9, color="#f1f5f9", fontweight="medium")
+        ax4.legend(loc="lower right", facecolor="#1e293b", edgecolor="#475569", labelcolor="#f8fafc", fontsize=9)
     ax4.set_xlim(0, 1.05)
     ax4.set_xlabel("High-Precision / Low-FPR Operating Points", color="#cbd5e1", fontsize=10, fontweight="bold")
     ax4.set_title("D. LLM Safety Regimes (Full Prefix Operating Points)", color="#f8fafc", fontsize=12, fontweight="bold", pad=12)
-    ax4.legend(loc="lower right", facecolor="#1e293b", edgecolor="#475569", labelcolor="#f8fafc", fontsize=9)
     ax4.invert_yaxis()
 
     # Supertitle and Metadata
@@ -203,7 +225,7 @@ def _generate_heatmap_infographic(
     scorers = list(data.keys())
     def sort_key(s: str) -> tuple[int, float]:
         name, family = _get_display_name(s)
-        pref = data[s].get("full_prefix", {}).get("auprc", 0.0)
+        pref = _get_float(data[s].get("full_prefix"), "auprc", 0.0)
         fam_order = 0 if "LLM" in family else (1 if "Ensemble" in family else 2)
         return (fam_order, -pref)
 
@@ -217,8 +239,8 @@ def _generate_heatmap_infographic(
 
     for i, s in enumerate(sorted_scorers):
         for j, c in enumerate(conditions):
-            matrix_auprc[i, j] = data[s].get(c, {}).get("auprc", 0.0)
-            matrix_auroc[i, j] = data[s].get(c, {}).get("auroc", 0.0) or 0.0
+            matrix_auprc[i, j] = _get_float(data[s].get(c), "auprc", 0.0)
+            matrix_auroc[i, j] = _get_float(data[s].get(c), "auroc", 0.0)
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 8), dpi=300)
     fig.patch.set_facecolor("#0b0f19")
@@ -284,7 +306,7 @@ def _generate_context_trajectory(
     scorers = list(data.keys())
 
     for idx, s in enumerate(scorers):
-        y_vals = [data[s].get(c, {}).get("auprc", 0.0) for c in conditions]
+        y_vals = [_get_float(data[s].get(c), "auprc", 0.0) for c in conditions]
         name, family = _get_display_name(s)
         color = colors[idx % len(colors)]
         style = "-" if "LLM" in family else ("--" if "Ensemble" in family else ":")
@@ -320,10 +342,10 @@ def _generate_llm_leaderboard(
         spine.set_color("#334155")
 
     llm_scorers = [s for s in data.keys() if "LLM" in _get_display_name(s)[1]]
-    llm_scorers.sort(key=lambda s: data[s].get("full_prefix", {}).get("auprc", 0.0), reverse=True)
+    llm_scorers.sort(key=lambda s: _get_float(data[s].get("full_prefix"), "auprc", 0.0), reverse=True)
 
     names = [_get_display_name(s)[0] for s in llm_scorers]
-    scores = [data[s].get("full_prefix", {}).get("auprc", 0.0) for s in llm_scorers]
+    scores = [_get_float(data[s].get("full_prefix"), "auprc", 0.0) for s in llm_scorers]
     y = np.arange(len(llm_scorers))
 
     palette = ["#38bdf8", "#34d399", "#818cf8", "#f59e0b", "#ec4899", "#a78bfa"]
@@ -360,14 +382,14 @@ def _generate_html_dashboard(
         c_pair = data[s].get("prev_plus_current", {})
         c_pref = data[s].get("full_prefix", {})
 
-        p_turn = f"{c_turn.get('auprc', 0.0):.3f}"
-        r_turn = f"{c_turn.get('auroc', 0.0):.3f}" if c_turn.get("auroc") is not None else "—"
-        p_pair = f"{c_pair.get('auprc', 0.0):.3f}"
-        r_pair = f"{c_pair.get('auroc', 0.0):.3f}" if c_pair.get("auroc") is not None else "—"
-        p_pref = f"{c_pref.get('auprc', 0.0):.3f}"
-        r_pref = f"{c_pref.get('auroc', 0.0):.3f}" if c_pref.get("auroc") is not None else "—"
+        p_turn = f"{_get_float(c_turn, 'auprc', 0.0):.3f}"
+        r_turn = f"{_get_float(c_turn, 'auroc', 0.0):.3f}" if c_turn.get("auroc") is not None else "—"
+        p_pair = f"{_get_float(c_pair, 'auprc', 0.0):.3f}"
+        r_pair = f"{_get_float(c_pair, 'auroc', 0.0):.3f}" if c_pair.get("auroc") is not None else "—"
+        p_pref = f"{_get_float(c_pref, 'auprc', 0.0):.3f}"
+        r_pref = f"{_get_float(c_pref, 'auroc', 0.0):.3f}" if c_pref.get("auroc") is not None else "—"
 
-        delta = c_pref.get("auprc", 0.0) - c_turn.get("auprc", 0.0)
+        delta = _get_float(c_pref, "auprc", 0.0) - _get_float(c_turn, "auprc", 0.0)
         delta_badge = f"<span class='badge {'badge-green' if delta >= 0 else 'badge-red'}'>{delta:+.3f}</span>"
         fam_badge = f"<span class='badge badge-purple'>{family}</span>" if "LLM" in family else (f"<span class='badge badge-blue'>{family}</span>" if "Ensemble" in family else f"<span class='badge badge-gray'>{family}</span>")
 
@@ -385,8 +407,8 @@ def _generate_html_dashboard(
     table_rows = "\n".join(rows_html)
 
     # Top stats
-    best_llm_score = max((data[s].get("full_prefix", {}).get("auprc", 0.0) for s in scorers if "LLM" in _get_display_name(s)[1]), default=0.0)
-    best_baseline_score = max((data[s].get("full_prefix", {}).get("auprc", 0.0) for s in scorers if "Baseline" in _get_display_name(s)[1]), default=0.0)
+    best_llm_score = max((_get_float(data[s].get("full_prefix"), "auprc", 0.0) for s in scorers if "LLM" in _get_display_name(s)[1]), default=0.0)
+    best_baseline_score = max((_get_float(data[s].get("full_prefix"), "auprc", 0.0) for s in scorers if "Baseline" in _get_display_name(s)[1]), default=0.0)
 
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
