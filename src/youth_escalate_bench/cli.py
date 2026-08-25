@@ -276,9 +276,31 @@ def export_schemas(output_dir: Path) -> None:
 @click.option("--output-dir", type=click.Path(path_type=Path), default=Path("data/e2e"))
 def run_e2e(output_dir: Path) -> None:
     """Run miniature end-to-end pipeline on fixture data."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    fixture_ingest_cfg = output_dir / "ingest_fixture.yaml"
+    import yaml
+
+    with fixture_ingest_cfg.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(
+            {
+                "stage": "ingest",
+                "benchmark_version": "0.1.0",
+                "default_language_mode": "english",
+                "allow_fixture_sources": True,
+                "sources": [
+                    {
+                        "source_id": "fixture",
+                        "input_path": "tests/fixtures/sample_conversations.jsonl",
+                        "adapter": "jsonl",
+                    }
+                ],
+            },
+            f,
+        )
+
     configs = {
         "source_audit": Path("configs/stages/source_audit.yaml"),
-        "ingest": Path("configs/stages/ingest.yaml"),
+        "ingest": fixture_ingest_cfg,
         "redact": Path("configs/stages/redact.yaml"),
         "thread": Path("configs/stages/thread.yaml"),
         "transform": Path("configs/stages/transform.yaml"),
