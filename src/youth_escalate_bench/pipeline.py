@@ -36,8 +36,11 @@ def run_stage(
     input_dir: Path,
     output_dir: Path,
     runner: StageFn,
+    config_overrides: dict[str, Any] | None = None,
 ) -> StageManifest:
     config = load_config(config_path)
+    if config_overrides:
+        config.update(config_overrides)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     logger.info("stage_start", stage=stage_name, config=str(config_path))

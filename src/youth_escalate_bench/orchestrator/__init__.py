@@ -284,7 +284,12 @@ class PipelineRunner:
         except ValueError:
             return p
 
-    def execute_step(self, step_info: dict[str, Any], force: bool = False) -> bool:
+    def execute_step(
+        self,
+        step_info: dict[str, Any],
+        force: bool = False,
+        config_overrides: dict[str, Any] | None = None,
+    ) -> bool:
         """Run a single pipeline step with timing, manifests, and error logging."""
         step_id = step_info["id"]
         title = step_info["title"]
@@ -311,7 +316,14 @@ class PipelineRunner:
 
         try:
             runner = get_runner(step_id)
-            manifest = run_stage(step_id, config_path, input_dir, output_dir, runner)
+            manifest = run_stage(
+                step_id,
+                config_path,
+                input_dir,
+                output_dir,
+                runner,
+                config_overrides=config_overrides,
+            )
             duration = time.perf_counter() - start_time
 
             output_filenames = [Path(e.path).name for e in manifest.outputs]
@@ -368,6 +380,7 @@ class PipelineRunner:
         resume: bool = False,
         force: bool = False,
         dry_run: bool = False,
+        extended_report: bool = False,
     ) -> bool:
         """Execute selected range of pipeline steps."""
         all_ids = [s["id"] for s in ORDERED_STEPS]
@@ -414,7 +427,8 @@ class PipelineRunner:
 
         overall_start = time.perf_counter()
         for s in steps_to_run:
-            success = self.execute_step(s, force=force)
+            overrides = {"extended_report": True} if (s["id"] == "report" and extended_report) else None
+            success = self.execute_step(s, force=force, config_overrides=overrides)
             if not success:
                 print(f"\n⛔ Pipeline halted at step '{s['id']}'. Fix error or re-run with --force.")
                 self.checkpoint_mgr.display_status()
@@ -437,11 +451,14 @@ Examples:
   # Run entire pipeline from start to finish:
   python main.py --all
 
+  # Run pipeline with extended report detailing all LLM failure cases:
+  python main.py --all --extended-report
+
   # Auto-resume from earliest incomplete/failed checkpoint:
   python main.py --resume
 
-  # Run only a specific step (e.g. adjudicate):
-  python main.py --step adjudicate --force
+  # Run only a specific step with extended error logs:
+  python main.py --step report --extended-report --force
 
   # Run a range of steps (from thread validation to model evaluation):
   python main.py --from-step thread --to-step evaluate
@@ -460,6 +477,14 @@ Examples:
     parser.add_argument("--from-step", choices=STEP_NAMES, help="Start execution from this step.")
     parser.add_argument("--to-step", choices=STEP_NAMES, help="Stop execution after this step.")
     parser.add_argument("--force", "-f", action="store_true", help="Force re-execution of already completed steps.")
+    parser.add_argument(
+        "--extended-report",
+        "-e",
+        "--extended",
+        dest="extended_report",
+        action="store_true",
+        help="Generate detailed extended report outputting all failure cases per LLM.",
+    )
     parser.add_argument("--status", action="store_true", help="Show current pipeline checkpoint status table.")
     parser.add_argument("--reset", action="store_true", help="Reset all checkpoint states to PENDING.")
     parser.add_argument("--dry-run", action="store_true", help="Simulate execution without running stages.")
@@ -489,6 +514,7 @@ Examples:
         resume=args.resume or (not args.force and not args.step),
         force=args.force,
         dry_run=args.dry_run,
+        extended_report=args.extended_report,
     )
 
     sys.exit(0 if success else 1)

@@ -39,16 +39,25 @@ def list_stages() -> None:
 @click.option("--config", type=click.Path(exists=True, path_type=Path), required=True)
 @click.option("--input-dir", type=click.Path(path_type=Path), default=Path("data/interim"))
 @click.option("--output-dir", type=click.Path(path_type=Path), default=Path("data/processed"))
+@click.option(
+    "--extended-report",
+    "-e",
+    is_flag=True,
+    default=False,
+    help="Generate detailed extended report outputting all failure cases per LLM.",
+)
 def run_pipeline_stage(
     stage: str,
     config: Path,
     input_dir: Path,
     output_dir: Path,
+    extended_report: bool = False,
 ) -> None:
     """Run a single pipeline stage."""
     stage_output = output_dir if output_dir.name == stage else (output_dir / stage)
     runner = get_runner(stage)
-    manifest = run_stage(stage, config, input_dir, stage_output, runner)
+    overrides = {"extended_report": True} if (stage == "report" and extended_report) else None
+    manifest = run_stage(stage, config, input_dir, stage_output, runner, config_overrides=overrides)
     click.echo(f"Stage {stage} complete. Manifest: {stage_output / 'manifest.json'}")
     click.echo(f"Outputs: {len(manifest.outputs)} files")
 
@@ -189,6 +198,13 @@ def ingest_data_command(
 @click.option("--status", is_flag=True, default=False, help="Show checkpoint status table.")
 @click.option("--reset", is_flag=True, default=False, help="Reset all checkpoints.")
 @click.option("--dry-run", is_flag=True, default=False, help="Simulate pipeline without executing.")
+@click.option(
+    "--extended-report",
+    "-e",
+    is_flag=True,
+    default=False,
+    help="Generate detailed extended report outputting all failure cases per LLM.",
+)
 def pipeline_command(
     run_all: bool,
     resume: bool,
@@ -199,6 +215,7 @@ def pipeline_command(
     status: bool,
     reset: bool,
     dry_run: bool,
+    extended_report: bool = False,
 ) -> None:
     """Execute pipeline with automated checkpoints, state recovery, and error diagnostics."""
     from youth_escalate_bench.orchestrator import PipelineRunner
@@ -227,6 +244,7 @@ def pipeline_command(
         resume=resume or (not force and not steps),
         force=force,
         dry_run=dry_run,
+        extended_report=extended_report,
     )
     if not success:
         raise SystemExit(1)

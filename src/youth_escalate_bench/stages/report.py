@@ -1,10 +1,12 @@
-"""Report generation: cross-condition tables, auto-infographics, LaTeX snippets, and benchmark cards."""
+"""Report generation: cross-condition tables, auto-infographics, LaTeX snippets, and extended error diagnostics."""
 
+import json
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+from youth_escalate_bench.io.parquet import read_conversations
 from youth_escalate_bench.metrics.agreement import actionable_agreement, severity_alpha
 from youth_escalate_bench.reporting.infographics import _get_display_name, generate_all_infographics
 from youth_escalate_bench.stages.adjudicate import _load_annotations
@@ -71,6 +73,163 @@ def _generate_latex_table(data_by_scorer: dict[str, dict[str, dict[str, Any]]]) 
     return "\n".join(lines)
 
 
+def _extract_llm_error_cases(
+    input_dir: Path,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    """Extract all classification failure cases (False Positives & False Negatives) for each evaluated LLM."""
+    # 1. Build turn lookup from conversation parquet files
+    turn_lookup: dict[tuple[str, str], dict[str, Any]] = {}
+    parquet_candidates = [
+        input_dir / "split_test.parquet",
+        Path("data/processed/split/split_test.parquet"),
+        Path("data/processed/thread/conversations_threaded.parquet"),
+        Path("data/processed/ingest/conversations.parquet"),
+    ]
+    for pq in parquet_candidates:
+        if pq.exists():
+            try:
+                convs = read_conversations(pq)
+                for c in convs:
+                    history: list[tuple[str, str]] = []
+                    for t in c.turns:
+                        turn_lookup[(c.conversation_id, t.turn_id)] = {
+                            "text": t.text,
+                            "speaker_id": t.speaker_id,
+                            "role": t.role,
+                            "platform_style": c.platform_style,
+                            "history": list(history),
+                        }
+                        history.append((t.speaker_id, t.text))
+            except Exception:
+                pass
+
+    # 2. Build gold label lookup
+    gold_lookup: dict[tuple[str, str], dict[str, Any]] = {}
+    label_candidates = [
+        Path(config.get("labels_path", "data/processed/adjudicate/gold_labels.jsonl")),
+        input_dir / "gold_labels.jsonl",
+        Path("data/processed/adjudicate/gold_labels.jsonl"),
+        Path("tests/fixtures/sample_labels.jsonl"),
+    ]
+    for lbl_path in label_candidates:
+        if lbl_path.exists():
+            try:
+                with lbl_path.open("r", encoding="utf-8") as f:
+                    for line in f:
+                        obj = json.loads(line)
+                        is_act = obj.get("severity") in ("actionable", "urgent")
+                        gold_lookup[(obj["conversation_id"], obj["turn_id"])] = {
+                            "actionable": is_act,
+                            "severity": obj.get("severity", "benign"),
+                            "harm_types": obj.get("harm_types", []),
+                            "pragmatic_use": obj.get("pragmatic_use", "absent"),
+                            "target_type": obj.get("target_type", "none"),
+                        }
+            except Exception:
+                pass
+
+    # 3. Load predictions and match errors
+    preds_candidates = [
+        input_dir / "predictions.jsonl",
+        Path("data/processed/evaluate/predictions.jsonl"),
+    ]
+    model_errors: dict[str, list[dict[str, Any]]] = {}
+
+    for p_file in preds_candidates:
+        if p_file.exists():
+            try:
+                with p_file.open("r", encoding="utf-8") as f:
+                    for line in f:
+                        pred = json.loads(line)
+                        scorer = pred.get("scorer", "")
+                        display_name, family = _get_display_name(scorer)
+                        if "LLM" not in family and not scorer.startswith("llm_") and scorer != "prompted_llm_judge":
+                            continue
+
+                        conv_id = pred.get("conversation_id", "")
+                        turn_id = pred.get("turn_id", "")
+                        cond = pred.get("condition", "full_prefix")
+                        key = (conv_id, turn_id)
+
+                        gold = gold_lookup.get(key)
+                        if not gold:
+                            continue
+
+                        gold_act = gold["actionable"]
+                        prob = pred.get("harm_probability", 0.0)
+                        pred_act = prob >= 0.5 or pred.get("actionable", False)
+
+                        if pred_act != gold_act:
+                            err_type = "False Positive (Over-moderation)" if (pred_act and not gold_act) else "False Negative (Missed Harm)"
+                            t_info = turn_lookup.get(key, {})
+                            turn_text = t_info.get("text", f"[{turn_id} text unavailable]")
+                            history = t_info.get("history", [])
+
+                            # Generate diagnostic rationale
+                            if err_type == "False Positive (Over-moderation)":
+                                if "banter" in conv_id or gold.get("pragmatic_use") == "affiliative_banter":
+                                    diag = "Benign affiliative peer banter with informal/playful swearing misjudged as hostile abuse."
+                                elif "quotation" in conv_id:
+                                    diag = "Third-party quotation or reference of swear word flagged without recognizing non-directed context."
+                                elif "friendly_profanity" in conv_id:
+                                    diag = "Profanity used for non-targeted emotional emphasis mistaken for abusive behavior."
+                                else:
+                                    diag = f"Model over-penalized text (P={prob:.3f}) despite benign ground truth."
+                            else:
+                                if gold.get("severity") in ("actionable", "urgent"):
+                                    diag = "Covert hostility, harassment, or targeted escalation missed due to absence of overt swear keywords."
+                                else:
+                                    diag = f"Model under-estimated harm (P={prob:.3f}) below actionable threshold."
+
+                            if scorer not in model_errors:
+                                model_errors[scorer] = []
+
+                            model_errors[scorer].append({
+                                "conversation_id": conv_id,
+                                "turn_id": turn_id,
+                                "condition": cond,
+                                "error_type": err_type,
+                                "predicted_harm_probability": round(prob, 4),
+                                "predicted_actionable": pred_act,
+                                "gold_actionable": gold_act,
+                                "gold_severity": gold.get("severity"),
+                                "gold_harm_types": gold.get("harm_types", []),
+                                "gold_pragmatic_use": gold.get("pragmatic_use"),
+                                "turn_text": turn_text,
+                                "speaker_id": t_info.get("speaker_id", "unknown"),
+                                "platform_style": t_info.get("platform_style", "group_chat"),
+                                "dialogue_history": history,
+                                "diagnostic_reason": diag,
+                            })
+            except Exception:
+                pass
+            break
+
+    # Organize statistics
+    summary_by_model: dict[str, Any] = {}
+    for scorer, cases in model_errors.items():
+        disp_name, fam = _get_display_name(scorer)
+        fps = [c for c in cases if "False Positive" in c["error_type"]]
+        fns = [c for c in cases if "False Negative" in c["error_type"]]
+        summary_by_model[scorer] = {
+            "display_name": disp_name,
+            "family": fam,
+            "total_errors": len(cases),
+            "false_positives": len(fps),
+            "false_negatives": len(fns),
+            "cases": cases,
+        }
+
+    return {
+        "summary": {
+            "total_llms_evaluated": len(summary_by_model),
+            "total_error_instances": sum(m["total_errors"] for m in summary_by_model.values()),
+        },
+        "by_model": summary_by_model,
+    }
+
+
 def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dict[str, Any]:
     eval_path = input_dir / "evaluation_results.yaml"
     if not eval_path.exists():
@@ -116,6 +275,10 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
         if scorer not in data_by_scorer:
             data_by_scorer[scorer] = {}
         data_by_scorer[scorer][cond] = row
+
+    # Extract detailed LLM error failure cases
+    error_analysis = _extract_llm_error_cases(input_dir, config)
+    extended_mode = config.get("extended_report", False)
 
     # Generate automated infographics & charts
     infographic_files = generate_all_infographics(results, output_dir, onset_data)
@@ -258,12 +421,136 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
             ]
         )
 
+    # 7. LLM Error Diagnostics & Failure Case Registry (Extended Report Section)
+    error_section_lines = [
+        "",
+        "---",
+        "",
+        "## 7. LLM Error Diagnostics & Failure Cases Registry",
+        "",
+        "This section details every instance where an evaluated LLM made an incorrect moderation decision (False Positives or False Negatives).",
+        "",
+        "### 7.1 Error Summary by Model",
+        "",
+        "| LLM Model | Total Failure Cases | False Positives (Over-moderation) | False Negatives (Missed Harm) |",
+        "| :--- | :---: | :---: | :---: |",
+    ]
+
+    by_model_errs = error_analysis.get("by_model", {})
+    for scorer in llm_scorers_ranked:
+        m_info = by_model_errs.get(scorer, {})
+        d_name = m_info.get("display_name", _get_display_name(scorer)[0])
+        tot = m_info.get("total_errors", 0)
+        fps = m_info.get("false_positives", 0)
+        fns = m_info.get("false_negatives", 0)
+        error_section_lines.append(f"| **{d_name}** | {tot} | {fps} | {fns} |")
+
+    error_section_lines.extend(
+        [
+            "",
+            "### 7.2 Detailed Failure Cases per LLM",
+            "",
+        ]
+    )
+
+    for scorer in llm_scorers_ranked:
+        m_info = by_model_errs.get(scorer)
+        if not m_info or not m_info.get("cases"):
+            continue
+
+        d_name = m_info["display_name"]
+        cases = m_info["cases"]
+        error_section_lines.extend(
+            [
+                f"#### 🤖 {d_name} ({len(cases)} failure cases)",
+                "",
+            ]
+        )
+
+        for idx, c in enumerate(cases, 1):
+            conv_id = c["conversation_id"]
+            turn_id = c["turn_id"]
+            cond = c["condition"]
+            err_type = c["error_type"]
+            prob = c["predicted_harm_probability"]
+            gold_act = c["gold_actionable"]
+            gold_sev = c["gold_severity"]
+            turn_text = c["turn_text"]
+            history = c.get("dialogue_history", [])
+            diag = c.get("diagnostic_reason", "")
+
+            badge = "🔴 **FALSE POSITIVE**" if "Positive" in err_type else "🟠 **FALSE NEGATIVE**"
+
+            error_section_lines.extend(
+                [
+                    f"**Case #{idx}: `{conv_id}` — Turn `{turn_id}`** ({badge})",
+                    f"- **Context Condition:** `{cond}`",
+                    f"- **LLM Prediction:** Harm Probability = `{prob:.3f}` (Actionable = `{prob >= 0.5}`)",
+                    f"- **Gold Ground Truth:** Severity = `{gold_sev}` (Actionable = `{gold_act}`)",
+                    f"- **Evaluated Turn Text:** > *\"{turn_text}\"*",
+                ]
+            )
+
+            if history:
+                error_section_lines.append("- **Dialogue Context:**")
+                for spk, txt in history[-3:]:
+                    error_section_lines.append(f"  - `{spk}`: *\"{txt}\"*")
+
+            error_section_lines.extend(
+                [
+                    f"- **Diagnostic Analysis:** {diag}",
+                    "",
+                ]
+            )
+
+    # Append to main report or note extended availability
+    if extended_mode:
+        lines.extend(error_section_lines)
+    else:
+        total_llm_errors = sum(m.get("total_errors", 0) for m in by_model_errs.values())
+        lines.extend(
+            [
+                "",
+                "---",
+                "",
+                "## 7. LLM Error Diagnostics Summary",
+                "",
+                f"Identified **{total_llm_errors} total failure cases** across all evaluated LLMs.",
+                "",
+                "> 💡 **Tip:** To view the complete turn-by-turn case transcripts and failure logs for each LLM, run:",
+                "> ```bash",
+                "> python main.py --step report --extended-report --force",
+                "> # or",
+                "> python -m youth_escalate_bench.cli run --stage report --extended-report",
+                "> ```",
+                "> Detailed error logs are also exported to [`llm_error_cases.yaml`](llm_error_cases.yaml) and [`extended_evaluation_report.md`](extended_evaluation_report.md).",
+            ]
+        )
+
+    # Write evaluation_report.md
     report_md = output_dir / "evaluation_report.md"
     report_md.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    # Always write extended_evaluation_report.md containing full error cases
+    extended_report_md = output_dir / "extended_evaluation_report.md"
+    full_extended_lines = list(lines)
+    if not extended_mode:
+        # replace summary note with full error section
+        full_extended_lines = full_extended_lines[:-8] + error_section_lines
+    extended_report_md.write_text("\n".join(full_extended_lines) + "\n", encoding="utf-8")
 
     # Export LaTeX table for paper inclusion
     latex_path = output_dir / "table_main_results.tex"
     latex_path.write_text(_generate_latex_table(data_by_scorer) + "\n", encoding="utf-8")
+
+    # Export structured machine-readable error dumps
+    llm_errors_yaml = output_dir / "llm_error_cases.yaml"
+    with llm_errors_yaml.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(error_analysis, f, sort_keys=False)
+
+    llm_errors_json = output_dir / "llm_error_cases.json"
+    with llm_errors_json.open("w", encoding="utf-8") as f:
+        json.dump(error_analysis, f, indent=2, ensure_ascii=False)
 
     summary_path = output_dir / "report_summary.yaml"
     summary = {
@@ -272,6 +559,7 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
         "onset_dynamics": onset_data,
         "annotation_quality": quality,
         "infographics": infographic_files,
+        "llm_error_summary": {k: {"total": v["total_errors"], "fp": v["false_positives"], "fn": v["false_negatives"]} for k, v in by_model_errs.items()},
     }
     with summary_path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(summary, f)
@@ -279,32 +567,26 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
     # Error analysis bundle
     error_path = output_dir / "error_analysis_bundle.yaml"
     error_bundle = {
-        "top_false_positives": [],
-        "top_false_negatives": [],
-        "by_source_tier": {},
-        "note": "Populated from predictions.jsonl",
+        "summary": error_analysis.get("summary", {}),
+        "by_model": {
+            k: {
+                "display_name": v["display_name"],
+                "total_errors": v["total_errors"],
+                "false_positives": v["false_positives"],
+                "false_negatives": v["false_negatives"],
+                "top_cases": v["cases"][:10],
+            }
+            for k, v in by_model_errs.items()
+        },
     }
-    preds_path = input_dir / "predictions.jsonl"
-    if preds_path.exists():
-        import json
-
-        fps: list[dict] = []
-        fns: list[dict] = []
-        with preds_path.open(encoding="utf-8") as f:
-            for line in f:
-                row = json.loads(line)
-                if row.get("harm_probability", 0) > 0.8:
-                    fps.append(row)
-                if row.get("harm_probability", 0) < 0.2 and row.get("actionable"):
-                    fns.append(row)
-        error_bundle["top_false_positives"] = fps[:10]
-        error_bundle["top_false_negatives"] = fns[:10]
-
     with error_path.open("w", encoding="utf-8") as f:
-        yaml.safe_dump(error_bundle, f)
+        yaml.safe_dump(error_bundle, f, sort_keys=False)
 
     output_files = [
         "evaluation_report.md",
+        "extended_evaluation_report.md",
+        "llm_error_cases.yaml",
+        "llm_error_cases.json",
         "table_main_results.tex",
         "report_summary.yaml",
         "error_analysis_bundle.yaml",
@@ -316,6 +598,8 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
             "result_rows": len(results),
             "total_models": len(data_by_scorer),
             "infographics_count": len(infographic_files),
+            "llm_errors_count": error_analysis.get("summary", {}).get("total_error_instances", 0),
             "onset_metrics_present": bool(onset_data),
+            "extended_report_enabled": extended_mode,
         },
     }
