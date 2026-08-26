@@ -8,7 +8,11 @@ import yaml
 
 from youth_escalate_bench.io.parquet import read_conversations
 from youth_escalate_bench.metrics.agreement import actionable_agreement, severity_alpha
-from youth_escalate_bench.reporting.infographics import _get_display_name, generate_all_infographics
+from youth_escalate_bench.reporting.infographics import (
+    _get_display_name,
+    _get_float,
+    generate_all_infographics,
+)
 from youth_escalate_bench.stages.adjudicate import _load_annotations
 
 
@@ -18,7 +22,7 @@ def _generate_latex_table(data_by_scorer: dict[str, dict[str, dict[str, Any]]]) 
 
     def sort_key(s: str) -> tuple[int, float]:
         _, family = _get_display_name(s)
-        pref = data_by_scorer[s].get("full_prefix", {}).get("auprc", 0.0)
+        pref = _get_float(data_by_scorer[s].get("full_prefix", {}), "auprc", 0.0)
         fam_order = 0 if "LLM" in family else (1 if "Ensemble" in family else 2)
         return (fam_order, -pref)
 
@@ -50,14 +54,14 @@ def _generate_latex_table(data_by_scorer: dict[str, dict[str, dict[str, Any]]]) 
         p_row = data_by_scorer[s].get("prev_plus_current", {})
         f_row = data_by_scorer[s].get("full_prefix", {})
 
-        p_turn = f"{t_row.get('auprc', 0.0):.3f}"
-        r_turn = f"{t_row.get('auroc', 0.0):.3f}" if t_row.get("auroc") is not None else "---"
+        p_turn = f"{_get_float(t_row, 'auprc', 0.0):.3f}"
+        r_turn = f"{_get_float(t_row, 'auroc', 0.0):.3f}" if t_row.get("auroc") is not None else "---"
 
-        p_pair = f"{p_row.get('auprc', 0.0):.3f}"
-        r_pair = f"{p_row.get('auroc', 0.0):.3f}" if p_row.get("auroc") is not None else "---"
+        p_pair = f"{_get_float(p_row, 'auprc', 0.0):.3f}"
+        r_pair = f"{_get_float(p_row, 'auroc', 0.0):.3f}" if p_row.get("auroc") is not None else "---"
 
-        p_pref = f"{f_row.get('auprc', 0.0):.3f}"
-        r_pref = f"{f_row.get('auroc', 0.0):.3f}" if f_row.get("auroc") is not None else "---"
+        p_pref = f"{_get_float(f_row, 'auprc', 0.0):.3f}"
+        r_pref = f"{_get_float(f_row, 'auroc', 0.0):.3f}" if f_row.get("auroc") is not None else "---"
 
         lines.append(f"{escaped_name} & {escaped_fam} & {p_turn} & {r_turn} & {p_pair} & {r_pair} & \\textbf{{{p_pref}}} & {r_pref} \\\\")
 
@@ -310,7 +314,7 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
     # Sort all models: LLMs first, then Ensemble, then Baselines
     def sort_key(s: str) -> tuple[int, float]:
         _, family = _get_display_name(s)
-        pref = data_by_scorer[s].get("full_prefix", {}).get("auprc", 0.0)
+        pref = _get_float(data_by_scorer[s].get("full_prefix", {}), "auprc", 0.0)
         fam_order = 0 if "LLM" in family else (1 if "Ensemble" in family else 2)
         return (fam_order, -pref)
 
@@ -322,16 +326,16 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
         p_row = data_by_scorer[s].get("prev_plus_current", {})
         f_row = data_by_scorer[s].get("full_prefix", {})
 
-        p_turn = f"{t_row.get('auprc', 0.0):.3f}"
-        r_turn = f"{t_row.get('auroc', 0.0):.3f}" if t_row.get("auroc") is not None else "—"
+        p_turn = f"{_get_float(t_row, 'auprc', 0.0):.3f}"
+        r_turn = f"{_get_float(t_row, 'auroc', 0.0):.3f}" if t_row.get("auroc") is not None else "—"
 
-        p_pair = f"{p_row.get('auprc', 0.0):.3f}"
-        r_pair = f"{p_row.get('auroc', 0.0):.3f}" if p_row.get("auroc") is not None else "—"
+        p_pair = f"{_get_float(p_row, 'auprc', 0.0):.3f}"
+        r_pair = f"{_get_float(p_row, 'auroc', 0.0):.3f}" if p_row.get("auroc") is not None else "—"
 
-        p_pref = f"{f_row.get('auprc', 0.0):.3f}"
-        r_pref = f"{f_row.get('auroc', 0.0):.3f}" if f_row.get("auroc") is not None else "—"
+        p_pref = f"{_get_float(f_row, 'auprc', 0.0):.3f}"
+        r_pref = f"{_get_float(f_row, 'auroc', 0.0):.3f}" if f_row.get("auroc") is not None else "—"
 
-        delta = f_row.get("auprc", 0.0) - t_row.get("auprc", 0.0)
+        delta = _get_float(f_row, "auprc", 0.0) - _get_float(t_row, "auprc", 0.0)
         delta_str = f"**{delta:+.3f}**" if abs(delta) > 0.001 else "0.000"
         n_samples = f_row.get("n_samples", t_row.get("n_samples", 0))
 
@@ -353,20 +357,20 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
         ]
     )
 
-    llm_scorers_ranked = sorted(llm_scorers, key=lambda s: data_by_scorer[s].get("full_prefix", {}).get("auprc", 0.0), reverse=True)
+    llm_scorers_ranked = sorted(llm_scorers, key=lambda s: _get_float(data_by_scorer[s].get("full_prefix", {}), "auprc", 0.0), reverse=True)
     for rank, s in enumerate(llm_scorers_ranked, 1):
         name, _ = _get_display_name(s)
         t_row = data_by_scorer[s].get("current_turn_only", {})
         p_row = data_by_scorer[s].get("prev_plus_current", {})
         f_row = data_by_scorer[s].get("full_prefix", {})
 
-        p_turn = f"{t_row.get('auprc', 0.0):.3f}"
-        p_pair = f"{p_row.get('auprc', 0.0):.3f}"
-        p_pref = f"{f_row.get('auprc', 0.0):.3f}"
-        r_pref = f"{f_row.get('auroc', 0.0):.3f}" if f_row.get("auroc") is not None else "—"
-        p95 = f"{f_row.get('precision_at_recall_95', 0.0):.3f}"
-        rfpr1 = f"{f_row.get('recall_at_fpr_1pct', 0.0):.3f}"
-        delta = f_row.get("auprc", 0.0) - t_row.get("auprc", 0.0)
+        p_turn = f"{_get_float(t_row, 'auprc', 0.0):.3f}"
+        p_pair = f"{_get_float(p_row, 'auprc', 0.0):.3f}"
+        p_pref = f"{_get_float(f_row, 'auprc', 0.0):.3f}"
+        r_pref = f"{_get_float(f_row, 'auroc', 0.0):.3f}" if f_row.get("auroc") is not None else "—"
+        p95 = f"{_get_float(f_row, 'precision_at_recall_95', 0.0):.3f}" if f_row.get("precision_at_recall_95") is not None else "—"
+        rfpr1 = f"{_get_float(f_row, 'recall_at_fpr_1pct', 0.0):.3f}" if f_row.get("recall_at_fpr_1pct") is not None else "—"
+        delta = _get_float(f_row, "auprc", 0.0) - _get_float(t_row, "auprc", 0.0)
 
         medal = "🥇" if rank == 1 else ("🥈" if rank == 2 else ("🥉" if rank == 3 else f"{rank}"))
         lines.append(
