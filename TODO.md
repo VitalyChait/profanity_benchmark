@@ -17,6 +17,7 @@ This document synthesizes the status of the entire project across all documentat
 | Phase 4: Adjudication & Split  | [x] 100% COMPLETE         | [x] Zero-Leakage Test |
 | Phase 5: Multi-LLM Evaluation  | [x] 100% COMPLETE (12 Mod)| [x] 3 Conditions Run  |
 | Phase 6: Reporting & Viz       | [x] 100% COMPLETE         | [x] Auto Infographics |
+| Phase 7: Agentic Discovery Loop | [ ] Architecture Planned   | [ ] Autonomous Scout   |
 | Pre-Release Compliance & Legal | [x] Documentation Ready   | [ ] IRB Sign-Off      |
 | Extended Research Tracks (2&3) | [ ] Planned Post-Bench    | [ ] Research Roadmap  |
 +-----------------------------------------------------------------------------------+
@@ -142,6 +143,44 @@ This document synthesizes the status of the entire project across all documentat
 - [ ] **Track 3: Real-Time Dialogue De-Escalation Engine**:
   - Build an on-the-fly conversational intervention model that rephrases hostile escalation into constructive communication while preserving user intent.
   - Evaluate de-escalation success rates in multi-turn gaming and chat threads.
+
+---
+
+### 🤖 Priority 6: Autonomous Agentic Framework for Continuous Profanity & Slang Discovery
+An autonomous, self-evolving agentic loop that continuously scouts, filters, stress-tests, and incorporates emerging youth slang, toxic neologisms, and evasion tactics into YouthEscalateBench.
+
+- [ ] **Phase 6.1: Multi-Source Slang & Neologism Scouts (Web Crawler Subsystem)**:
+  - Implement continuous Urban Dictionary scout utilizing `UrbanDictionaryClient` (`/api/random`, daily top definitions, and targeted youth slang tag exploration).
+  - Implement Reddit / Social Forum scout (streaming linguistic anomalies from gaming and youth subreddits: r/teenagers, r/gaming, Twitch chat logs).
+  - Implement Wiktionary & KnowYourMeme glossary monitor for newly added internet slang, memes, and covert derogatory terms.
+  - Implement lexical anomaly detector (identifying high-velocity Out-of-Vocabulary (OOV) tokens with low standard dictionary frequency).
+
+- [ ] **Phase 6.2: Autonomous Linguistic Verification & Multi-Judge Triangulation**:
+  - Implement an LLM Multi-Judge verification agent (using OpenRouter frontier models + local models) to evaluate discovered terms:
+    - Distinguish innocent adolescent jargon (e.g. *skibidi, rizz, fanum tax, gyatt*) from malicious bypasses, coded slurs, or harassment terms.
+    - Classify semantic categories (`derogatory_insult`, `slur_hate_speech`, `offensive_sexual`, `gaming_toxic`, `benign_youth_slang`).
+    - Estimate severity rating (Level 1–4) and extract context-dependent usage rules.
+  - Implement human-in-the-loop (HITL) review queue for high-stakes terms (severity $\ge 3$ or potential protected-class slurs).
+
+- [ ] **Phase 6.3: Adversarial Mutation & Contrastive Minimal-Pair Generator**:
+  - Automatically generate paired conversational scenarios using the newly discovered terms:
+    - *Benign scenario*: Slang used in positive/neutral gaming banter or humorous exaggeration.
+    - *Escalated scenario*: Identical slang used in hostile, exclusionary, or threatening harassment.
+  - Apply the 9 algospeak transformation operators (leetspeak, zero-width spaces, phonetic respellings, emojis) to synthesize evasion variants.
+
+- [ ] **Phase 6.4: Closed-Loop LLM Regression Testing & Vulnerability Re-indexing**:
+  - Trigger automated evaluation passes against the multi-LLM benchmark pool specifically targeting newly synthesized pairs.
+  - Update the **Internal Difficulty & Misclassification Ranking Index** (`difficulty.py`):
+    - Identify whether the new slang term triggers false positive over-moderation (safe banter falsely banned).
+    - Identify whether models exhibit false negative blind spots (missed covert harassment).
+  - Prioritize vulnerable terms in subsequent model evaluation queues.
+
+- [ ] **Phase 6.5: Automated Database Maintenance, Governance, & CI/CD Cron**:
+  - Automatically update and deduplicate [`configs/lexicons/profanity_database.json`](configs/lexicons/profanity_database.json) and [`configs/profanity_lexicon.txt`](configs/profanity_lexicon.txt).
+  - Update [`configs/source_registry.yaml`](configs/source_registry.yaml) with timestamped discovery provenance.
+  - Create GitHub Actions automated workflow (`.github/workflows/agentic_discovery.yml`) to run the discovery loop on a scheduled cron (e.g., daily / weekly).
+  - Generate automated weekly markdown discovery digests in `reports/agentic_discovery_digest.md`.
+  - Provide CLI entrypoint: `yeb agent run-once` and `yeb agent start --daemon --interval-hours 24`.
 
 ---
 
