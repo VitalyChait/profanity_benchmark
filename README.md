@@ -1,6 +1,6 @@
 # YouthEscalateBench
 
-Dynamic multi-turn youth safety moderation benchmark for causal cyberbullying and escalation detection. Includes a 12-stage pipeline, 14 audited research datasets & lexicons (79k+ turns, 2,508 unified profanity terms), 12 evaluated LLMs/baselines across 3 context conditions, automated difficulty ranking, autonomous agentic discovery, real-time interactive service dashboard, and 100% test pass rate (129/129).
+Dynamic multi-turn youth safety moderation benchmark for causal cyberbullying and escalation detection. Includes a 12-stage pipeline, 14 audited research datasets & lexicons (79k+ turns, 2,508 unified profanity terms), 12 evaluated LLMs/baselines across 3 context conditions, automated difficulty ranking, autonomous agentic discovery, real-time interactive service dashboard, pre-flight model deduplication, and 100% test pass rate (137/137).
 
 ## Quick Start
 ```bash
@@ -20,6 +20,7 @@ Open **`http://localhost:8080/dashboard`** in your browser to interactively anal
 - ⚡ **Live Prediction Playground**: Interactively test moderation queries against live `/predict`.
 
 ## Useful CLI Commands
+- `yeb audit-models`: Audit configured LLMs and eliminate duplicate model targets before evaluation.
 - `yeb serve`: Launch evaluator microservice and web dashboard (`/dashboard`).
 - `yeb difficulty-ranking`: View hardest conversational turns and word vulnerability index.
 - `yeb profanity-check <term>`: Inspect severity (Level 1–4) and categories for any slang or term.

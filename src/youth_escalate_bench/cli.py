@@ -431,6 +431,54 @@ def validate_llms_command(
             click.echo(f"Report saved to Markdown table: {output}")
 
 
+@main.command("audit-models")
+@click.option(
+    "--lexicon",
+    type=click.Path(exists=True, path_type=Path),
+    default=Path("configs/profanity_lexicon.txt"),
+    help="Lexicon file to construct candidate scorers.",
+)
+def audit_models_command(lexicon: Path) -> None:
+    """Audit LLM models to detect and report any duplicate entries before running evaluation."""
+    from youth_escalate_bench.baselines.scorers import build_default_scorers, deduplicate_scorers
+    from youth_escalate_bench.llm.keys import audit_llm_model_duplicates, get_expanded_eval_targets
+
+    click.echo("\n" + "=" * 72)
+    click.echo("🔍 YouthEscalateBench — LLM Model Duplication Pre-Flight Audit")
+    click.echo("=" * 72)
+
+    # 1. Audit environment keys and openrouter list
+    env_duplicates = audit_llm_model_duplicates()
+    if env_duplicates:
+        click.echo(f"\n⚠️  Found {len(env_duplicates)} potential duplicate definitions in .env configuration:")
+        for d in env_duplicates:
+            click.echo(f"   • Duplicate Model : {d['duplicate_model']}")
+            click.echo(f"     Scope/Location  : {d['location']}")
+            click.echo(f"     Reason          : {d['reason']}")
+    else:
+        click.echo("\n✅ .env configuration check: Zero duplicate model entries in OPENROUTER_MODELS.")
+
+    # 2. Expanded evaluation targets
+    targets = get_expanded_eval_targets()
+    click.echo(f"\n📋 Active Unique LLM Evaluation Targets ({len(targets)} models):")
+    for idx, (prov, mdl) in enumerate(targets, start=1):
+        click.echo(f"   {idx:2d}. [{prov}] {mdl}")
+
+    # 3. Full scorers panel audit
+    scorers = build_default_scorers(lexicon)
+    _, removed = deduplicate_scorers(scorers)
+    if removed:
+        click.echo(f"\n⚠️  Deduplication gate removed {len(removed)} duplicate scorers from evaluation panel:")
+        for r in removed:
+            click.echo(f"   • Removed  : '{r['removed_scorer']}' ({r['provider']}:{r['model']})")
+            click.echo(f"     Retained : '{r['retained_scorer']}'")
+            click.echo("     Action   : Excluded from evaluation to save time and API tokens.")
+    else:
+        click.echo("\n✅ Scorer panel check: All moderation scorers and LLM targets are 100% distinct.")
+
+    click.echo("\n" + "=" * 72 + "\n")
+
+
 @main.command("urban-dict")
 @click.argument("term", required=False, default=None)
 @click.option("--limit", "-l", default=3, type=int, help="Maximum definitions to display.")

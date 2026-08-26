@@ -316,7 +316,80 @@ class EnsembleScorer(ModerationScorer):
         return _score_to_output(total_prob)
 
 
+def deduplicate_scorers(
+    scorers: dict[str, ModerationScorer],
+) -> tuple[dict[str, ModerationScorer], list[dict[str, str]]]:
+    """Inspect all moderation scorers and deduplicate any redundant LLM model evaluations.
+
+    Identifies the underlying (provider, model) target of each PromptedLLMScorer.
+    If multiple scorers target the exact same model, removes the duplicates so that
+    inference time and API tokens are not wasted.
+
+    Returns:
+        tuple of (deduplicated_scorers_dict, list_of_removed_metadata)
+    """
+    from youth_escalate_bench.llm.keys import get_llm_config, get_provider_model
+
+    deduped: dict[str, ModerationScorer] = {}
+    seen_targets: dict[tuple[str, str], str] = {}
+    removed: list[dict[str, str]] = []
+
+    for name, scorer in scorers.items():
+        if not isinstance(scorer, PromptedLLMScorer):
+            deduped[name] = scorer
+            continue
+
+        # Resolve effective provider and model
+        prov = scorer.provider
+        mdl = scorer.model
+        if not prov:
+            config = get_llm_config()
+            prov = config.get("selected_provider", "auto")
+        if not mdl:
+            mdl = get_provider_model(prov) if prov else "default"
+
+        target_key = (str(prov).strip().lower(), str(mdl).strip().lower())
+
+        if target_key in seen_targets:
+            existing_name = seen_targets[target_key]
+            existing_scorer = deduped.get(existing_name)
+
+            # If existing scorer was generic (model was None) and this one has an explicit model name,
+            # prefer the explicit named scorer and drop the generic one
+            if (
+                existing_scorer
+                and isinstance(existing_scorer, PromptedLLMScorer)
+                and existing_scorer.model is None
+                and scorer.model is not None
+            ):
+                del deduped[existing_name]
+                deduped[name] = scorer
+                seen_targets[target_key] = name
+                removed.append({
+                    "removed_scorer": existing_name,
+                    "retained_scorer": name,
+                    "provider": prov,
+                    "model": mdl,
+                    "reason": f"Generic fallback '{existing_name}' replaced by explicit model scorer '{name}'",
+                })
+            else:
+                # Drop this subsequent duplicate
+                removed.append({
+                    "removed_scorer": name,
+                    "retained_scorer": existing_name,
+                    "provider": prov,
+                    "model": mdl,
+                    "reason": f"Duplicate evaluation of model '{mdl}' already covered by '{existing_name}'",
+                })
+        else:
+            seen_targets[target_key] = name
+            deduped[name] = scorer
+
+    return deduped, removed
+
+
 def build_default_scorers(lexicon_path: Path | str) -> dict[str, ModerationScorer]:
+    """Construct baseline rule-based and configured LLM moderation scorers with deduplication."""
     lexicon = load_lexicon(lexicon_path)
     lex_raw = LexiconScorer(lexicon)
     lex_norm = NormalizedLexiconScorer(lexicon)
@@ -339,20 +412,36 @@ def build_default_scorers(lexicon_path: Path | str) -> dict[str, ModerationScore
         ensemble,
     ]
 
-    from youth_escalate_bench.llm import get_openrouter_models, is_provider_configured
+    from youth_escalate_bench.llm import (
+        get_expanded_eval_targets,
+        get_llm_config,
+        get_provider_model,
+    )
 
-    if is_provider_configured("openrouter"):
-        openrouter_models = get_openrouter_models()
-        if len(openrouter_models) > 1:
-            for mdl in openrouter_models:
-                clean_id = mdl.split("/")[-1].replace(":", "_").replace("-", "_").replace(".", "_")
-                scorers.append(
-                    PromptedLLMScorer(
-                        provider="openrouter",
-                        model=mdl,
-                        name=f"llm_openrouter_{clean_id}",
-                    )
+    eval_targets = get_expanded_eval_targets()
+    if eval_targets:
+        # Determine effective model target of the primary prompt_llm
+        cfg = get_llm_config()
+        p_eff = prompt_llm.provider or cfg.get("selected_provider", "auto")
+        m_eff = prompt_llm.model or (get_provider_model(p_eff) if p_eff else "default")
+        primary_target = (str(p_eff).lower().strip(), str(m_eff).lower().strip())
+
+        for provider, model in eval_targets:
+            target_key = (provider.lower().strip(), model.lower().strip())
+            # Skip if already represented by primary prompt_llm_judge
+            if target_key == primary_target:
+                continue
+            clean_id = model.split("/")[-1].replace(":", "_").replace("-", "_").replace(".", "_")
+            scorers.append(
+                PromptedLLMScorer(
+                    provider=provider,
+                    model=model,
+                    name=f"llm_{provider}_{clean_id}",
                 )
+            )
 
-    return {s.name: s for s in scorers}
+    scorers_dict = {s.name: s for s in scorers}
+    deduped_scorers, _ = deduplicate_scorers(scorers_dict)
+    return deduped_scorers
+
 

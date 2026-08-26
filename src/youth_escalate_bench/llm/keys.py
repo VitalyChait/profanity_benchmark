@@ -202,32 +202,99 @@ def get_provider_model(provider: str) -> str:
 
 
 def get_openrouter_models() -> list[str]:
-    """Get list of all configured OpenRouter models for multi-model usage."""
+    """Get list of all configured OpenRouter models for multi-model usage with zero duplicates.
+
+    Preserves definition order while filtering out redundant duplicate model specifications.
+    """
     load_env_file()
     multi = os.environ.get("OPENROUTER_MODELS", "").strip()
     if multi:
-        models = [m.strip() for m in multi.split(",") if m.strip()]
-        if models:
-            return models
+        raw_models = [m.strip() for m in multi.split(",") if m.strip()]
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for m in raw_models:
+            key = m.lower()
+            if key not in seen:
+                seen.add(key)
+                deduped.append(m)
+        if deduped:
+            return deduped
     single = get_provider_model("openrouter")
     return [single] if single else [DEFAULT_MODELS["openrouter"]]
 
 
 def get_expanded_eval_targets() -> list[tuple[str, str]]:
-    """Return expanded list of (provider, model) pairs across all active keys.
+    """Return expanded list of (provider, model) pairs across all active keys with zero duplicates.
 
     If OpenRouter is configured with multiple models in OPENROUTER_MODELS,
     each OpenRouter model is included as an independent evaluation/judge target.
+    Duplicate (provider, model) targets are strictly filtered out to avoid wasted tokens.
     """
     config = get_llm_config()
     targets: list[tuple[str, str]] = []
+    seen: set[tuple[str, str]] = set()
 
     for provider in config["active_providers"]:
         if provider == "openrouter":
             for model in get_openrouter_models():
-                targets.append(("openrouter", model))
+                target_key = ("openrouter", model.lower())
+                if target_key not in seen:
+                    seen.add(target_key)
+                    targets.append(("openrouter", model))
         else:
-            targets.append((provider, get_provider_model(provider)))
+            model = get_provider_model(provider)
+            target_key = (provider.lower(), model.lower())
+            if target_key not in seen:
+                seen.add(target_key)
+                targets.append((provider, model))
 
     return targets
+
+
+def audit_llm_model_duplicates() -> list[dict[str, str]]:
+    """Audit configured LLM providers and models in environment for duplicate entries.
+
+    Returns:
+        List of duplicate descriptions that were detected and eliminated.
+    """
+    load_env_file()
+    removed_items: list[dict[str, str]] = []
+
+    # 1. Audit OPENROUTER_MODELS string for internal duplicates
+    multi = os.environ.get("OPENROUTER_MODELS", "").strip()
+    if multi:
+        raw_models = [m.strip() for m in multi.split(",") if m.strip()]
+        seen_or: set[str] = set()
+        for idx, m in enumerate(raw_models):
+            key = m.lower()
+            if key in seen_or:
+                removed_items.append({
+                    "scope": "OPENROUTER_MODELS",
+                    "duplicate_model": m,
+                    "location": f"index {idx} in OPENROUTER_MODELS",
+                    "reason": "Exact duplicate model in OPENROUTER_MODELS list",
+                })
+            else:
+                seen_or.add(key)
+
+    # 2. Audit cross-provider duplicate models (e.g. direct provider vs openrouter proxy)
+    config = get_llm_config()
+    active_providers = config["active_providers"]
+    if "openrouter" in active_providers:
+        or_models_norm = {m.split("/")[-1].lower(): m for m in get_openrouter_models()}
+        for p in active_providers:
+            if p == "openrouter":
+                continue
+            direct_model = get_provider_model(p)
+            clean_direct = direct_model.split("/")[-1].lower()
+            if clean_direct in or_models_norm:
+                removed_items.append({
+                    "scope": "cross_provider",
+                    "duplicate_model": f"{p}:{direct_model}",
+                    "location": f"Provider {p} and OpenRouter ({or_models_norm[clean_direct]})",
+                    "reason": f"Direct provider model '{direct_model}' also evaluated via OpenRouter proxy",
+                })
+
+    return removed_items
+
 

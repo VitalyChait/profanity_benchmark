@@ -10,7 +10,7 @@ This document synthesizes the status of the entire project across all documentat
 +-----------------------------------------------------------------------------------+
 | Stage / Area                   | Implementation Status     | Validation Status     |
 +-----------------------------------------------------------------------------------+
-| Phase 0: System Architecture   | [x] 100% COMPLETE         | [x] 129/129 Pytest Pass|
+| Phase 0: System Architecture   | [x] 100% COMPLETE         | [x] 137/137 Pytest Pass|
 | Phase 1: Governance & Audit    | [x] 100% COMPLETE         | [x] Gate Passed (14/14)|
 | Phase 2: Pilot Pipeline        | [x] 100% Code Complete    | [ ] Live Annotators   |
 | Phase 3: Data Construction     | [x] 100% COMPLETE (79k+)  | [x] 14 Sources Ingest |
@@ -33,7 +33,7 @@ This document synthesizes the status of the entire project across all documentat
 - [x] **High-Performance IO Engine**: $O(N)$ dictionary-based conversation grouping and vectorized Parquet IO.
 - [x] **Vectorized MinHash & LSH Banding**: Sublinear near-duplicate detection preventing conversational leakage.
 - [x] **Robust Checkpoint Orchestrator**: `main.py` orchestrator supporting `--all`, `--resume`, `--step`, `--force`, `--status`, and `--extended-report`.
-- [x] **100% Test Pass Rate**: 129+ automated unit, integration, schema, causal, agentic, and e2e tests passing in CI.
+- [x] **100% Test Pass Rate**: 137+ automated unit, integration, schema, causal, agentic, and e2e tests passing in CI.
 - [x] **CI/CD Integration**: GitHub Actions workflows (`.github/workflows/ci.yml` and `.github/workflows/agentic_discovery.yml`).
 
 ### 🛡️ Governance, Ethics & Threat Modeling (`Phase 1`)

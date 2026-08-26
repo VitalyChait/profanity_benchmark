@@ -50,6 +50,16 @@ class MultiLLMJudge:
         else:
             self.targets = get_expanded_eval_targets()
 
+        # Deduplicate targets to guarantee zero redundant model inference calls
+        seen_t: set[tuple[str, str]] = set()
+        deduped_targets: list[tuple[str, str]] = []
+        for prov, mdl in self.targets:
+            key = (prov.lower().strip(), (mdl or "").lower().strip())
+            if key not in seen_t:
+                seen_t.add(key)
+                deduped_targets.append((prov, mdl))
+        self.targets = deduped_targets
+
         self.providers = [t[0] for t in self.targets]
 
     def judge_turn(self, request: InferenceRequest) -> list[AnnotationRecord]:

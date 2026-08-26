@@ -152,6 +152,28 @@ def run_evaluation(
 
     eval_logger = structlog.get_logger()
 
+    from youth_escalate_bench.baselines.scorers import deduplicate_scorers
+
+    # Deduplicate scorers targeting identical LLM models before starting evaluation
+    scorers, removed_duplicates = deduplicate_scorers(scorers)
+    if removed_duplicates:
+        print("\n" + "=" * 72)
+        print("🔍 [LLM PRE-FLIGHT DEDUPLICATION GATE] Verifying Model Targets")
+        print(f"⚠️  Detected and removed {len(removed_duplicates)} duplicate model entries to save tokens and inference time:")
+        for rem in removed_duplicates:
+            print(f"   • REMOVED : '{rem['removed_scorer']}' (targets {rem['provider']}:{rem['model']})")
+            print(f"     RETAINED: '{rem['retained_scorer']}'")
+            print(f"     REASON  : {rem['reason']}")
+            eval_logger.warning(
+                "duplicate_llm_model_removed",
+                removed=rem["removed_scorer"],
+                retained=rem["retained_scorer"],
+                provider=rem["provider"],
+                model=rem["model"],
+                reason=rem["reason"],
+            )
+        print("✅ Clean deduplicated panel ready. Proceeding to evaluation.\n" + "=" * 72 + "\n")
+
     for condition in conditions:
         pairs = target_requests.get(condition, [])
         if not pairs:
