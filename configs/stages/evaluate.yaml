@@ -4,6 +4,7 @@ random_seed: 42
 labels_path: data/processed/adjudicate/gold_labels.jsonl
 lexicon_path: configs/profanity_lexicon.txt
 split: test
+max_samples: 20
 conditions:
   - current_turn_only
   - prev_plus_current

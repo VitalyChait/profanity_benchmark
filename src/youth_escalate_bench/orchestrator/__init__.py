@@ -104,6 +104,14 @@ ORDERED_STEPS: list[dict[str, Any]] = [
 
 STEP_NAMES = [s["id"] for s in ORDERED_STEPS]
 
+EVAL_MODES: dict[str, dict[str, int]] = {
+    "extra-small": {"max_samples": 20, "plans_per_template": 2},
+    "small": {"max_samples": 100, "plans_per_template": 15},
+    "medium": {"max_samples": 250, "plans_per_template": 35},
+    "large": {"max_samples": 500, "plans_per_template": 70},
+    "extra-large": {"max_samples": 1000, "plans_per_template": 140},
+}
+
 
 @dataclass
 class StepCheckpoint:
@@ -381,9 +389,15 @@ class PipelineRunner:
         force: bool = False,
         dry_run: bool = False,
         extended_report: bool = False,
+        mode: str = "extra-small",
+        max_samples: int | None = None,
     ) -> bool:
         """Execute selected range of pipeline steps."""
         all_ids = [s["id"] for s in ORDERED_STEPS]
+
+        mode_config = EVAL_MODES.get(mode, EVAL_MODES["extra-small"])
+        active_max_samples = max_samples if max_samples is not None else mode_config["max_samples"]
+        active_plans = mode_config["plans_per_template"]
 
         if target_steps:
             steps_to_run = [s for s in ORDERED_STEPS if s["id"] in target_steps]
@@ -411,7 +425,7 @@ class PipelineRunner:
             steps_to_run = ORDERED_STEPS[start_idx:end_idx]
 
         if dry_run:
-            print("\n[DRY RUN] Planned Execution Sequence:")
+            print(f"\n[DRY RUN] Planned Execution Sequence (Mode: {mode}, Max Samples: {active_max_samples}):")
             for idx, s in enumerate(steps_to_run, 1):
                 input_dir = self.resolve_input_dir(s)
                 status = self.checkpoint_mgr.checkpoints.get(s["id"], StepCheckpoint(s["id"], s["title"])).status
@@ -422,13 +436,24 @@ class PipelineRunner:
             return True
 
         print("=" * 80)
-        print(f"YouthEscalateBench — Starting Pipeline ({len(steps_to_run)} steps queued)")
+        print(f"YouthEscalateBench — Starting Pipeline ({len(steps_to_run)} steps queued, Mode: {mode}, Max Samples: {active_max_samples})")
         print("=" * 80)
 
         overall_start = time.perf_counter()
         for s in steps_to_run:
-            overrides = {"extended_report": True} if (s["id"] == "report" and extended_report) else None
-            success = self.execute_step(s, force=force, config_overrides=overrides)
+            overrides: dict[str, Any] = {}
+            if s["id"] == "stage_generate":
+                overrides["plans_per_template"] = active_plans
+            elif s["id"] == "evaluate":
+                overrides["max_samples"] = active_max_samples
+            elif s["id"] == "report" and extended_report:
+                overrides["extended_report"] = True
+
+            success = self.execute_step(
+                s,
+                force=force,
+                config_overrides=overrides if overrides else None,
+            )
             if not success:
                 print(f"\n⛔ Pipeline halted at step '{s['id']}'. Fix error or re-run with --force.")
                 self.checkpoint_mgr.display_status()
@@ -448,26 +473,29 @@ def run_pipeline_cli() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Run entire pipeline from start to finish:
+  # Run entire pipeline with default extra-small scale (20 test samples):
   python main.py --all
 
-  # Run pipeline with extended report detailing all LLM failure cases:
-  python main.py --all --extended-report
+  # Run pipeline with small scale (100 test samples):
+  python main.py --all --mode small
+
+  # Run pipeline with medium scale (250 test samples):
+  python main.py --all --mode medium
+
+  # Run pipeline with large scale (500 test samples):
+  python main.py --all --mode large
+
+  # Run pipeline with extra-large scale (1000 test samples):
+  python main.py --all --mode extra-large
 
   # Auto-resume from earliest incomplete/failed checkpoint:
   python main.py --resume
 
-  # Run only a specific step with extended error logs:
-  python main.py --step report --extended-report --force
-
-  # Run a range of steps (from thread validation to model evaluation):
-  python main.py --from-step thread --to-step evaluate
+  # Run only evaluation and report with small mode:
+  python main.py --step evaluate report --mode small --force
 
   # Display current checkpoint status table:
   python main.py --status
-
-  # Reset all checkpoints:
-  python main.py --reset
         """,
     )
 
@@ -484,6 +512,19 @@ Examples:
         dest="extended_report",
         action="store_true",
         help="Generate detailed extended report outputting all failure cases per LLM.",
+    )
+    parser.add_argument(
+        "--mode",
+        "-m",
+        choices=list(EVAL_MODES.keys()),
+        default="extra-small",
+        help="Evaluation scale mode: extra-small=20 (default), small=100, medium=250, large=500, extra-large=1000.",
+    )
+    parser.add_argument(
+        "--max-samples",
+        type=int,
+        default=None,
+        help="Explicitly override maximum evaluation samples across conditions (overrides --mode default).",
     )
     parser.add_argument("--status", action="store_true", help="Show current pipeline checkpoint status table.")
     parser.add_argument("--reset", action="store_true", help="Reset all checkpoint states to PENDING.")
@@ -515,6 +556,8 @@ Examples:
         force=args.force,
         dry_run=args.dry_run,
         extended_report=args.extended_report,
+        mode=args.mode,
+        max_samples=args.max_samples,
     )
 
     sys.exit(0 if success else 1)

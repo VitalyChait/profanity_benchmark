@@ -119,10 +119,21 @@ def run_evaluation(
         target_requests[condition] = pairs
 
     # Run predictions concurrently per scorer
+    import structlog
+
+    eval_logger = structlog.get_logger()
+
     for condition in conditions:
         pairs = target_requests.get(condition, [])
         if not pairs:
             continue
+
+        eval_logger.info(
+            "evaluation_sample_intake",
+            condition=condition.value,
+            sample_count=len(pairs),
+            max_samples=max_samples,
+        )
 
         for scorer_name, scorer in scorers.items():
             def _score_one(pair: tuple[InferenceRequest, bool]) -> tuple[InferenceRequest, bool, ModelOutput]:

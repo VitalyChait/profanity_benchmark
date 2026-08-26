@@ -205,6 +205,19 @@ def ingest_data_command(
     default=False,
     help="Generate detailed extended report outputting all failure cases per LLM.",
 )
+@click.option(
+    "--mode",
+    "-m",
+    type=click.Choice(["extra-small", "small", "medium", "large", "extra-large"]),
+    default="extra-small",
+    help="Evaluation scale mode: extra-small=20 (default), small=100, medium=250, large=500, extra-large=1000.",
+)
+@click.option(
+    "--max-samples",
+    type=int,
+    default=None,
+    help="Explicitly override maximum evaluation samples across conditions.",
+)
 def pipeline_command(
     run_all: bool,
     resume: bool,
@@ -216,6 +229,8 @@ def pipeline_command(
     reset: bool,
     dry_run: bool,
     extended_report: bool = False,
+    mode: str = "extra-small",
+    max_samples: int | None = None,
 ) -> None:
     """Execute pipeline with automated checkpoints, state recovery, and error diagnostics."""
     from youth_escalate_bench.orchestrator import PipelineRunner
@@ -245,6 +260,8 @@ def pipeline_command(
         force=force,
         dry_run=dry_run,
         extended_report=extended_report,
+        mode=mode,
+        max_samples=max_samples,
     )
     if not success:
         raise SystemExit(1)
