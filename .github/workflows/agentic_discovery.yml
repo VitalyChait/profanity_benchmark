@@ -1,0 +1,45 @@
+name: Autonomous Slang & Profanity Discovery
+
+on:
+  schedule:
+    # Run weekly every Monday at 04:00 UTC
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+
+jobs:
+  agentic-discovery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run Autonomous Discovery Agent
+        run: |
+          yeb agent-discover --random-limit 15
+
+      - name: Audit Sources and Lexicon
+        run: |
+          yeb audit-sources
+          yeb lexicon-stats
+
+      - name: Commit and Create Discovery PR
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "feat(agent): autonomous weekly slang and profanity discovery update"
+          title: "🤖 Weekly Autonomous Slang & Profanity Discovery"
+          body: |
+            Autonomous Agentic Discovery scan executed.
+            See `reports/agentic_discovery_digest.md` for newly scouted terms, category classifications, and synthesized minimal pairs.
+          branch: agentic-discovery-update
+          base: master

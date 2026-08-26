@@ -34,7 +34,9 @@
 
 ## Baselines (bundled)
 
-- `lexicon_raw`, `lexicon_normalized`, `char_ngram_tfidf`, `lexicon_full_context`
+- 7 Classical & Specialized Baselines: `lexicon_raw`, `lexicon_normalized`, `char_ngram_tfidf`, `lexicon_full_context`, `rule_safeguard_expert`, `prompted_llm_judge`, `ensemble_moderator`
+- Frontier Multi-LLM Router: 14 providers (OpenRouter, Groq, Mistral, OpenAI, Anthropic, Gemini, Ollama, etc.)
+- Active Difficulty Queue: Prioritizes historically misclassified turns and vulnerable slang via `SentenceRanking` & `WordRanking`
 
 ## Submission
 

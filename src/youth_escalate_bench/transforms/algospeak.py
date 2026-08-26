@@ -195,6 +195,20 @@ def transform_version_hash() -> str:
     return sha256_text(payload)[:16]
 
 
+def apply_algospeak_transform(
+    text: str,
+    transform_family: str | TransformFamily = "leetspeak",
+    seed: int = 42,
+) -> str:
+    """Apply a single algospeak transformation operator by name or enum."""
+    try:
+        fam = TransformFamily(transform_family) if isinstance(transform_family, str) else transform_family
+    except ValueError:
+        fam = TransformFamily.LEETSPEAK
+    op = OPERATORS.get(fam, apply_leetspeak)
+    return op(text)
+
+
 def verify_slang_in_urban_dictionary(word: str, client: Any | None = None) -> bool:
     """Check whether an algospeak or youth slang term is defined in Urban Dictionary."""
     if client is None:

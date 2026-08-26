@@ -617,5 +617,87 @@ def update_lexicon_command() -> None:
     click.echo(f"Done! {seeds} seed words preserved. {total:,} total unique profanities compiled.")
 
 
+@main.command("audit-pii")
+@click.option("--sample-size", "-n", default=200, type=int, help="Number of random conversations to inspect.")
+@click.option(
+    "--dataset",
+    type=click.Path(path_type=Path),
+    default=Path("data/processed/split/split_test.parquet"),
+    help="Path to dataset parquet file.",
+)
+def audit_pii_command(sample_size: int, dataset: Path) -> None:
+    """Perform an independent spot-check audit for residual PII entities."""
+    from youth_escalate_bench.pii.audit import generate_pii_audit_markdown, run_pii_audit
+
+    target = dataset
+    if not target.exists():
+        for candidate in [
+            Path("data/processed/redact/conversations_redacted.parquet"),
+            Path("data/processed/split/split_train.parquet"),
+            Path("data/processed/sample/conversations_sampled.parquet"),
+        ]:
+            if candidate.exists():
+                target = candidate
+                break
+
+    click.echo(f"Auditing sample of {sample_size} conversations from {target}...")
+    results = run_pii_audit(target, sample_size=sample_size)
+    report_content = generate_pii_audit_markdown(results)
+    report_path = Path("reports/pii_spot_check_report.md")
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(report_content, encoding="utf-8")
+
+    click.echo("=" * 65)
+    click.echo(f"PII Spot-Check Result: {results['status'].upper()}")
+    click.echo(f"Inspected Turns     : {results['total_turns']}")
+    click.echo(f"Residual Flags Found: {results['flag_count']}")
+    click.echo(f"Formal Report Saved : {report_path}")
+    click.echo("=" * 65)
+
+
+@main.command("create-snapshot")
+@click.option("--tag", default="2026.Q1", help="Version tag for quarterly release.")
+@click.option(
+    "--output-dir",
+    type=click.Path(path_type=Path),
+    default=Path("reports/snapshots"),
+    help="Output directory.",
+)
+def create_snapshot_command(tag: str, output_dir: Path) -> None:
+    """Create a sealed quarterly snapshot bundle with Croissant metadata and SHA256."""
+    from youth_escalate_bench.snapshot import create_snapshot_bundle
+
+    click.echo(f"Packaging quarterly release snapshot bundle '{tag}'...")
+    res = create_snapshot_bundle(output_dir=output_dir, version_tag=tag)
+    click.echo("=" * 65)
+    click.echo("Quarterly Snapshot Packaged Successfully!")
+    click.echo(f"Version Tag : {res['version_tag']}")
+    click.echo(f"Archive File: {res['archive_path']}")
+    click.echo(f"SHA256      : {res['sha256']}")
+    click.echo(f"Files Count : {len(res['files_included'])}")
+    click.echo("=" * 65)
+
+
+@main.command("agent-discover")
+@click.option("--random-limit", "-r", default=5, type=int, help="Number of random Urban Dictionary terms to scout.")
+@click.option("--terms", "-t", default=None, type=str, help="Comma-separated target slang terms to verify.")
+def agent_discover_command(random_limit: int, terms: str | None) -> None:
+    """Run an autonomous agentic discovery pass to scout and verify new profanity/slang."""
+    from youth_escalate_bench.agents.runner import DiscoveryLoop
+
+    target_list = [w.strip() for w in terms.split(",") if w.strip()] if terms else None
+    click.echo("Launching Autonomous Discovery Agent...")
+    loop = DiscoveryLoop()
+    res = loop.run_discovery_cycle(target_terms=target_list, random_limit=random_limit)
+    click.echo("=" * 65)
+    click.echo("Agentic Discovery Pass Complete!")
+    click.echo(f"Candidates Scouted : {res['candidates_count']}")
+    new_terms_str = ", ".join(res["new_terms_added"]) if res["new_terms_added"] else "None"
+    click.echo(f"New Terms Ingested : {len(res['new_terms_added'])} ({new_terms_str})")
+    click.echo(f"Pairs Synthesized  : {res['contrastive_pairs_count']}")
+    click.echo("Audit Digest       : reports/agentic_discovery_digest.md")
+    click.echo("=" * 65)
+
+
 if __name__ == "__main__":
     main()

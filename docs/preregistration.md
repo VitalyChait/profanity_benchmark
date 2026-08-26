@@ -18,14 +18,15 @@
 3. Specialized safeguard vs instruction LLM on context-dependent slice
 4. Onset detection recall at lag 0 vs lag 2
 
-## Model panel (to pin at freeze)
+## Model panel (pinned at freeze)
 
 | Tier | Models | Notes |
 |------|--------|-------|
-| Lexical | lexicon_raw, lexicon_normalized, char_ngram_tfidf | Bundled baselines |
-| Encoder | TBD fine-tuned on public train only | Pin checkpoint |
-| Safeguard | TBD × 3 open models | Pin revisions |
-| Instruction LLM | TBD × 6 spanning size tiers | Temperature 0 |
+| Lexical | `lexicon_raw`, `lexicon_normalized`, `char_ngram_tfidf`, `lexicon_full_context` | Bundled deterministic baselines |
+| Rule Safeguard | `rule_safeguard_expert` | Threshold 0.65, context window 3 turns |
+| LLM Judge | `prompted_llm_judge` | OpenRouter / local LLM, zero-shot structured JSON |
+| Ensemble | `ensemble_moderator` | 40% lexical + 60% rule safeguard |
+| Frontier LLMs | Gemma 4 (31B/26B), Nemotron 3.5 Content Safety, Dots 3, Liquid LFM 2.5 | Temperature 0.0, seed 42 |
 
 ## Evaluation conditions
 

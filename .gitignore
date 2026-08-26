@@ -18,6 +18,8 @@ data/e2e/
 data/e2e/*
 reports/pipeline_errors/
 reports/pipeline_errors/*
+reports/snapshots/
+reports/snapshots/*
 *.parquet
 *.pq
 *.tar.gz

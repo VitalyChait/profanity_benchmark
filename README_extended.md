@@ -3,8 +3,8 @@
 [![CI](https://github.com/VitalyChait/profanity_benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/VitalyChait/profanity_benchmark/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: >=3.12](https://img.shields.io/badge/Python->=3.12-brightgreen.svg)](https://www.python.org/)
-[![Tests: 74 Passed](https://img.shields.io/badge/Tests-74%20Passed-success.svg)](tests/)
-[![Coverage: 78%](https://img.shields.io/badge/Coverage-78%25-informational.svg)](tests/)
+[![Tests: 105 Passed](https://img.shields.io/badge/Tests-105%20Passed-success.svg)](tests/)
+[![Coverage: 80%](https://img.shields.io/badge/Coverage-80%25-informational.svg)](tests/)
 
 **YouthEscalateBench** is a research-grade, causal evaluation benchmark designed to assess whether automated moderation systems and frontier Large Language Models (LLMs) can reliably detect harmful peer-to-peer interactions as they emerge across multi-turn, youth-oriented conversations—especially when profanity, slang, emojis, code-switching, and algospeak obscure the harm.
 
@@ -46,12 +46,17 @@ Standard toxicity benchmarks assess safety using isolated turns. They fail in yo
 
 ## 🏆 What Has Already Been Achieved
 
-- [x] **Full 12-Stage Pipeline Executed on Real-World Data**: Ingested and threaded 10 diverse public research corpora (79,000+ turns) into unified Parquet representations.
+- [x] **Full 12-Stage Pipeline Executed on Real-World Data**: Ingested and threaded 14 diverse public research corpora and lexicons (79,000+ turns) into unified Parquet representations.
+- [x] **Unified Profanity & Slur Database**: 2,508 terms with severity ratings (1–4) compiled across 5 trusted sources (Google, dsojevic, LDNOOBW, HurtLex, HateCheck).
+- [x] **Active Difficulty Ranking & Priority Queue**: Evaluates LLMs preferentially on historically misclassified turns and vulnerable vocabulary.
+- [x] **Autonomous Agentic Discovery Framework**: Continuous Urban Dictionary scout, linguistic verifier, contrastive minimal-pair generator, and weekly GitHub Actions workflow.
 - [x] **Multi-LLM Causal Evaluation**: Evaluated 12 models and baselines across 3 causal context conditions (`Isolated Turn`, `Local Context`, `Full Prefix`).
 - [x] **14 LLM Providers Supported**: Integrated with OpenRouter, Mistral, OpenAI, Anthropic, Gemini, Groq, DeepSeek, Together, Ollama, and local models.
 - [x] **Automated Infographics Generation**: High-resolution 300 DPI publication figures (multi-panel benchmark comparisons, AUPRC heatmaps, context trajectories, and dark-mode interactive HTML dashboards).
 - [x] **Turn-by-Turn Failure Case Diagnostics (`--extended-report`)**: Automated extraction of every False Positive and False Negative with exact turn text, dialogue context, and diagnostic rationales.
-- [x] **100% Test Suite Pass Rate**: 74 automated unit, integration, schema, and causal tests passing in CI.
+- [x] **100% Test Suite Pass Rate**: 105+ automated unit, integration, schema, causal, agentic, and e2e tests passing in CI.
+- [x] **Quarterly Live Snapshot Tooling (`yeb create-snapshot`)**: Bundles versioned release archives with Croissant metadata and SHA256 verification.
+- [x] **Independent PII Audit Spot-Check (`yeb audit-pii`)**: Automated high-recall heuristic scanner with formal verification report (`reports/pii_spot_check_report.md`).
 - [x] **Air-Gapped Evaluator Microservice**: Sandboxed Docker container (`docker/evaluator/Dockerfile`) with HTTP `/predict` contract for zero-leakage offline scoring.
 - [x] **Comprehensive Documentation Package**: Datasheet for Datasets, Benchmark Card, Threat Model, IRB Ethics Package, Annotator Wellness Protocol, and OSF Preregistration specification.
 

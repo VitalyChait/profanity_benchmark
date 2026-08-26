@@ -14,6 +14,11 @@ documented legal status.**
 | wildchat | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | ODC-BY — Approved for personal non-commercial research |
 | lmsys_chat_1m | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | LMSYS Terms — Approved for personal non-commercial research |
 | personachat | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-22 | CC-BY-NC 4.0 — Approved for personal non-commercial research |
+| profanity_en_lexicon | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-24 | CC0 / Public Domain — Approved for personal non-commercial research |
+| google_profanity_words | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-26 | Public Domain — Approved for personal non-commercial research |
+| dsojevic_profanity_list | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-26 | MIT License — Approved for personal non-commercial research |
+| hurtlex_en | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-26 | CC-BY-NC 4.0 — Approved for personal non-commercial research |
+| hatecheck_lexicon | ☑ | ☑ | ☑ | Vitaly Chait | 2026-08-26 | CC-BY 4.0 — Approved for personal non-commercial research |
 
 ## Verification checklist (per source)
 
