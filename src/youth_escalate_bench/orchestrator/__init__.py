@@ -350,7 +350,7 @@ class PipelineRunner:
             reports_data_dir.mkdir(parents=True, exist_ok=True)
             for entry in manifest.outputs:
                 src_path = Path(entry.path)
-                if src_path.name.endswith(("_report.yaml", "_manifest.yaml", "manifest.json")):
+                if src_path.name.endswith(("_report.yaml", "_manifest.yaml", "manifest.json", "_ranking.yaml")):
                     dest_file = reports_data_dir / (
                         f"{step_id}_{src_path.name}" if src_path.name == "manifest.json" else src_path.name
                     )

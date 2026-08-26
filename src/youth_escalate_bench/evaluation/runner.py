@@ -15,6 +15,11 @@ from youth_escalate_bench.evaluation.conditions import (
     ContextCondition,
     build_requests_for_conversation,
 )
+from youth_escalate_bench.evaluation.difficulty import (
+    DifficultyIndex,
+    compute_difficulty_index,
+    score_request_difficulty,
+)
 from youth_escalate_bench.io.parquet import read_conversations
 from youth_escalate_bench.metrics.detection import compute_binary_metrics
 from youth_escalate_bench.schemas.conversation import ConversationRecord
@@ -50,6 +55,7 @@ class EvaluationResult:
 class EvaluationBundle:
     results: list[EvaluationResult] = field(default_factory=list)
     predictions: list[PredictionRow] = field(default_factory=list)
+    difficulty_index: DifficultyIndex | None = None
 
 
 def load_labels(path: Path) -> dict[tuple[str, str], bool]:
@@ -78,9 +84,14 @@ def run_evaluation(
     seed: int = 42,
     threshold: float = 0.5,
     max_samples: int | None = None,
+    difficulty_index: DifficultyIndex | None = None,
+    prioritize_hard_samples: bool = True,
 ) -> EvaluationBundle:
     from concurrent.futures import ThreadPoolExecutor
 
+    import structlog
+
+    eval_logger = structlog.get_logger()
     bundle = EvaluationBundle()
 
     # Pre-collect labeled inference requests per condition
@@ -88,8 +99,6 @@ def run_evaluation(
     for condition in conditions:
         pairs: list[tuple[InferenceRequest, bool]] = []
         for conv in conversations:
-            if max_samples and len(pairs) >= max_samples:
-                break
             turn_records = [
                 TurnRecord(
                     turn_id=t.turn_id,
@@ -111,11 +120,31 @@ def run_evaluation(
                 seed=seed,
             )
             for req in requests:
-                if max_samples and len(pairs) >= max_samples:
-                    break
                 key = (req.conversation_id, req.current_turn_id)
                 if key in labels:
                     pairs.append((req, labels[key]))
+
+        # Prioritize hard samples / misclassified examples if difficulty index is available
+        if difficulty_index and prioritize_hard_samples and pairs:
+            pairs.sort(
+                key=lambda p: score_request_difficulty(
+                    difficulty_index,
+                    p[0].conversation_id,
+                    p[0].current_turn_id,
+                    p[0].turns[-1].text if p[0].turns else "",
+                ),
+                reverse=True,
+            )
+            eval_logger.info(
+                "priority_hard_sampling_applied",
+                condition=condition.value,
+                total_candidates=len(pairs),
+                prioritized_max=max_samples,
+            )
+
+        if max_samples and len(pairs) > max_samples:
+            pairs = pairs[:max_samples]
+
         target_requests[condition] = pairs
 
     # Run predictions concurrently per scorer
@@ -177,6 +206,13 @@ def run_evaluation(
                 )
             )
 
+    if bundle.predictions:
+        bundle.difficulty_index = compute_difficulty_index(
+            predictions=bundle.predictions,
+            labels=labels,
+            conversations=conversations,
+        )
+
     return bundle
 
 
@@ -187,11 +223,20 @@ def evaluate_from_parquet(
     conditions: list[ContextCondition],
     seed: int = 42,
     max_samples: int | None = None,
+    difficulty_index: DifficultyIndex | None = None,
+    prioritize_hard_samples: bool = True,
 ) -> EvaluationBundle:
     conversations = read_conversations(parquet_path)
     labels = load_labels(labels_path)
     return run_evaluation(
-        conversations, scorers, labels, conditions, seed=seed, max_samples=max_samples
+        conversations,
+        scorers,
+        labels,
+        conditions,
+        seed=seed,
+        max_samples=max_samples,
+        difficulty_index=difficulty_index,
+        prioritize_hard_samples=prioritize_hard_samples,
     )
 
 

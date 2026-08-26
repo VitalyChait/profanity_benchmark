@@ -8,6 +8,10 @@ from typing import Any
 
 import yaml
 
+from youth_escalate_bench.evaluation.difficulty import (
+    generate_difficulty_markdown_report,
+    load_difficulty_index,
+)
 from youth_escalate_bench.io.parquet import read_conversations
 from youth_escalate_bench.metrics.agreement import actionable_agreement, severity_alpha
 from youth_escalate_bench.reporting.infographics import (
@@ -593,6 +597,23 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
     data_report_md = output_dir / "data_report.md"
     data_report_md.write_text(data_report_content + "\n", encoding="utf-8")
 
+    # Generate difficulty_ranking_report.md if ranking exists
+    diff_path = input_dir / "difficulty_ranking.yaml"
+    if not diff_path.exists():
+        diff_path = Path("reports/data/difficulty_ranking.yaml")
+    if not diff_path.exists():
+        diff_path = Path("data/processed/evaluate/difficulty_ranking.yaml")
+
+    diff_index = load_difficulty_index(diff_path) if diff_path.exists() else None
+    diff_files: list[str] = []
+    if diff_index:
+        diff_report_md = output_dir / "difficulty_ranking_report.md"
+        diff_report_md.write_text(generate_difficulty_markdown_report(diff_index) + "\n", encoding="utf-8")
+        diff_files.append("difficulty_ranking_report.md")
+        if not (output_dir / "difficulty_ranking.yaml").exists() and diff_path.exists():
+            shutil.copy2(diff_path, output_dir / "difficulty_ranking.yaml")
+            diff_files.append("difficulty_ranking.yaml")
+
     # Export all final evaluation and data reports to top-level reports/ dir
     exported_to_reports = _export_reports_to_reports_dir(output_dir, config)
 
@@ -605,7 +626,7 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
         "table_main_results.tex",
         "report_summary.yaml",
         "error_analysis_bundle.yaml",
-    ] + infographic_files
+    ] + diff_files + infographic_files
 
     return {
         "output_files": output_files,
@@ -821,6 +842,7 @@ def _export_reports_to_reports_dir(output_dir: Path, config: dict[str, Any]) -> 
         ("split", "manifest.json"),
         ("evaluate", "onset_metrics.yaml"),
         ("evaluate", "evaluation_results.yaml"),
+        ("evaluate", "difficulty_ranking.yaml"),
     ]
     for stage_id, fname in data_report_sources:
         src = Path(f"data/processed/{stage_id}/{fname}")

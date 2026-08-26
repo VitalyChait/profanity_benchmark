@@ -1,8 +1,8 @@
 {
   "stage": "report",
   "benchmark_version": "0.1.0",
-  "created_at": "2026-08-26T20:21:57.575721+00:00",
-  "config_sha256": "196237ea9e57de1b0dad1e4fe983b40f6c56709d14f23bc487e005c016eb3ce4",
+  "created_at": "2026-08-26T20:33:12.659037+00:00",
+  "config_sha256": "4d8c353935735ea68bd920120595cd9ca2ce41257c40ea3868f39cc9e5932a71",
   "random_seed": 42,
   "inputs": [],
   "outputs": [
@@ -17,6 +17,12 @@
       "row_count": null,
       "sha256": "f902c5ca738d7ea8533d1ff2016e11d03e305e2aa1b72ab26b17ae9a392d4840",
       "bytes": 17789
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/data_report.md",
+      "row_count": null,
+      "sha256": "82c9ea521942cf629f4dc535af72dd368558d78540ed1f8e1dcd9107e5b4803f",
+      "bytes": 5119
     },
     {
       "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/llm_error_cases.yaml",
@@ -85,6 +91,7 @@
     "infographics_count": 5,
     "llm_errors_count": 22,
     "onset_metrics_present": true,
-    "extended_report_enabled": true
+    "extended_report_enabled": true,
+    "exported_reports_count": 24
   }
 }

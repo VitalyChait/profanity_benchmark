@@ -9,6 +9,7 @@ import yaml
 from youth_escalate_bench.adapters import get_adapter
 from youth_escalate_bench.baselines.scorers import build_default_scorers
 from youth_escalate_bench.evaluation.conditions import ContextCondition
+from youth_escalate_bench.evaluation.difficulty import load_difficulty_index, save_difficulty_index
 from youth_escalate_bench.evaluation.runner import evaluate_from_parquet, write_evaluation_bundle
 from youth_escalate_bench.io.parquet import read_conversations, write_conversations
 from youth_escalate_bench.metrics.onset import compute_onset_metrics, detection_recall_at_lag
@@ -288,6 +289,11 @@ def run_evaluate(config: dict[str, Any], input_dir: Path, output_dir: Path) -> d
     )
     conditions = [ContextCondition(c) for c in condition_names]
 
+    difficulty_path = output_dir / "difficulty_ranking.yaml"
+    if not difficulty_path.exists():
+        difficulty_path = Path("reports/data/difficulty_ranking.yaml")
+    prior_difficulty = load_difficulty_index(difficulty_path) if difficulty_path.exists() else None
+
     bundle = evaluate_from_parquet(
         parquet_path=parquet_path,
         labels_path=labels_path,
@@ -295,9 +301,15 @@ def run_evaluate(config: dict[str, Any], input_dir: Path, output_dir: Path) -> d
         conditions=conditions,
         seed=config.get("random_seed", 42),
         max_samples=config.get("max_samples", 20),
+        difficulty_index=prior_difficulty,
+        prioritize_hard_samples=config.get("prioritize_hard_samples", True),
     )
 
     meta = write_evaluation_bundle(bundle, output_dir)
+
+    if bundle.difficulty_index:
+        save_difficulty_index(bundle.difficulty_index, output_dir / "difficulty_ranking.yaml")
+        meta["output_files"].append("difficulty_ranking.yaml")
 
     # Onset metrics for primary scorer + full context
     labels_list_path = labels_path

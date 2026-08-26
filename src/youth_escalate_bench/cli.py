@@ -478,5 +478,76 @@ def urban_dict_command(
     click.echo("=" * 65)
 
 
+@main.command("difficulty-ranking")
+@click.option("--top-sentences", "-s", default=10, type=int, help="Number of hardest sentences to display.")
+@click.option("--top-words", "-w", default=15, type=int, help="Number of most vulnerable words to display.")
+@click.option(
+    "--path",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Path to difficulty_ranking.yaml (default: checks reports/ and data/processed/evaluate/).",
+)
+def difficulty_ranking_command(top_sentences: int, top_words: int, path: Path | None) -> None:
+    """View internal difficulty and misclassification rankings for words and sentences."""
+    from youth_escalate_bench.evaluation.difficulty import load_difficulty_index
+
+    resolved_path = path
+    if not resolved_path:
+        for candidate in [
+            Path("reports/data/difficulty_ranking.yaml"),
+            Path("reports/difficulty_ranking.yaml"),
+            Path("data/processed/evaluate/difficulty_ranking.yaml"),
+            Path("data/processed/report/difficulty_ranking.yaml"),
+        ]:
+            if candidate.exists():
+                resolved_path = candidate
+                break
+
+    if not resolved_path or not resolved_path.exists():
+        click.echo("Error: No difficulty_ranking.yaml found. Please run the evaluate stage first:")
+        click.echo("  python main.py --step evaluate")
+        return
+
+    index = load_difficulty_index(resolved_path)
+    if not index:
+        click.echo(f"Error: Unable to parse difficulty ranking file at {resolved_path}")
+        return
+
+    meta = index.metadata
+    click.echo("=" * 80)
+    click.echo("YouthEscalateBench — Internal Evaluation Difficulty Ranking")
+    click.echo(f"Source file : {resolved_path}")
+    click.echo(f"Generated   : {meta.get('generated_at', 'N/A')}")
+    click.echo(
+        f"Total turns : {meta.get('total_evaluated_turns', 0)} ({meta.get('total_misclassified_turns', 0)} misclassified)"
+    )
+    click.echo("=" * 80)
+
+    # 1. Top Sentences
+    click.echo(f"\n[ Top {top_sentences} Hardest Sentences / Turns ]")
+    click.echo("-" * 80)
+    click.echo(f"{'Rank':<5} {'Priority':<9} {'Error Rate':<12} {'Type':<22} {'Turn Text'}")
+    click.echo("-" * 80)
+    for rank, s in enumerate(index.sentences[:top_sentences], 1):
+        clean_text = s.turn_text.replace("\n", " ").strip()
+        if len(clean_text) > 45:
+            clean_text = clean_text[:42] + "..."
+        err_str = f"{s.error_rate * 100:.0f}% ({s.total_errors}/{s.total_evaluations})"
+        click.echo(f"#{rank:<4} {s.priority_weight:<9.2f} {err_str:<12} {s.primary_error_type[:20]:<22} \"{clean_text}\"")
+
+    # 2. Top Words
+    click.echo(f"\n[ Top {top_words} Most Vulnerable Words / Slang Terms ]")
+    click.echo("-" * 80)
+    click.echo(f"{'Rank':<5} {'Word/Slang':<18} {'Vuln Score':<12} {'Count':<8} {'Error Rate':<12} {'Failure Mode'}")
+    click.echo("-" * 80)
+    for rank, w in enumerate(index.words[:top_words], 1):
+        err_rate_str = f"{w.error_rate * 100:.0f}%"
+        click.echo(
+            f"#{rank:<4} {w.word:<18} {w.vulnerability_score:<12.3f} {w.total_occurrences:<8} {err_rate_str:<12} {w.primary_failure_mode}"
+        )
+
+    click.echo("=" * 80)
+
+
 if __name__ == "__main__":
     main()
