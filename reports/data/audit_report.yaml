@@ -24,3 +24,7 @@ approved_sources:
 - tweeteval_offensive
 - tweeteval_hate
 - profanity_en_lexicon
+- google_profanity_words
+- dsojevic_profanity_list
+- hurtlex_en
+- hatecheck_lexicon

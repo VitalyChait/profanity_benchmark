@@ -549,5 +549,73 @@ def difficulty_ranking_command(top_sentences: int, top_words: int, path: Path | 
     click.echo("=" * 80)
 
 
+@main.command("profanity-check")
+@click.argument("term")
+def profanity_check_command(term: str) -> None:
+    """Check whether a word or phrase is in the unified trusted profanity database."""
+    from youth_escalate_bench.external.profanity_sources import ProfanityDatabase
+
+    db_path = Path("configs/lexicons/profanity_database.json")
+    db = ProfanityDatabase.load_json(db_path)
+    entry = db.lookup(term)
+
+    if not entry:
+        click.echo(f"Term '{term}' is NOT in the unified profanity database.")
+        return
+
+    click.echo(f"Term        : {entry.word}")
+    click.echo(f"Severity    : Level {entry.severity} / 4")
+    click.echo(f"Categories  : {', '.join(entry.categories) if entry.categories else 'None'}")
+    click.echo(f"Sources     : {', '.join(entry.sources)}")
+    if entry.match_patterns:
+        click.echo(f"Patterns    : {', '.join(entry.match_patterns[:5])}")
+
+
+@main.command("lexicon-stats")
+def lexicon_stats_command() -> None:
+    """Display statistics for the unified profanity database and lexicons."""
+    from youth_escalate_bench.external.profanity_sources import ProfanityDatabase
+
+    db_path = Path("configs/lexicons/profanity_database.json")
+    db = ProfanityDatabase.load_json(db_path)
+    stats = db.stats()
+
+    click.echo("=" * 65)
+    click.echo("YouthEscalateBench — Unified Profanity Lexicon Statistics")
+    click.echo("=" * 65)
+    click.echo(f"Total Unique Terms: {stats['total_terms']:,}")
+    click.echo("\nTerms by Severity:")
+    for sev, count in stats.get("by_severity", {}).items():
+        label = {1: "Mild", 2: "Moderate", 3: "Severe / Toxic", 4: "Extreme / Slurs"}.get(sev, "")
+        click.echo(f"  Level {sev} ({label:<16}): {count:,}")
+    click.echo("\nTop Categories:")
+    for cat, count in list(stats.get("by_category", {}).items())[:8]:
+        click.echo(f"  {cat:<22}: {count:,}")
+    click.echo("\nContributing Sources:")
+    for src, count in stats.get("by_source", {}).items():
+        click.echo(f"  {src:<22}: {count:,}")
+    click.echo("=" * 65)
+
+
+@main.command("update-lexicon")
+def update_lexicon_command() -> None:
+    """Ingest and recompile trusted profanity sources into the database and lexicon."""
+    from youth_escalate_bench.external.profanity_sources import (
+        compile_profanity_database,
+        sync_lexicon_files,
+    )
+
+    click.echo(
+        "Fetching and compiling trusted profanity sources (Google, dsojevic, LDNOOBW, HurtLex, HateCheck)..."
+    )
+    db = compile_profanity_database()
+    seeds, total = sync_lexicon_files(
+        db=db,
+        lexicon_txt_path=Path("configs/profanity_lexicon.txt"),
+        database_json_path=Path("configs/lexicons/profanity_database.json"),
+    )
+    click.echo(f"Done! {seeds} seed words preserved. {total:,} total unique profanities compiled.")
+
+
 if __name__ == "__main__":
     main()
