@@ -1,0 +1,26 @@
+gate_passed: true
+coverage_pct: 100.0
+pending_count: 0
+failures: []
+approved_sources:
+- wikiconv_wikidetox
+- contextual_abuse_dataset
+- convotox
+- gametox
+- minorbench
+- davidson
+- wildchat
+- lmsys_chat_1m
+- personachat
+- generic
+- flat_joiner
+- conversations_gone_awry_wikipedia
+- conversations_gone_awry_cmv
+- lmsys_toxic_chat_train
+- lmsys_toxic_chat_test
+- davidson_hate_speech
+- dynabench_hate_speech
+- hatexplain
+- tweeteval_offensive
+- tweeteval_hate
+- profanity_en_lexicon

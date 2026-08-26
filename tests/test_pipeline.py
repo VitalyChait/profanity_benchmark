@@ -98,3 +98,29 @@ def test_openrouter_model_family_display_names() -> None:
     name3, family3 = _get_display_name("llm_openrouter_qwen_qwen_2_5_72b_instruct")
     assert family3 == "OpenRouter LLM"
     assert "Qwen" in name3
+
+
+def test_reports_dir_export(tmp_path: Path) -> None:
+    from youth_escalate_bench.stages.report import (
+        _export_reports_to_reports_dir,
+        _generate_data_report,
+    )
+
+    mock_out = tmp_path / "report"
+    mock_out.mkdir()
+    (mock_out / "evaluation_report.md").write_text("# Eval Report\n", encoding="utf-8")
+    (mock_out / "table_main_results.tex").write_text("\\begin{table}\n", encoding="utf-8")
+
+    reports_dir = tmp_path / "test_reports"
+    config = {"reports_dir": str(reports_dir), "benchmark_version": "0.1.0"}
+
+    # Generate data report
+    data_rep = _generate_data_report(config, tmp_path)
+    assert "YouthEscalateBench Data Lifecycle" in data_rep
+    assert "Executive Data Summary" in data_rep
+
+    # Export
+    _export_reports_to_reports_dir(mock_out, config)
+    assert (reports_dir / "evaluation_report.md").exists()
+    assert (reports_dir / "table_main_results.tex").exists()
+    assert (reports_dir / "data").is_dir()

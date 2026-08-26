@@ -1,0 +1,54 @@
+annotation_quality: {}
+data_by_scorer:
+  rule_based_lexicon:
+    current_turn_only: &id001
+      condition: current_turn_only
+      metrics:
+        auprc: 0.85
+        auroc: 0.9
+        f1: 0.8
+        support: 50
+      per_harm_auprc:
+        targeted_insult: 0.82
+      scorer: rule_based_lexicon
+infographics:
+- infographic_models_comparison.png
+- figure_auprc_heatmap.png
+- figure_context_trajectory.png
+- figure_llm_leaderboard.png
+- infographic_dashboard.html
+llm_error_summary:
+  llm_openrouter_dots_3_note_preview_free:
+    fn: 0
+    fp: 1
+    total: 1
+  llm_openrouter_gemma_4_26b_a4b_it_free:
+    fn: 0
+    fp: 1
+    total: 1
+  llm_openrouter_gemma_4_31b_it_free:
+    fn: 3
+    fp: 1
+    total: 4
+  llm_openrouter_glm_5_3_flash:
+    fn: 4
+    fp: 0
+    total: 4
+  llm_openrouter_lfm_2_5_2_6b_free:
+    fn: 3
+    fp: 3
+    total: 6
+  llm_openrouter_nemotron_3_5_content_safety_free:
+    fn: 3
+    fp: 3
+    total: 6
+onset_dynamics:
+  detection_rate: 0.0
+  median_delay: null
+  missed: 18
+  recall_at_lag:
+    0: 0.0
+    1: 0.0
+    2: 0.0
+results:
+- *id001

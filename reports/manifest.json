@@ -1,0 +1,90 @@
+{
+  "stage": "report",
+  "benchmark_version": "0.1.0",
+  "created_at": "2026-08-26T20:21:57.575721+00:00",
+  "config_sha256": "196237ea9e57de1b0dad1e4fe983b40f6c56709d14f23bc487e005c016eb3ce4",
+  "random_seed": 42,
+  "inputs": [],
+  "outputs": [
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/evaluation_report.md",
+      "row_count": null,
+      "sha256": "f902c5ca738d7ea8533d1ff2016e11d03e305e2aa1b72ab26b17ae9a392d4840",
+      "bytes": 17789
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/extended_evaluation_report.md",
+      "row_count": null,
+      "sha256": "f902c5ca738d7ea8533d1ff2016e11d03e305e2aa1b72ab26b17ae9a392d4840",
+      "bytes": 17789
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/llm_error_cases.yaml",
+      "row_count": null,
+      "sha256": "426b6ec0116335f061ea6db5b8caa04d831beeffc709771b3ea876d193353ece",
+      "bytes": 16255
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/llm_error_cases.json",
+      "row_count": null,
+      "sha256": "e1b05b853195e57c40c81d140725834b740652ef9ace1d0986a6fb8be1ba5e69",
+      "bytes": 22534
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/table_main_results.tex",
+      "row_count": null,
+      "sha256": "0ba2d6423d7143e44a4e1fc708408fc19fb335b39ef6228b399d01bfdae40137",
+      "bytes": 1928
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/report_summary.yaml",
+      "row_count": null,
+      "sha256": "f6369d77cb789d46d5b2d136b692d0bfc3527fa37ff3c3bf7ea81009ed43e394",
+      "bytes": 11592
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/error_analysis_bundle.yaml",
+      "row_count": null,
+      "sha256": "5bc937e2a767059cff92e2ad679f74eae3346052ca65e09c231b517b43c40c16",
+      "bytes": 16117
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/infographic_models_comparison.png",
+      "row_count": null,
+      "sha256": "45d59da34301b112ec6162b5e4a339e3dc2c1c26224981da6b7f9ecc0d08d8a6",
+      "bytes": 746080
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/figure_auprc_heatmap.png",
+      "row_count": null,
+      "sha256": "2eadf5652e97ab7eac25c2153bdde43bf5a3fef3edec5c7ae5467f6c3f1286dd",
+      "bytes": 372239
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/figure_context_trajectory.png",
+      "row_count": null,
+      "sha256": "43f38978447bc77381e3f18a691a9d4706280808e37bc8185fd3d1fcb140fe74",
+      "bytes": 287219
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/figure_llm_leaderboard.png",
+      "row_count": null,
+      "sha256": "caabcfc1a207ee427168dee44506522cc529f758b064e5128ec32f8e6f9938ef",
+      "bytes": 168438
+    },
+    {
+      "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/infographic_dashboard.html",
+      "row_count": null,
+      "sha256": "dc19a61e15a9578b374b8cb729b4bd545a5253a139ca6b5f1ec6c46fde1f4153",
+      "bytes": 16074
+    }
+  ],
+  "metadata": {
+    "result_rows": 39,
+    "total_models": 13,
+    "infographics_count": 5,
+    "llm_errors_count": 22,
+    "onset_metrics_present": true,
+    "extended_report_enabled": true
+  }
+}

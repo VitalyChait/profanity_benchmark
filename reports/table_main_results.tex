@@ -1,0 +1,15 @@
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{llcccccc}
+\toprule
+ & & \multicolumn{2}{c}{\textbf{Turn Only}} & \multicolumn{2}{c}{\textbf{Prev + Turn}} & \multicolumn{2}{c}{\textbf{Full Prefix}} \\
+\cmidrule(lr){3-4} \cmidrule(lr){5-6} \cmidrule(lr){7-8}
+\textbf{Model / Scorer} & \textbf{Family} & \textbf{AUPRC} $\uparrow$ & \textbf{AUROC} $\uparrow$ & \textbf{AUPRC} $\uparrow$ & \textbf{AUROC} $\uparrow$ & \textbf{AUPRC} $\uparrow$ & \textbf{AUROC} $\uparrow$ \\
+\midrule
+Rule Based Lexicon & Custom & 0.000 & --- & 0.000 & --- & \textbf{0.000} & --- \\
+\bottomrule
+\end{tabular}
+\caption{YouthEscalateBench Causal Moderation Performance across Context Conditions.}
+\label{tab:main_results}
+\end{table*}

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
 import time
 import traceback
@@ -343,6 +344,21 @@ class PipelineRunner:
                 output_files=output_filenames,
                 row_counts=row_counts,
             )
+
+            # Mirror stage data reports and manifests to reports/data/
+            reports_data_dir = Path("reports/data")
+            reports_data_dir.mkdir(parents=True, exist_ok=True)
+            for entry in manifest.outputs:
+                src_path = Path(entry.path)
+                if src_path.name.endswith(("_report.yaml", "_manifest.yaml", "manifest.json")):
+                    dest_file = reports_data_dir / (
+                        f"{step_id}_{src_path.name}" if src_path.name == "manifest.json" else src_path.name
+                    )
+                    try:
+                        shutil.copy2(src_path, dest_file)
+                    except Exception:
+                        pass
+
             print(f"  ✓ {step_id} completed in {duration:.2f}s ({len(manifest.outputs)} outputs)")
             return True
 
