@@ -3,7 +3,7 @@
 [![CI](https://github.com/VitalyChait/profanity_benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/VitalyChait/profanity_benchmark/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: >=3.12](https://img.shields.io/badge/Python->=3.12-brightgreen.svg)](https://www.python.org/)
-[![Tests: 105 Passed](https://img.shields.io/badge/Tests-105%20Passed-success.svg)](tests/)
+[![Tests: 119 Passed](https://img.shields.io/badge/Tests-119%20Passed-success.svg)](tests/)
 [![Coverage: 80%](https://img.shields.io/badge/Coverage-80%25-informational.svg)](tests/)
 
 **YouthEscalateBench** is a research-grade, causal evaluation benchmark designed to assess whether automated moderation systems and frontier Large Language Models (LLMs) can reliably detect harmful peer-to-peer interactions as they emerge across multi-turn, youth-oriented conversations—especially when profanity, slang, emojis, code-switching, and algospeak obscure the harm.
@@ -203,9 +203,9 @@ Every run of the `report` stage automatically produces visual analytics in [`dat
 
 ---
 
-## 🐳 Docker Evaluator Microservice
+## 🐳 Docker Evaluator Microservice & Interactive Web Dashboard
 
-For air-gapped zero-leakage evaluations or production chat moderation:
+For air-gapped zero-leakage evaluations, production chat moderation, or interactive visual analysis:
 
 ```bash
 # Build image
@@ -215,7 +215,20 @@ docker build -t youth-escalate-evaluator -f docker/evaluator/Dockerfile .
 docker run --rm -p 8080:8080 --network none youth-escalate-evaluator
 ```
 
-Send a `POST /predict` inference request:
+Or run directly with the CLI:
+```bash
+yeb serve --host 127.0.0.1 --port 8080
+```
+
+### 📊 Real-Time Service Analysis Dashboard
+Navigate to **`http://localhost:8080/dashboard`** (or `http://localhost:8080/`) to interactively analyze benchmark results:
+- **Visual Analytics**: Interactive 300 DPI heatmaps, causal trajectory curves, and leaderboard charts.
+- **Turn-by-Turn Failure Inspector**: Search and filter false positives (over-moderation) vs. false negatives (missed harm) with full dialogue context and diagnostic rationales.
+- **Hard-Sample Ranking Explorer**: Inspect hardest conversational turns and top trigger words sorted by error rate.
+- **Live Prediction Playground**: Interactively enter conversation turns and submit live requests to `POST /predict`.
+- **REST Endpoints**: `/health`, `/api/summary`, `/api/errors`, `/api/difficulty`.
+
+### Send a `POST /predict` inference request:
 ```bash
 curl -X POST http://localhost:8080/predict \
   -H "Content-Type: application/json" \

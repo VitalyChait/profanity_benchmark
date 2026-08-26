@@ -268,16 +268,23 @@ def pipeline_command(
 
 
 @main.command("serve")
-@click.option("--host", default="127.0.0.1")
-@click.option("--port", default=8080, type=int)
+@click.option("--host", default="127.0.0.1", help="Host IP to bind evaluator service to.")
+@click.option("--port", default=8080, type=int, help="Port to listen on.")
 @click.option(
     "--lexicon",
     type=click.Path(exists=True, path_type=Path),
     default=Path("configs/profanity_lexicon.txt"),
+    help="Lexicon file used for baseline scoring.",
 )
-def serve_evaluator(host: str, port: int, lexicon: Path) -> None:
-    """Start private /predict evaluator server (baseline scorer default)."""
-    serve(host=host, port=port, lexicon_path=lexicon)
+@click.option(
+    "--reports-dir",
+    type=click.Path(path_type=Path),
+    default=Path("reports"),
+    help="Directory containing benchmark reports, figures, and summaries.",
+)
+def serve_evaluator(host: str, port: int, lexicon: Path, reports_dir: Path) -> None:
+    """Start private /predict evaluator server and interactive analysis dashboard."""
+    serve(host=host, port=port, lexicon_path=lexicon, reports_dir=reports_dir)
 
 
 @main.command("export-schemas")

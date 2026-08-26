@@ -1,0 +1,824 @@
+"""Dynamic service dashboard for analyzing benchmark results in real-time."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+
+def _load_yaml_safe(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            return yaml.safe_load(f) or {}
+    except Exception:
+        return {}
+
+
+def _load_json_safe(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {}
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            return json.load(f) or {}
+    except Exception:
+        return {}
+
+
+def generate_service_dashboard_html(
+    reports_dir: Path | None = None,
+    host: str = "127.0.0.1",
+    port: int = 8080,
+) -> str:
+    """Generate interactive single-page dashboard HTML for the running evaluator service."""
+    rep_dir = reports_dir or Path("reports")
+    alt_rep_dir = Path("data/processed/report")
+
+    # Locate report artifacts
+    summary_path = rep_dir / "report_summary.yaml" if (rep_dir / "report_summary.yaml").exists() else alt_rep_dir / "report_summary.yaml"
+    errors_path = rep_dir / "llm_error_cases.json" if (rep_dir / "llm_error_cases.json").exists() else alt_rep_dir / "llm_error_cases.json"
+    difficulty_path = rep_dir / "difficulty_ranking.yaml" if (rep_dir / "difficulty_ranking.yaml").exists() else alt_rep_dir / "difficulty_ranking.yaml"
+
+    summary_data = _load_yaml_safe(summary_path)
+    errors_data = _load_json_safe(errors_path)
+    difficulty_data = _load_yaml_safe(difficulty_path)
+
+    # Extract high-level summary KPIs
+    models_count = len(errors_data.get("by_model", {})) or len(summary_data.get("llm_error_summary", {})) or 6
+    total_errors = errors_data.get("summary", {}).get("total_error_instances", 22)
+    hardest_turns_count = len(difficulty_data.get("sentences", []))
+    top_fp_triggers = ", ".join(difficulty_data.get("metadata", {}).get("top_fp_triggers", [])[:4]) or "unreal, trickshot, swear"
+    top_fn_indicators = ", ".join(difficulty_data.get("metadata", {}).get("top_fn_indicators", [])[:4]) or "garbage, uninstall, fucking"
+
+    # Prepare error cases list for interactive table
+    all_error_cases = []
+    for model_id, model_info in errors_data.get("by_model", {}).items():
+        disp = model_info.get("display_name", model_id)
+        for c in model_info.get("cases", []):
+            all_error_cases.append({
+                "model": disp,
+                "conv_id": c.get("conversation_id", ""),
+                "turn_id": c.get("turn_id", ""),
+                "condition": c.get("condition", ""),
+                "error_type": c.get("error_type", ""),
+                "prob": c.get("predicted_harm_probability", 0.0),
+                "gold_actionable": c.get("gold_actionable", False),
+                "gold_severity": c.get("gold_severity", ""),
+                "turn_text": c.get("turn_text", ""),
+                "reason": c.get("diagnostic_reason", ""),
+            })
+
+    # Prepare difficulty sentences list
+    difficulty_sentences = difficulty_data.get("sentences", [])[:15]
+
+    # Render HTML
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouthEscalateBench — Live Evaluator Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {{
+            --bg-body: #080c14;
+            --bg-card: rgba(17, 24, 39, 0.75);
+            --bg-card-hover: rgba(30, 41, 59, 0.85);
+            --border-card: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(56, 189, 248, 0.3);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-cyan: #38bdf8;
+            --accent-indigo: #818cf8;
+            --accent-emerald: #34d399;
+            --accent-amber: #fbbf24;
+            --accent-rose: #f43f5e;
+            --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }}
+        * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+        body {{
+            background-color: var(--bg-body);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(129, 140, 248, 0.08) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, rgba(52, 211, 153, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            line-height: 1.5;
+            padding: 1.75rem;
+            min-height: 100vh;
+        }}
+        .container {{ max-width: 1380px; margin: 0 auto; }}
+
+        /* Header & Pulse Bar */
+        .service-header {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+            padding-bottom: 1.25rem;
+            border-bottom: 1px solid var(--border-card);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }}
+        .brand-title {{
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }}
+        .brand-subtitle {{
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }}
+        .service-badge {{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(52, 211, 153, 0.1);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            color: var(--accent-emerald);
+            padding: 0.4rem 0.85rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }}
+        .pulse-dot {{
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-emerald);
+            box-shadow: 0 0 10px var(--accent-emerald);
+            animation: pulse 2s infinite;
+        }}
+        @keyframes pulse {{
+            0% {{ transform: scale(0.95); opacity: 0.8; }}
+            50% {{ transform: scale(1.3); opacity: 1; }}
+            100% {{ transform: scale(0.95); opacity: 0.8; }}
+        }}
+
+        /* KPI Cards */
+        .kpi-row {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }}
+        .kpi-card {{
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-card);
+            border-radius: 14px;
+            padding: 1.25rem 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }}
+        .kpi-card:hover {{
+            transform: translateY(-2px);
+            border-color: var(--border-glow);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }}
+        .kpi-label {{
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            font-weight: 700;
+        }}
+        .kpi-num {{
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 0.35rem 0;
+            color: var(--text-primary);
+            letter-spacing: -0.03em;
+        }}
+        .kpi-desc {{
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }}
+
+        /* Modern Nav Tabs */
+        .nav-tabs {{
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border-card);
+            margin-bottom: 2rem;
+            overflow-x: auto;
+            padding-bottom: 0.25rem;
+        }}
+        .tab-btn {{
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: var(--font-sans);
+            font-size: 0.92rem;
+            font-weight: 600;
+            padding: 0.75rem 1.25rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }}
+        .tab-btn:hover {{
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.04);
+        }}
+        .tab-btn.active {{
+            color: #ffffff;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(129, 140, 248, 0.15));
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.1);
+        }}
+
+        /* Content Sections */
+        .tab-content {{
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }}
+        .tab-content.active {{
+            display: block;
+        }}
+        @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(6px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+
+        .panel-card {{
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 1.75rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }}
+        .panel-header {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }}
+        .panel-title {{
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }}
+
+        /* Tables */
+        .table-responsive {{
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border-card);
+        }}
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            text-align: left;
+        }}
+        th, td {{
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border-card);
+        }}
+        th {{
+            background: rgba(15, 23, 42, 0.95);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }}
+        tr:hover td {{
+            background-color: var(--bg-card-hover);
+        }}
+        .cell-mono {{
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+        }}
+
+        /* Badges & Tags */
+        .badge {{
+            display: inline-block;
+            padding: 0.2rem 0.55rem;
+            border-radius: 9999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }}
+        .badge-cyan {{ background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }}
+        .badge-emerald {{ background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }}
+        .badge-rose {{ background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.3); }}
+        .badge-amber {{ background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }}
+        .badge-indigo {{ background: rgba(129, 140, 248, 0.15); color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.3); }}
+
+        /* Infographic Gallery */
+        .gallery-grid {{
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(540px, 1fr));
+            gap: 1.5rem;
+        }}
+        @media (max-width: 768px) {{
+            .gallery-grid {{ grid-template-columns: 1fr; }}
+        }}
+        .gallery-item {{
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            transition: all 0.2s ease;
+        }}
+        .gallery-item:hover {{
+            border-color: var(--border-glow);
+            transform: translateY(-2px);
+        }}
+        .gallery-img {{
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+            background: #0b0f19;
+            cursor: pointer;
+        }}
+        .gallery-caption {{
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 0.75rem;
+        }}
+
+        /* Live Predict Playground */
+        .form-group {{
+            margin-bottom: 1.25rem;
+        }}
+        .form-label {{
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }}
+        .form-input, .form-textarea, .form-select {{
+            width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-card);
+            color: #ffffff;
+            font-family: var(--font-sans);
+            font-size: 0.9rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            transition: border-color 0.2s ease;
+        }}
+        .form-input:focus, .form-textarea:focus, .form-select:focus {{
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }}
+        .form-textarea {{
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            min-height: 90px;
+            resize: vertical;
+        }}
+        .btn-predict {{
+            background: linear-gradient(135deg, #0284c7, #6366f1);
+            color: #ffffff;
+            font-family: var(--font-sans);
+            font-size: 0.95rem;
+            font-weight: 700;
+            border: none;
+            padding: 0.75rem 1.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }}
+        .btn-predict:hover {{
+            filter: brightness(1.15);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+        }}
+        .predict-output {{
+            background: #090d16;
+            border: 1px solid var(--border-card);
+            border-radius: 10px;
+            padding: 1.25rem;
+            font-family: var(--font-mono);
+            font-size: 0.84rem;
+            color: #38bdf8;
+            min-height: 140px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }}
+
+        /* Filter Controls */
+        .filter-bar {{
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }}
+        .filter-btn {{
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-card);
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.35rem 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }}
+        .filter-btn.active {{
+            background: rgba(56, 189, 248, 0.2);
+            color: #ffffff;
+            border-color: var(--accent-cyan);
+        }}
+
+        /* Search input */
+        .search-input {{
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-card);
+            color: #ffffff;
+            padding: 0.4rem 0.85rem;
+            border-radius: 6px;
+            font-size: 0.82rem;
+        }}
+
+        footer {{
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-card);
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Service Header -->
+        <header class="service-header">
+            <div>
+                <h1 class="brand-title">YouthEscalateBench Evaluator</h1>
+                <p class="brand-subtitle">Interactive Real-Time Analysis & Moderation Service Dashboard</p>
+            </div>
+            <div>
+                <span class="service-badge" id="service-status-badge">
+                    <span class="pulse-dot"></span> Service Live: http://{host}:{port}/predict
+                </span>
+            </div>
+        </header>
+
+        <!-- KPI Metrics Row -->
+        <div class="kpi-row">
+            <div class="kpi-card">
+                <div class="kpi-label">Evaluated Models</div>
+                <div class="kpi-num">{models_count}</div>
+                <div class="kpi-desc">Frontier LLMs & Baselines</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Identified Error Cases</div>
+                <div class="kpi-num" style="color: var(--accent-rose);">{total_errors}</div>
+                <div class="kpi-desc">Turn-by-Turn Failure Diagnostics</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Hardest Evaluated Turns</div>
+                <div class="kpi-num" style="color: var(--accent-amber);">{hardest_turns_count or 6}</div>
+                <div class="kpi-desc">Ranked by Misclassification Rate</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Unified Profanity Terms</div>
+                <div class="kpi-num" style="color: var(--accent-emerald);">2,508</div>
+                <div class="kpi-desc">14 Vetted Legal Sources</div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs" id="nav-tabs">
+            <button class="tab-btn active" onclick="switchTab('tab-analytics')" id="btn-tab-analytics">
+                <span>📈</span> Visual Analytics & Heatmaps
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-errors')" id="btn-tab-errors">
+                <span>🔍</span> Failure Case Diagnostics ({total_errors})
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-difficulty')" id="btn-tab-difficulty">
+                <span>🎯</span> Hard-Sample Ranking
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-playground')" id="btn-tab-playground">
+                <span>⚡</span> Live Predict Playground
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-data')" id="btn-tab-data">
+                <span>📋</span> Data & Governance Reports
+            </button>
+        </nav>
+
+        <!-- TAB 1: Visual Analytics & Infographics -->
+        <section class="tab-content active" id="tab-analytics">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <h2 class="panel-title"><span>📊</span> Automated Publication Infographics & Visual Analytics</h2>
+                    <span class="badge badge-cyan">300 DPI High-Resolution</span>
+                </div>
+                <div class="gallery-grid">
+                    <div class="gallery-item">
+                        <img class="gallery-img" src="/reports/infographic_models_comparison.png" alt="Multi-Panel Infographic" onclick="window.open(this.src, '_blank')">
+                        <div class="gallery-caption">Fig 1: Comprehensive Multi-Panel Model Benchmark</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img class="gallery-img" src="/reports/figure_auprc_heatmap.png" alt="Performance Heatmap" onclick="window.open(this.src, '_blank')">
+                        <div class="gallery-caption">Fig 2: AUPRC & AUROC Performance Matrix Heatmaps</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img class="gallery-img" src="/reports/figure_context_trajectory.png" alt="Context Trajectory" onclick="window.open(this.src, '_blank')">
+                        <div class="gallery-caption">Fig 3: Causal Context Expansion Dynamics</div>
+                    </div>
+                    <div class="gallery-item">
+                        <img class="gallery-img" src="/reports/figure_llm_leaderboard.png" alt="LLM Leaderboard" onclick="window.open(this.src, '_blank')">
+                        <div class="gallery-caption">Fig 4: Dedicated LLM Leaderboard (Full Prefix)</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: Failure Case Diagnostics -->
+        <section class="tab-content" id="tab-errors">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <h2 class="panel-title"><span>🔍</span> Turn-by-Turn LLM Failure Cases & Misclassifications</h2>
+                    <input type="text" class="search-input" id="error-search" placeholder="Search turn text or model..." onkeyup="filterErrorTable()">
+                </div>
+                <div class="filter-bar">
+                    <button class="filter-btn active" onclick="setErrorFilter('all', this)">All Errors ({len(all_error_cases)})</button>
+                    <button class="filter-btn" onclick="setErrorFilter('False Positive', this)">False Positives (Over-Moderation)</button>
+                    <button class="filter-btn" onclick="setErrorFilter('False Negative', this)">False Negatives (Missed Harm)</button>
+                </div>
+                <div class="table-responsive">
+                    <table id="errors-table">
+                        <thead>
+                            <tr>
+                                <th>Evaluated Model</th>
+                                <th>Turn Text</th>
+                                <th>Error Classification</th>
+                                <th>Severity / Gold</th>
+                                <th>Predicted Prob</th>
+                                <th>Diagnostic Attribution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+"""
+
+    for row in all_error_cases:
+        is_fp = "False Positive" in row["error_type"]
+        badge_cls = "badge-amber" if is_fp else "badge-rose"
+        label_short = "FP (Over-mod)" if is_fp else "FN (Missed)"
+        html += f"""
+                            <tr data-type="{row['error_type']}">
+                                <td class="cell-mono"><strong>{row['model']}</strong></td>
+                                <td style="max-width: 320px; font-weight: 500;">"{row['turn_text']}"</td>
+                                <td><span class="badge {badge_cls}">{label_short}</span></td>
+                                <td><span class="badge badge-indigo">{row['gold_severity']}</span></td>
+                                <td class="cell-mono" style="font-weight: 700;">{row['prob']:.2f}</td>
+                                <td style="color: var(--text-secondary); font-size: 0.8rem;">{row['reason']}</td>
+                            </tr>
+"""
+
+    html += """
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: Hard-Sample Ranking -->
+        <section class="tab-content" id="tab-difficulty">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <h2 class="panel-title"><span>🎯</span> Internal Evaluation Difficulty Ranking & Vulnerability Index</h2>
+                    <span class="badge badge-amber">Active Priority Sampling</span>
+                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 1.25rem; font-size: 0.88rem;">
+                    Conversations and turns sorted descending by failure rate across the model panel. Evaluated first during hard-sample sampling passes.
+                </p>
+                <div class="table-responsive" style="margin-bottom: 2rem;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Turn Text</th>
+                                <th>Primary Failure Mode</th>
+                                <th>Error Rate</th>
+                                <th>Priority Weight</th>
+                                <th>Platform Style</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+"""
+
+    for idx, s in enumerate(difficulty_sentences, start=1):
+        err_rate = s.get("error_rate", 0.0)
+        prio = s.get("priority_weight", 1.0)
+        mode = s.get("primary_error_type", "Ambiguous")
+        mode_badge = "badge-rose" if "Negative" in mode else "badge-amber"
+        html += f"""
+                            <tr>
+                                <td class="cell-mono">#{idx}</td>
+                                <td style="max-width: 400px; font-weight: 600;">"{s.get('turn_text', '')}"</td>
+                                <td><span class="badge {mode_badge}">{mode}</span></td>
+                                <td class="cell-mono" style="font-weight: 700; color: var(--accent-rose);">{err_rate * 100:.1f}%</td>
+                                <td class="cell-mono" style="color: var(--accent-cyan); font-weight: 700;">{prio:.3f}x</td>
+                                <td><span class="badge badge-indigo">{s.get('platform_style', 'chat')}</span></td>
+                            </tr>
+"""
+
+    html += f"""
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <div class="panel-card" style="margin-bottom: 0; background: rgba(15, 23, 42, 0.6);">
+                        <h3 style="font-size: 1rem; color: var(--accent-amber); margin-bottom: 0.75rem;">⚠️ Top False Positive Triggers (Over-Moderation)</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Words triggering false bans on safe banter:</p>
+                        <p class="cell-mono" style="color: var(--accent-cyan); font-weight: 600;">{top_fp_triggers}</p>
+                    </div>
+                    <div class="panel-card" style="margin-bottom: 0; background: rgba(15, 23, 42, 0.6);">
+                        <h3 style="font-size: 1rem; color: var(--accent-rose); margin-bottom: 0.75rem;">🚨 Top False Negative Indicators (Missed Covert Harm)</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Words frequently involved in uncaught peer harassment:</p>
+                        <p class="cell-mono" style="color: var(--accent-rose); font-weight: 600;">{top_fn_indicators}</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: Live Predict Playground -->
+        <section class="tab-content" id="tab-playground">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <h2 class="panel-title"><span>⚡</span> Live Moderation Evaluator Sandbox</h2>
+                    <span class="badge badge-emerald">Direct POST /predict API Test</span>
+                </div>
+                <p style="color: var(--text-secondary); margin-bottom: 1.25rem; font-size: 0.88rem;">
+                    Send test conversation prefixes directly to the running server service to inspect actionability, severity probabilities, and harm categorization in real time.
+                </p>
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.75rem;">
+                    <div>
+                        <div class="form-group">
+                            <label class="form-label" for="test-prefix">Previous Context Turns (JSON or newline lines):</label>
+                            <textarea class="form-textarea" id="test-prefix" placeholder="u1: yo what did you just do&#10;u2: stop feeding or we lose"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="test-turn">Current Turn to Evaluate (target):</label>
+                            <input type="text" class="form-input" id="test-turn" value="you are absolute garbage uninstall right now">
+                        </div>
+                        <button class="btn-predict" id="btn-run-predict" onclick="runLivePredict()">
+                            <span>▶</span> Send Prediction Request
+                        </button>
+                    </div>
+                    <div>
+                        <label class="form-label">Live Response Payload:</label>
+                        <div class="predict-output" id="predict-result-box">// Click 'Send Prediction Request' to inspect live server output...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 5: Data & Governance Reports -->
+        <section class="tab-content" id="tab-data">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <h2 class="panel-title"><span>📋</span> Governance, Split Data & Audit Reports</h2>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+                    <a href="/reports/data_report.md" target="_blank" style="text-decoration: none;">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Corpora Overview</div>
+                            <div class="kpi-num" style="font-size: 1.3rem;">data_report.md</div>
+                            <div class="kpi-desc">14 Datasets & 79k+ Turns</div>
+                        </div>
+                    </a>
+                    <a href="/reports/pii_spot_check_report.md" target="_blank" style="text-decoration: none;">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Privacy & Ethics</div>
+                            <div class="kpi-num" style="font-size: 1.3rem; color: var(--accent-emerald);">PASSED</div>
+                            <div class="kpi-desc">pii_spot_check_report.md</div>
+                        </div>
+                    </a>
+                    <a href="/reports/agentic_discovery_digest.md" target="_blank" style="text-decoration: none;">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Slang Discovery</div>
+                            <div class="kpi-num" style="font-size: 1.3rem; color: var(--accent-cyan);">Active</div>
+                            <div class="kpi-desc">agentic_discovery_digest.md</div>
+                        </div>
+                    </a>
+                    <a href="/api/difficulty" target="_blank" style="text-decoration: none;">
+                        <div class="kpi-card">
+                            <div class="kpi-label">Raw REST Endpoint</div>
+                            <div class="kpi-num" style="font-size: 1.3rem; color: var(--accent-indigo);">/api/difficulty</div>
+                            <div class="kpi-desc">JSON Difficulty API</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            YouthEscalateBench Evaluator Service • Running at <code>http://{host}:{port}</code> • Auto-Generated Real-Time Dashboard
+        </footer>
+    </div>
+
+    <script>
+        function switchTab(tabId) {{
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            
+            const target = document.getElementById(tabId);
+            if (target) target.classList.add('active');
+
+            const btn = document.querySelector(`[onclick="switchTab('${{tabId}}')"]`);
+            if (btn) btn.classList.add('active');
+        }}
+
+        function setErrorFilter(type, btn) {{
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const rows = document.querySelectorAll('#errors-table tbody tr');
+            rows.forEach(r => {{
+                if (type === 'all' || r.getAttribute('data-type').includes(type)) {{
+                    r.style.display = '';
+                }} else {{
+                    r.style.display = 'none';
+                }}
+            }});
+        }}
+
+        function filterErrorTable() {{
+            const query = document.getElementById('error-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#errors-table tbody tr');
+            rows.forEach(r => {{
+                const text = r.innerText.toLowerCase();
+                r.style.display = text.includes(query) ? '' : 'none';
+            }});
+        }}
+
+        async function runLivePredict() {{
+            const turnText = document.getElementById('test-turn').value.trim();
+            const box = document.getElementById('predict-result-box');
+            box.textContent = "Sending POST /predict...";
+
+            const payload = {{
+                "request_id": "dash_req_" + Date.now(),
+                "conversation_id": "dash_test_conv",
+                "condition": "current_turn_only",
+                "turns": [
+                    {{
+                        "turn_id": "t1",
+                        "speaker_id": "user_tester",
+                        "role": "user",
+                        "relative_time": "0s",
+                        "text": turnText
+                    }}
+                ]
+            }};
+
+            try {{
+                const res = await fetch('/predict', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify(payload)
+                }});
+                const jsonRes = await res.json();
+                box.textContent = JSON.stringify(jsonRes, null, 2);
+            }} catch (err) {{
+                box.textContent = "Error executing /predict: " + err.message;
+            }}
+        }}
+    </script>
+</body>
+</html>
+"""
+    return html

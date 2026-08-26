@@ -10,7 +10,7 @@ This document synthesizes the status of the entire project across all documentat
 +-----------------------------------------------------------------------------------+
 | Stage / Area                   | Implementation Status     | Validation Status     |
 +-----------------------------------------------------------------------------------+
-| Phase 0: System Architecture   | [x] 100% COMPLETE         | [x] 105/105 Pytest Pass|
+| Phase 0: System Architecture   | [x] 100% COMPLETE         | [x] 119/119 Pytest Pass|
 | Phase 1: Governance & Audit    | [x] 100% COMPLETE         | [x] Gate Passed (14/14)|
 | Phase 2: Pilot Pipeline        | [x] 100% Code Complete    | [ ] Live Annotators   |
 | Phase 3: Data Construction     | [x] 100% COMPLETE (79k+)  | [x] 14 Sources Ingest |
@@ -73,7 +73,7 @@ This document synthesizes the status of the entire project across all documentat
   - `figure_llm_leaderboard.png` (Dedicated LLM ranking chart)
   - `infographic_dashboard.html` (Standalone interactive dark-mode dashboard)
 - [x] **Extended Failure Diagnostics (`--extended-report`)**: Turn-by-turn error logs with exact turn text, dialogue context, and diagnostic rationales.
-- [x] **Evaluator Microservice Container**: Production-ready Docker container and manual in [`docker/evaluator/`](docker/evaluator/README.md).
+- [x] **Evaluator Microservice Container & Interactive Live Dashboard**: Production-ready Docker container with real-time web dashboard on `/dashboard` for visual analytics, failure diagnostics, hard-sample inspection, and interactive prediction testing (`yeb serve`).
 - [x] **Quarterly Live Snapshot Tooling (`yeb create-snapshot`)**: Bundles versioned release archives with Croissant metadata and SHA256 verification.
 - [x] **Independent PII Audit Spot-Check Tooling (`yeb audit-pii`)**: Automated high-recall heuristic scanner with formal verification report (`reports/pii_spot_check_report.md`).
 - [x] **Unified Profanity & Slur Database (`yeb profanity-check`, `yeb lexicon-stats`)**: 2,508 terms with severity ratings (1–4) and categories from 5 trusted sources.

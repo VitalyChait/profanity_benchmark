@@ -16,6 +16,25 @@ The `Dockerfile` packages YouthEscalateBench into a lightweight, hermetic, and r
 | **2. Zero-Leakage Air-Gapped Evaluation** | Evaluating models on hidden/unseen test splits with complete network isolation (`--network none`). | Guarantees participant models cannot exfiltrate hidden benchmark test data or make unauthorized external API calls. |
 | **3. Production Real-Time Moderation Microservice** | Deploying chat safety moderation in gaming chats, youth forums, or messaging platforms as a standalone microservice. | Plug-and-play deployment onto Kubernetes, AWS ECS, Google Cloud Run, or Docker Compose. |
 | **4. Reproducible Baseline Benchmarking** | Running lexical, subword TF-IDF, and rule-based safeguard baselines locally with zero environment drift. | Avoids Python version mismatches and OS-specific dependency issues. |
+| **5. Live Results Analysis Dashboard** | Interactive dark-mode web dashboard on `/dashboard` with visual heatmaps, failure diagnostics, and live prediction playground. | Instant visual inspection and debugging of moderation outputs in real time. |
+
+---
+
+## 📊 Interactive Web Dashboard View
+
+When running as a service, the server provides a built-in interactive web dashboard to analyze evaluation results:
+
+- **Web Dashboard URL**: `http://localhost:8080/dashboard` (or `http://localhost:8080/`)
+- **Key Capabilities**:
+  - **Visual Analytics Gallery**: View high-resolution 300 DPI heatmaps, causal trajectory curves, and leaderboard charts.
+  - **Turn-by-Turn Failure Inspector**: Search and filter false positives (over-moderation) vs. false negatives (missed harm) with dialogue context and diagnostic attributions.
+  - **Hard-Sample Ranking Explorer**: Inspect hardest conversational turns and top trigger words sorted by error rate.
+  - **Live Prediction Playground**: Interactively enter conversation turns and submit live requests to `POST /predict`.
+  - **REST API Endpoints**:
+    - `GET /health`: Health check (`{"status": "healthy"}`)
+    - `GET /api/summary`: Summary benchmark metrics (AUPRC, AUROC, F1)
+    - `GET /api/errors`: LLM failure cases JSON
+    - `GET /api/difficulty`: Difficulty and vulnerability ranking JSON
 
 ---
 

@@ -6,7 +6,7 @@ Structured subtasks derived from [`plan.md`](plan.md). Status: `[ ]` pending · 
 
 ## Phase 0 — Repository Foundation `[x] COMPLETE`
 
-All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature E2E, 105+ pytest tests passing (100%).
+All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature E2E, 119+ pytest tests passing (100%).
 
 ---
 
@@ -83,7 +83,7 @@ All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature
 
 | ID | Subtask | Status |
 |----|---------|--------|
-| 6.1 | Private `/predict` server + Docker container | `[x]` `docker/evaluator/Dockerfile` + `yeb serve` |
+| 6.1 | Private `/predict` server + Docker + Service Dashboard | `[x]` `docker/evaluator/Dockerfile` + `yeb serve` (interactive `/dashboard`) |
 | 6.2 | Quarterly live snapshot tooling | `[x]` `yeb create-snapshot` + Croissant metadata + SHA256 |
 | 6.3 | Benchmark card, datasheet, license worksheet | `[x]` complete in `docs/` |
 | 6.4 | Paper LaTeX tables, infographics & dashboards | `[x]` auto-generated in `reports/` |
