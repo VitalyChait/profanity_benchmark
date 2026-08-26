@@ -424,5 +424,59 @@ def validate_llms_command(
             click.echo(f"Report saved to Markdown table: {output}")
 
 
+@main.command("urban-dict")
+@click.argument("term", required=False, default=None)
+@click.option("--limit", "-l", default=3, type=int, help="Maximum definitions to display.")
+@click.option("--strict", is_flag=True, default=False, help="Match query term strictly.")
+@click.option("--random", "-r", "fetch_random", is_flag=True, default=False, help="Fetch random slang terms.")
+@click.option(
+    "--api-url",
+    default=None,
+    help="Custom Urban Dictionary API base URL (default: https://unofficialurbandictionaryapi.com/).",
+)
+def urban_dict_command(
+    term: str | None,
+    limit: int,
+    strict: bool,
+    fetch_random: bool,
+    api_url: str | None,
+) -> None:
+    """Query slang and colloquial definitions against the Unofficial Urban Dictionary API."""
+    from youth_escalate_bench.external.urban_dictionary import UrbanDictionaryClient
+
+    client = UrbanDictionaryClient(base_url=api_url)
+
+    if fetch_random:
+        click.echo(f"Fetching random slang terms from {client.base_url}...")
+        results = client.get_random(limit=limit)
+    elif term:
+        click.echo(f"Querying Urban Dictionary for '{term}' (strict={strict})...")
+        results = client.search(term=term, strict=strict, limit=limit)
+    else:
+        click.echo("Error: Please provide a term to search, or use --random to browse.")
+        raise click.UsageError("Missing argument 'TERM' or flag '--random'.")
+
+    if not results:
+        click.echo("No definitions found for query.")
+        return
+
+    click.echo("=" * 65)
+    click.echo(f"Urban Dictionary Results ({len(results)} entry/entries):")
+    click.echo("=" * 65)
+
+    for idx, d in enumerate(results, 1):
+        click.echo(f"\n[{idx}] {d.word}")
+        click.echo(f"Meaning: {d.meaning}")
+        if d.example:
+            click.echo(f"Example: {d.example}")
+        if d.contributor or d.date:
+            attr = f"by {d.contributor}" if d.contributor else ""
+            if d.date:
+                attr += f" on {d.date}"
+            click.echo(f"({attr.strip()})")
+
+    click.echo("=" * 65)
+
+
 if __name__ == "__main__":
     main()

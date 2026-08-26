@@ -3,6 +3,7 @@
 import re
 from collections.abc import Callable
 from enum import StrEnum
+from typing import Any
 
 from youth_escalate_bench.manifest import sha256_text
 
@@ -192,3 +193,12 @@ def transform_version_hash() -> str:
     """Immutable version id for transformation operator set."""
     payload = "|".join(sorted(TransformFamily))
     return sha256_text(payload)[:16]
+
+
+def verify_slang_in_urban_dictionary(word: str, client: Any | None = None) -> bool:
+    """Check whether an algospeak or youth slang term is defined in Urban Dictionary."""
+    if client is None:
+        from youth_escalate_bench.external.urban_dictionary import UrbanDictionaryClient
+
+        client = UrbanDictionaryClient()
+    return bool(client.is_slang_defined(word))
