@@ -79,3 +79,22 @@ def test_report_stage_runs(tmp_path: Path):
     assert (report_out / "evaluation_report.md").exists()
     assert (report_out / "report_summary.yaml").exists()
     assert (report_out / "table_main_results.tex").exists()
+
+
+def test_openrouter_model_family_display_names() -> None:
+    from youth_escalate_bench.reporting.infographics import _get_display_name
+
+    # Model configured in .env: z-ai/glm-5.3-flash
+    name, family = _get_display_name("llm_openrouter_glm_5_3_flash")
+    assert family == "OpenRouter LLM"
+    assert "GLM" in name and "5.3" in name
+
+    # Model configured in .env: google/gemma-4-31b-it:free
+    name2, family2 = _get_display_name("llm_openrouter_gemma_4_31b_it_free")
+    assert family2 == "OpenRouter LLM"
+    assert "Gemma" in name2 and "(Free)" in name2
+
+    # Any generic openrouter model
+    name3, family3 = _get_display_name("llm_openrouter_qwen_qwen_2_5_72b_instruct")
+    assert family3 == "OpenRouter LLM"
+    assert "Qwen" in name3

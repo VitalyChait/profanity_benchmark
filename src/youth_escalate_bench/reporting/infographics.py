@@ -13,15 +13,52 @@ import structlog
 logger = structlog.get_logger()
 
 
+def _format_model_from_spec(mdl: str) -> str:
+    """Convert model spec (e.g. 'z-ai/glm-5.3-flash' or 'google/gemma-4-31b-it:free') into a clean human title."""
+    org = mdl.split("/")[0] if "/" in mdl else ""
+    base = mdl.split("/")[-1]
+    is_free = False
+    if base.endswith(":free") or base.endswith("_free"):
+        is_free = True
+        base = base[:-5]
+
+    parts = base.replace("-", " ").replace("_", " ").split()
+    out: list[str] = []
+    if org.lower() == "liquid" and not any(p.lower() == "liquid" for p in parts):
+        out.append("Liquid")
+
+    for p in parts:
+        pl = p.lower()
+        if pl in ("glm", "gpt", "lfm", "llm", "it", "ai", "dpo", "rlhf"):
+            token = p.upper()
+        elif pl in ("qwen", "llama", "gemma", "mistral", "claude", "gemini", "deepseek"):
+            token = p.title()
+        elif pl.endswith("b") and pl[:-1].replace(".", "").isdigit():
+            token = p.upper()
+        elif pl == "dots":
+            token = "Dots"
+        elif pl == "nemotron":
+            token = "Nemotron"
+        elif pl in ("flash", "safety", "instruct", "preview", "note", "content"):
+            token = p.capitalize()
+        else:
+            token = p.title()
+
+        if not out or out[-1].lower() != token.lower():
+            out.append(token)
+
+    name = " ".join(out)
+    if "Nemotron" in name and "Content Safety" in name:
+        name = name.replace("Content Safety", "Safety")
+    if is_free:
+        name += " (Free)"
+    return name
+
+
 def _get_display_name(scorer_id: str) -> tuple[str, str]:
     """Return clean human-readable name and model family."""
     mapping = {
         "prompted_llm_judge": ("Gemma 4 31B (Default Judge)", "LLM Judge"),
-        "llm_openrouter_gemma_4_31b_it_free": ("Gemma 4 31B IT (Free)", "OpenRouter LLM"),
-        "llm_openrouter_gemma_4_26b_a4b_it_free": ("Gemma 4 26B A4B IT (Free)", "OpenRouter LLM"),
-        "llm_openrouter_nemotron_3_5_content_safety_free": ("Nemotron 3.5 Safety (Free)", "OpenRouter LLM"),
-        "llm_openrouter_dots_3_note_preview_free": ("Dots 3 Note Preview (Free)", "OpenRouter LLM"),
-        "llm_openrouter_lfm_2_5_2_6b_free": ("Liquid LFM 2.5 2.6B (Free)", "OpenRouter LLM"),
         "ensemble_moderator": ("Ensemble Moderator", "Ensemble"),
         "char_ngram_tfidf": ("Char N-Gram TF-IDF", "Subword Baseline"),
         "lexicon_raw": ("Raw Lexicon Match", "Lexical Baseline"),
@@ -29,7 +66,69 @@ def _get_display_name(scorer_id: str) -> tuple[str, str]:
         "lexicon_full_context": ("Full-Context Lexicon", "Lexical Baseline"),
         "rule_based_safeguard": ("Rule Safeguard Expert", "Rule Baseline"),
     }
-    return mapping.get(scorer_id, (scorer_id.replace("_", " ").title(), "Custom"))
+    if scorer_id in mapping:
+        return mapping[scorer_id]
+
+    # Dynamic lookup from all models defined in .env for OpenRouter
+    try:
+        from youth_escalate_bench.llm import get_openrouter_models
+
+        for mdl in get_openrouter_models():
+            clean_id = mdl.split("/")[-1].replace(":", "_").replace("-", "_").replace(".", "_")
+            key = f"llm_openrouter_{clean_id}"
+            if scorer_id in (key, mdl, f"openrouter/{mdl}"):
+                return (_format_model_from_spec(mdl), "OpenRouter LLM")
+    except Exception:
+        pass
+
+    # Pattern-based provider matching for OpenRouter and LLM providers
+    if scorer_id.startswith("llm_openrouter_"):
+        slug = scorer_id[len("llm_openrouter_"):]
+        return (_format_model_from_spec(slug), "OpenRouter LLM")
+    if scorer_id.startswith("openrouter_"):
+        slug = scorer_id[len("openrouter_"):]
+        return (_format_model_from_spec(slug), "OpenRouter LLM")
+    if scorer_id.startswith("llm_groq_"):
+        slug = scorer_id[len("llm_groq_"):]
+        return (_format_model_from_spec(slug), "Groq LLM")
+    if scorer_id.startswith("llm_mistral_"):
+        slug = scorer_id[len("llm_mistral_"):]
+        return (_format_model_from_spec(slug), "Mistral LLM")
+    if scorer_id.startswith("llm_gemini_"):
+        slug = scorer_id[len("llm_gemini_"):]
+        return (_format_model_from_spec(slug), "Gemini LLM")
+    if scorer_id.startswith("llm_openai_"):
+        slug = scorer_id[len("llm_openai_"):]
+        return (_format_model_from_spec(slug), "OpenAI LLM")
+    if scorer_id.startswith("llm_anthropic_"):
+        slug = scorer_id[len("llm_anthropic_"):]
+        return (_format_model_from_spec(slug), "Anthropic LLM")
+    if scorer_id.startswith("llm_together_"):
+        slug = scorer_id[len("llm_together_"):]
+        return (_format_model_from_spec(slug), "Together LLM")
+    if scorer_id.startswith("llm_cohere_"):
+        slug = scorer_id[len("llm_cohere_"):]
+        return (_format_model_from_spec(slug), "Cohere LLM")
+    if scorer_id.startswith("llm_deepseek_"):
+        slug = scorer_id[len("llm_deepseek_"):]
+        return (_format_model_from_spec(slug), "DeepSeek LLM")
+    if scorer_id.startswith("llm_qwen_"):
+        slug = scorer_id[len("llm_qwen_"):]
+        return (_format_model_from_spec(slug), "Qwen LLM")
+    if scorer_id.startswith("llm_glm_"):
+        slug = scorer_id[len("llm_glm_"):]
+        return (_format_model_from_spec(slug), "GLM LLM")
+    if scorer_id.startswith("llm_ollama_"):
+        slug = scorer_id[len("llm_ollama_"):]
+        return (_format_model_from_spec(slug), "Ollama Local LLM")
+    if scorer_id.startswith("llm_huggingface_"):
+        slug = scorer_id[len("llm_huggingface_"):]
+        return (_format_model_from_spec(slug), "HuggingFace LLM")
+    if scorer_id.startswith("llm_"):
+        slug = scorer_id[len("llm_"):]
+        return (_format_model_from_spec(slug), "LLM Model")
+
+    return (scorer_id.replace("_", " ").title(), "Custom")
 
 
 def _get_float(d: dict[str, Any] | None, key: str, default: float = 0.0) -> float:
