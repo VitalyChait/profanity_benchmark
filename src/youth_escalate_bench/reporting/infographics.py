@@ -1,5 +1,6 @@
 """Automated Infographics and Visualizations for YouthEscalateBench."""
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,11 @@ def _format_model_from_spec(mdl: str) -> str:
     if base.endswith(":free") or base.endswith("_free"):
         is_free = True
         base = base[:-5]
+
+    # Convert version number patterns like 5_3 or 2_5 (single digit subversion) into 5.3, 2.5
+    base = re.sub(r"(^|[\s_/-])(\d+)_(\d)(?=[\s_/-]|$)", r"\1\2.\3", base)
+    # Also handle decimal parameter counts like 2_6b or 1_5b into 2.6B, 1.5B
+    base = re.sub(r"(^|[\s_/-])(\d+)_(\d)[bB](?=[\s_/-]|$)", r"\1\2.\3B", base)
 
     parts = base.replace("-", " ").replace("_", " ").split()
     out: list[str] = []
