@@ -1,6 +1,6 @@
 # YouthEscalateBench
 
-Dynamic multi-turn youth safety moderation benchmark for causal cyberbullying and escalation detection. Includes a 12-stage pipeline, 14 audited research datasets & lexicons (79k+ turns, 2,508 unified profanity terms), 12 evaluated LLMs/baselines across 3 context conditions, automated difficulty ranking, autonomous agentic discovery, real-time interactive service dashboard, and 100% test pass rate (119/119).
+Dynamic multi-turn youth safety moderation benchmark for causal cyberbullying and escalation detection. Includes a 12-stage pipeline, 14 audited research datasets & lexicons (79k+ turns, 2,508 unified profanity terms), 12 evaluated LLMs/baselines across 3 context conditions, automated difficulty ranking, autonomous agentic discovery, real-time interactive service dashboard, and 100% test pass rate (129/129).
 
 ## Quick Start
 ```bash

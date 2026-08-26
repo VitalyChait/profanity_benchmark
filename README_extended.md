@@ -3,8 +3,8 @@
 [![CI](https://github.com/VitalyChait/profanity_benchmark/actions/workflows/ci.yml/badge.svg)](https://github.com/VitalyChait/profanity_benchmark/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python: >=3.12](https://img.shields.io/badge/Python->=3.12-brightgreen.svg)](https://www.python.org/)
-[![Tests: 119 Passed](https://img.shields.io/badge/Tests-119%20Passed-success.svg)](tests/)
-[![Coverage: 80%](https://img.shields.io/badge/Coverage-80%25-informational.svg)](tests/)
+[![Tests: 129 Passed](https://img.shields.io/badge/Tests-129%20Passed-success.svg)](tests/)
+[![Coverage: 81%](https://img.shields.io/badge/Coverage-81%25-informational.svg)](tests/)
 
 **YouthEscalateBench** is a research-grade, causal evaluation benchmark designed to assess whether automated moderation systems and frontier Large Language Models (LLMs) can reliably detect harmful peer-to-peer interactions as they emerge across multi-turn, youth-oriented conversations—especially when profanity, slang, emojis, code-switching, and algospeak obscure the harm.
 
@@ -54,7 +54,7 @@ Standard toxicity benchmarks assess safety using isolated turns. They fail in yo
 - [x] **14 LLM Providers Supported**: Integrated with OpenRouter, Mistral, OpenAI, Anthropic, Gemini, Groq, DeepSeek, Together, Ollama, and local models.
 - [x] **Automated Infographics Generation**: High-resolution 300 DPI publication figures (multi-panel benchmark comparisons, AUPRC heatmaps, context trajectories, and dark-mode interactive HTML dashboards).
 - [x] **Turn-by-Turn Failure Case Diagnostics (`--extended-report`)**: Automated extraction of every False Positive and False Negative with exact turn text, dialogue context, and diagnostic rationales.
-- [x] **100% Test Suite Pass Rate**: 105+ automated unit, integration, schema, causal, agentic, and e2e tests passing in CI.
+- [x] **100% Test Suite Pass Rate**: 129+ automated unit, integration, schema, causal, agentic, and e2e tests passing in CI.
 - [x] **Quarterly Live Snapshot Tooling (`yeb create-snapshot`)**: Bundles versioned release archives with Croissant metadata and SHA256 verification.
 - [x] **Independent PII Audit Spot-Check (`yeb audit-pii`)**: Automated high-recall heuristic scanner with formal verification report (`reports/pii_spot_check_report.md`).
 - [x] **Air-Gapped Evaluator Microservice**: Sandboxed Docker container (`docker/evaluator/Dockerfile`) with HTTP `/predict` contract for zero-leakage offline scoring.
