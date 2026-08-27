@@ -285,7 +285,7 @@ def validate_all_providers(
     target_providers = providers or list(PROVIDER_KEY_MAP.keys())
     results: list[ProviderValidationResult] = []
 
-    from youth_escalate_bench.llm.keys import get_openrouter_models
+    from youth_escalate_bench.llm.keys import get_openrouter_models, get_requesty_models
 
     for p in target_providers:
         if only_configured and not is_provider_configured(p):
@@ -293,6 +293,10 @@ def validate_all_providers(
         if p == "openrouter" and is_provider_configured(p):
             for model in get_openrouter_models():
                 res = validate_provider(provider="openrouter", model=model, timeout=timeout)
+                results.append(res)
+        elif p == "requesty" and is_provider_configured(p):
+            for model in get_requesty_models():
+                res = validate_provider(provider="requesty", model=model, timeout=timeout)
                 results.append(res)
         else:
             res = validate_provider(provider=p, timeout=timeout)

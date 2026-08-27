@@ -58,6 +58,7 @@ PROVIDER_KEY_MAP: dict[str, list[str]] = {
     "deepseek": ["DEEPSEEK_API_KEY"],
     "mistral": ["MISTRAL_API_KEY"],
     "openrouter": ["OPENROUTER_API_KEY", "OPEN_ROUTER_API_KEY"],
+    "requesty": ["REQUESTY_API_KEY", "REQUESTY_KEY"],
     "huggingface": ["HF_TOKEN", "HUGGINGFACE_API_KEY"],
     "together": ["TOGETHER_API_KEY"],
     "cohere": ["COHERE_API_KEY"],
@@ -76,6 +77,7 @@ DEFAULT_MODELS: dict[str, str] = {
     "deepseek": "deepseek-chat",
     "mistral": "mistral-small-latest",
     "openrouter": "meta-llama/llama-3.3-70b-instruct",
+    "requesty": "google/gemma-4-31b-it",
     "huggingface": "meta-llama/Llama-Guard-3-1B",
     "together": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
     "cohere": "command-r-08-2024",
@@ -113,6 +115,7 @@ def get_llm_config() -> dict[str, Any]:
             "qwen",
             "glm",
             "openrouter",
+            "requesty",
             "ollama",
             "huggingface",
             "together",
@@ -223,11 +226,33 @@ def get_openrouter_models() -> list[str]:
     return [single] if single else [DEFAULT_MODELS["openrouter"]]
 
 
+def get_requesty_models() -> list[str]:
+    """Get list of all configured Requesty models for multi-model usage with zero duplicates.
+
+    Preserves definition order while filtering out redundant duplicate model specifications.
+    """
+    load_env_file()
+    multi = os.environ.get("REQUESTY_MODELS", "").strip()
+    if multi:
+        raw_models = [m.strip() for m in multi.split(",") if m.strip()]
+        seen: set[str] = set()
+        deduped: list[str] = []
+        for m in raw_models:
+            key = m.lower()
+            if key not in seen:
+                seen.add(key)
+                deduped.append(m)
+        if deduped:
+            return deduped
+    single = get_provider_model("requesty")
+    return [single] if single else [DEFAULT_MODELS["requesty"]]
+
+
 def get_expanded_eval_targets() -> list[tuple[str, str]]:
     """Return expanded list of (provider, model) pairs across all active keys with zero duplicates.
 
-    If OpenRouter is configured with multiple models in OPENROUTER_MODELS,
-    each OpenRouter model is included as an independent evaluation/judge target.
+    If OpenRouter or Requesty is configured with multiple models,
+    each model is included as an independent evaluation/judge target.
     Duplicate (provider, model) targets are strictly filtered out to avoid wasted tokens.
     """
     config = get_llm_config()
@@ -241,6 +266,12 @@ def get_expanded_eval_targets() -> list[tuple[str, str]]:
                 if target_key not in seen:
                     seen.add(target_key)
                     targets.append(("openrouter", model))
+        elif provider == "requesty":
+            for model in get_requesty_models():
+                target_key = ("requesty", model.lower())
+                if target_key not in seen:
+                    seen.add(target_key)
+                    targets.append(("requesty", model))
         else:
             model = get_provider_model(provider)
             target_key = (provider.lower(), model.lower())
@@ -278,6 +309,25 @@ def audit_llm_model_duplicates() -> list[dict[str, str]]:
                 )
             else:
                 seen_or.add(key)
+
+    # 2. Audit REQUESTY_MODELS string for internal duplicates
+    multi_rq = os.environ.get("REQUESTY_MODELS", "").strip()
+    if multi_rq:
+        raw_rq_models = [m.strip() for m in multi_rq.split(",") if m.strip()]
+        seen_rq: set[str] = set()
+        for idx, m in enumerate(raw_rq_models):
+            key = m.lower()
+            if key in seen_rq:
+                removed_items.append(
+                    {
+                        "scope": "REQUESTY_MODELS",
+                        "duplicate_model": m,
+                        "location": f"index {idx} in REQUESTY_MODELS",
+                        "reason": "Exact duplicate model in REQUESTY_MODELS list",
+                    }
+                )
+            else:
+                seen_rq.add(key)
 
     # 2. Audit cross-provider duplicate models (e.g. direct provider vs openrouter proxy)
     config = get_llm_config()

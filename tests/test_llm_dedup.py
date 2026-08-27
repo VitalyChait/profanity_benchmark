@@ -198,3 +198,28 @@ def test_deduplicate_scorers_preserves_rag_comparison_variants() -> None:
     assert "llm_llama3" in deduped
     assert "rag_llm_llama3" in deduped
     assert len(removed) == 0
+
+
+def test_get_requesty_models_deduplication() -> None:
+    """Verify that get_requesty_models removes duplicate model definitions."""
+    from youth_escalate_bench.llm.keys import get_requesty_models
+
+    env_str = "google/gemma-4-31b-it, nvidia/nemotron-3.5-content-safety, google/gemma-4-31b-it, GOOGLE/GEMMA-4-31B-IT, mistral/leanstral-1-5"
+    with patch.dict(os.environ, {"REQUESTY_MODELS": env_str}):
+        models = get_requesty_models()
+        assert len(models) == 3
+        assert models == [
+            "google/gemma-4-31b-it",
+            "nvidia/nemotron-3.5-content-safety",
+            "mistral/leanstral-1-5",
+        ]
+
+
+def test_audit_llm_model_duplicates_detects_requesty_duplicates() -> None:
+    """Verify audit_llm_model_duplicates detects duplicates in REQUESTY_MODELS string."""
+    env_str = "google/gemma-4-31b-it, nvidia/nemotron-3.5-content-safety, google/gemma-4-31b-it"
+    with patch.dict(os.environ, {"REQUESTY_MODELS": env_str}):
+        dups = audit_llm_model_duplicates()
+        rq_dups = [d for d in dups if d["scope"] == "REQUESTY_MODELS"]
+        assert len(rq_dups) == 1
+        assert rq_dups[0]["duplicate_model"] == "google/gemma-4-31b-it"

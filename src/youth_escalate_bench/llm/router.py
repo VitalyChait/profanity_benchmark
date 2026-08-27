@@ -51,6 +51,15 @@ class LLMRouter:
             active_provider = "openrouter"
             if not model:
                 model = parts_model
+        elif (
+            active_provider
+            and active_provider.startswith("requesty/")
+            and "/" in active_provider[9:]
+        ):
+            parts_model = active_provider[9:]
+            active_provider = "requesty"
+            if not model:
+                model = parts_model
 
         if active_provider == "none" or not is_provider_configured(active_provider):
             raise RuntimeError(
@@ -72,6 +81,7 @@ class LLMRouter:
             "qwen",
             "glm",
             "openrouter",
+            "requesty",
         ):
             return self._call_openai_compatible(
                 prompt=prompt,
@@ -163,6 +173,7 @@ class LLMRouter:
             "qwen": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
             "glm": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
             "openrouter": "https://openrouter.ai/api/v1/chat/completions",
+            "requesty": "https://router.requesty.ai/v1/chat/completions",
         }
         url = endpoints.get(provider, "https://api.openai.com/v1/chat/completions")
         headers = {
@@ -184,7 +195,11 @@ class LLMRouter:
             resp = client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
             data = resp.json()
-            return data["choices"][0]["message"]["content"]
+            msg = data["choices"][0]["message"]
+            content = msg.get("content")
+            if not content and msg.get("reasoning_content"):
+                content = msg["reasoning_content"]
+            return content or ""
 
     def _call_anthropic(
         self,

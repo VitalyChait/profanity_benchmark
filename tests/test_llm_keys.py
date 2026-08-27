@@ -89,3 +89,56 @@ def test_openrouter_multi_model_configuration():
         or_targets = [t for t in targets if t[0] == "openrouter"]
         assert len(or_targets) == 3
         assert ("openrouter", "openai/gpt-4o-mini") in or_targets
+
+
+def test_requesty_multi_model_configuration():
+    from youth_escalate_bench.llm.keys import (
+        get_expanded_eval_targets,
+        get_requesty_models,
+    )
+
+    with patch.dict(
+        os.environ,
+        {
+            "REQUESTY_API_KEY": "rqsty-sk-testkey123",
+            "REQUESTY_MODELS": "google/gemma-4-31b-it, nvidia/nemotron-3.5-content-safety, mistral/leanstral-1-5",
+        },
+        clear=False,
+    ):
+        models = get_requesty_models()
+        assert len(models) == 3
+        assert "google/gemma-4-31b-it" in models
+        assert "nvidia/nemotron-3.5-content-safety" in models
+        assert "mistral/leanstral-1-5" in models
+
+        targets = get_expanded_eval_targets()
+        rq_targets = [t for t in targets if t[0] == "requesty"]
+        assert len(rq_targets) == 3
+        assert ("requesty", "google/gemma-4-31b-it") in rq_targets
+
+
+def test_requesty_router_endpoint_dispatch():
+    from unittest.mock import MagicMock
+
+    from youth_escalate_bench.llm.router import LLMRouter
+
+    router = LLMRouter()
+    with patch.dict(os.environ, {"REQUESTY_API_KEY": "rqsty-sk-testkey123"}):
+        with patch("httpx.Client.post") as mock_post:
+            mock_resp = MagicMock()
+            mock_resp.json.return_value = {
+                "choices": [{"message": {"content": "User Safety: safe"}}]
+            }
+            mock_post.return_value = mock_resp
+
+            result = router.call_llm(
+                prompt="Is this toxic?",
+                provider="requesty",
+                model="nvidia/nemotron-3.5-content-safety",
+            )
+            assert result == "User Safety: safe"
+            assert mock_post.called
+            call_url = mock_post.call_args[0][0]
+            assert call_url == "https://router.requesty.ai/v1/chat/completions"
+            call_headers = mock_post.call_args[1]["headers"]
+            assert call_headers["Authorization"] == "Bearer rqsty-sk-testkey123"

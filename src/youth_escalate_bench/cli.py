@@ -496,7 +496,7 @@ def audit_models_command(lexicon: Path) -> None:
             click.echo(f"     Reason          : {d['reason']}")
     else:
         click.echo(
-            "\n✅ .env configuration check: Zero duplicate model entries in OPENROUTER_MODELS."
+            "\n✅ .env configuration check: Zero duplicate model entries in OPENROUTER_MODELS / REQUESTY_MODELS."
         )
 
     # 2. Expanded evaluation targets
