@@ -1,5 +1,5 @@
 stage: ingest
-benchmark_version: "0.1.0"
+benchmark_version: "0.1.1"
 random_seed: 42
 enforce_gate: true
 allow_fixture_sources: true

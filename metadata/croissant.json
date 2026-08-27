@@ -6,7 +6,7 @@
   "@type": "Dataset",
   "name": "YouthEscalateBench",
   "description": "Dynamic multi-turn youth-safeguarding moderation benchmark",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "https://spdx.org/licenses/MIT",
   "url": "https://github.com/youth-escalate-bench/profanity_benchmark",
   "distribution": [

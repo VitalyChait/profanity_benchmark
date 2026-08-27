@@ -139,7 +139,7 @@ def fetch_source_text(url: str, cache_path: Path, timeout: float = 12.0) -> str:
     req = urllib.request.Request(
         url,
         headers={
-            "User-Agent": "YouthEscalateBench/0.1.0 (+https://github.com/VitalyChait/profanity_benchmark)"
+            "User-Agent": "YouthEscalateBench/0.1.1 (+https://github.com/VitalyChait/profanity_benchmark)"
         },
     )
     try:

@@ -122,7 +122,7 @@ class PredictHandler(BaseHTTPRequestHandler):
             # Fill convenience defaults for interactive playground or partial requests
             if isinstance(data, dict):
                 if "benchmark_version" not in data:
-                    data["benchmark_version"] = "0.1.0"
+                    data["benchmark_version"] = "0.1.1"
                 if "current_turn_id" not in data and data.get("turns"):
                     data["current_turn_id"] = data["turns"][-1].get("turn_id", "t1")
                 if "platform_style" not in data:

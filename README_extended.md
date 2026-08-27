@@ -233,7 +233,7 @@ Navigate to **`http://localhost:8080/dashboard`** (or `http://localhost:8080/`) 
 curl -X POST http://localhost:8080/predict \
   -H "Content-Type: application/json" \
   -d '{
-    "benchmark_version": "0.1.0",
+    "benchmark_version": "0.1.1",
     "conversation_id": "conv_demo_01",
     "current_turn_id": "t2",
     "platform_style": "gaming_chat",

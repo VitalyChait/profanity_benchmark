@@ -1,6 +1,6 @@
 # YouthEscalateBench Benchmark Card
 
-**Version:** 0.1.0  
+**Version:** 0.1.1  
 **Task:** Multi-turn youth-oriented peer moderation detection  
 **Languages:** English + English-led code-switch slice  
 **Unit:** Turn within causal conversation prefix  

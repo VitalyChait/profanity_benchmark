@@ -1,5 +1,5 @@
 stage: report
-benchmark_version: "0.1.0"
+benchmark_version: "0.1.1"
 random_seed: 42
 reports_dir: reports
 export_data_reports: true

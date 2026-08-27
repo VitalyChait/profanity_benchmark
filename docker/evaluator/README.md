@@ -75,7 +75,7 @@ Send a causal prefix conversation turn to `http://localhost:8080/predict`:
 curl -X POST http://localhost:8080/predict \
   -H "Content-Type: application/json" \
   -d '{
-    "benchmark_version": "0.1.0",
+    "benchmark_version": "0.1.1",
     "conversation_id": "conv_gaming_042",
     "current_turn_id": "turn_3",
     "platform_style": "gaming_chat",
@@ -150,7 +150,7 @@ import requests
 
 url = "http://localhost:8080/predict"
 payload = {
-    "benchmark_version": "0.1.0",
+    "benchmark_version": "0.1.1",
     "conversation_id": "conv_chat_101",
     "current_turn_id": "t2",
     "platform_style": "group_chat",

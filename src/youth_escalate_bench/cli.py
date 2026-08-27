@@ -4,6 +4,7 @@ from pathlib import Path
 
 import click
 
+from youth_escalate_bench import __version__
 from youth_escalate_bench.evaluator.server import serve
 from youth_escalate_bench.pipeline import get_runner, load_config, run_stage
 from youth_escalate_bench.schemas.export import export_all
@@ -23,6 +24,7 @@ E2E_STAGES = [
 
 
 @click.group()
+@click.version_option(__version__, "-v", "--version")
 def main() -> None:
     """YouthEscalateBench pipeline and evaluation toolkit."""
 

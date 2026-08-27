@@ -1,6 +1,6 @@
 # YouthEscalateBench Threat Model (Phase 1)
 
-Version 0.1.0 — derived from plan.md Sections 2–4.
+Version 0.1.1 — derived from plan.md Sections 2–4.
 
 ## 1. Scope
 
