@@ -1,5 +1,5 @@
-exact_duplicate_groups: 39
-near_duplicate_pairs: 711
+exact_duplicate_groups: 49
+near_duplicate_pairs: 95807
 quotas:
   fixture:
     available: 4
@@ -27,9 +27,9 @@ quotas:
     selected: 0
     target: 2000
   synthetic:
-    available: 14
-    gap: 2986
-    selected: 14
+    available: 245
+    gap: 2755
+    selected: 245
     target: 3000
-total_selected: 4038
-total_turns: 6996
+total_selected: 4269
+total_turns: 8414

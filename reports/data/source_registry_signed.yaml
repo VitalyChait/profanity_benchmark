@@ -465,3 +465,91 @@ sources:
   notes: Expanded unigram profanity list
   conversation_quota: null
   fallback_if_denied: null
+- source_id: google_profanity_words
+  name: Google Banned Words Lexicon
+  owner: Google / coffee-and-fun
+  version: null
+  url: https://raw.githubusercontent.com/coffee-and-fun/google-profanity-words/master/data/en.txt
+  license: Public Domain
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Content moderation blocklist and baseline profanity filter
+  allowed_artifacts:
+  - derived_labels
+  - lexical_seeds
+  status: approved
+  review_date: '2026-08-26'
+  reviewer: Vitaly Chait
+  notes: 962 terms from Google's content safety blocklists
+  conversation_quota: null
+  fallback_if_denied: null
+- source_id: dsojevic_profanity_list
+  name: dsojevic Categorized Profanity Database
+  owner: dsojevic
+  version: null
+  url: https://raw.githubusercontent.com/dsojevic/profanity-list/main/en.json
+  license: MIT License
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Severity-scaled multi-category profanity database
+  allowed_artifacts:
+  - derived_labels
+  - lexical_seeds
+  status: approved
+  review_date: '2026-08-26'
+  reviewer: Vitaly Chait
+  notes: 434 structured terms with severity ratings 1-4 and categories
+  conversation_quota: null
+  fallback_if_denied: null
+- source_id: hurtlex_en
+  name: HurtLex English Offensive Lexicon
+  owner: Bassignana et al. (2018)
+  version: null
+  url: https://raw.githubusercontent.com/valeriobasile/hurtlex/master/lexica/EN/1.2/hurtlex_EN.tsv
+  license: CC-BY-NC 4.0 (Academic Research)
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Computational linguistics offensive and derogatory category seeds
+  allowed_artifacts:
+  - derived_labels
+  - lexical_seeds
+  status: approved
+  review_date: '2026-08-26'
+  reviewer: Vitaly Chait
+  notes: 8,228 labeled lemmas with semantic categories (derogatory, slurs, offensive)
+  conversation_quota: null
+  fallback_if_denied: null
+- source_id: hatecheck_lexicon
+  name: HateCheck Functional Slur & Placeholder Lexicon
+  owner: "R\xF6ttger et al. (ACL 2021)"
+  version: null
+  url: https://raw.githubusercontent.com/paul-rottger/hatecheck-data/main/template_placeholders.csv
+  license: CC-BY 4.0
+  terms_url: null
+  consent_basis: null
+  redistribution_rights: Allowed for personal/non-commercial research
+  deletion_process: null
+  age_evidence: null
+  pii_risk: null
+  intended_use: Functional diagnostic tests for slurs, reclaimed terms, and leetspeak
+  allowed_artifacts:
+  - derived_labels
+  - lexical_seeds
+  status: approved
+  review_date: '2026-08-26'
+  reviewer: Vitaly Chait
+  notes: Gold standard benchmark slur templates and leetspeak obfuscations
+  conversation_quota: null
+  fallback_if_denied: null

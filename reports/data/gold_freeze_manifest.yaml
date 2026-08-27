@@ -1,5 +1,5 @@
 benchmark_version: 0.1.0
 correction_policy: issue_correction_manifest_for_label_changes
-frozen_at: '2026-08-26T19:56:51.334533+00:00'
-gold_labels: 98
-input_annotations: 98
+frozen_at: '2026-08-26T21:36:07.873387+00:00'
+gold_labels: 1516
+input_annotations: 1516

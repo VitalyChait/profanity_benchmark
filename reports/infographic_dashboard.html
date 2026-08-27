@@ -154,17 +154,17 @@
         <div class="kpi-grid">
             <div class="kpi-card">
                 <div class="kpi-title">Total Evaluated Models</div>
-                <div class="kpi-value">1</div>
+                <div class="kpi-value">18</div>
                 <div class="kpi-sub">6 LLMs & 6 Baselines</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Top Frontier LLM (AUPRC)</div>
-                <div class="kpi-value">0.000</div>
+                <div class="kpi-value">1.000</div>
                 <div class="kpi-sub">Gemma 4 31B Judge</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Top Baseline (AUPRC)</div>
-                <div class="kpi-value">0.000</div>
+                <div class="kpi-value">0.763</div>
                 <div class="kpi-sub">Char N-Gram TF-IDF</div>
             </div>
             <div class="kpi-card">
@@ -190,11 +190,181 @@
                 <tbody>
                     
         <tr>
-            <td class="model-name"><strong>Rule Based Lexicon</strong></td>
-            <td><span class='badge badge-gray'>Custom</span></td>
-            <td><span class="score-pill">0.000</span> <span class="sub-score">(—)</span></td>
-            <td><span class="score-pill">0.000</span> <span class="sub-score">(—)</span></td>
-            <td><span class="score-pill score-highlight">0.000</span> <span class="sub-score">(—)</span></td>
+            <td class="model-name"><strong>Raw Lexicon Match</strong></td>
+            <td><span class='badge badge-gray'>Lexical Baseline</span></td>
+            <td><span class="score-pill">0.763</span> <span class="sub-score">(0.800)</span></td>
+            <td><span class="score-pill">0.763</span> <span class="sub-score">(0.800)</span></td>
+            <td><span class="score-pill score-highlight">0.763</span> <span class="sub-score">(0.800)</span></td>
+            <td><span class='badge badge-green'>+0.000</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Normalized Lexicon</strong></td>
+            <td><span class='badge badge-gray'>Lexical Baseline</span></td>
+            <td><span class="score-pill">0.763</span> <span class="sub-score">(0.800)</span></td>
+            <td><span class="score-pill">0.763</span> <span class="sub-score">(0.800)</span></td>
+            <td><span class="score-pill score-highlight">0.763</span> <span class="sub-score">(0.800)</span></td>
+            <td><span class='badge badge-green'>+0.000</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Char N-Gram TF-IDF</strong></td>
+            <td><span class='badge badge-gray'>Subword Baseline</span></td>
+            <td><span class="score-pill">0.574</span> <span class="sub-score">(0.729)</span></td>
+            <td><span class="score-pill">0.574</span> <span class="sub-score">(0.729)</span></td>
+            <td><span class="score-pill score-highlight">0.574</span> <span class="sub-score">(0.729)</span></td>
+            <td><span class='badge badge-green'>+0.000</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Full-Context Lexicon</strong></td>
+            <td><span class='badge badge-gray'>Lexical Baseline</span></td>
+            <td><span class="score-pill">0.763</span> <span class="sub-score">(0.800)</span></td>
+            <td><span class="score-pill">0.745</span> <span class="sub-score">(0.806)</span></td>
+            <td><span class="score-pill score-highlight">0.714</span> <span class="sub-score">(0.738)</span></td>
+            <td><span class='badge badge-red'>-0.048</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Rule Safeguard Expert</strong></td>
+            <td><span class='badge badge-gray'>Rule Baseline</span></td>
+            <td><span class="score-pill">0.754</span> <span class="sub-score">(0.816)</span></td>
+            <td><span class="score-pill">0.734</span> <span class="sub-score">(0.815)</span></td>
+            <td><span class="score-pill score-highlight">0.729</span> <span class="sub-score">(0.813)</span></td>
+            <td><span class='badge badge-red'>-0.025</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Gemma 4 31B (Default Judge)</strong></td>
+            <td><span class='badge badge-purple'>LLM Judge</span></td>
+            <td><span class="score-pill">0.836</span> <span class="sub-score">(0.832)</span></td>
+            <td><span class="score-pill">0.833</span> <span class="sub-score">(0.835)</span></td>
+            <td><span class="score-pill score-highlight">0.812</span> <span class="sub-score">(0.822)</span></td>
+            <td><span class='badge badge-red'>-0.024</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Ensemble Moderator</strong></td>
+            <td><span class='badge badge-blue'>Ensemble</span></td>
+            <td><span class="score-pill">0.804</span> <span class="sub-score">(0.811)</span></td>
+            <td><span class="score-pill">0.808</span> <span class="sub-score">(0.832)</span></td>
+            <td><span class="score-pill score-highlight">0.807</span> <span class="sub-score">(0.831)</span></td>
+            <td><span class='badge badge-green'>+0.003</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Mistral Small Latest</strong></td>
+            <td><span class='badge badge-purple'>Mistral LLM</span></td>
+            <td><span class="score-pill">0.757</span> <span class="sub-score">(0.835)</span></td>
+            <td><span class="score-pill">0.760</span> <span class="sub-score">(0.843)</span></td>
+            <td><span class="score-pill score-highlight">0.777</span> <span class="sub-score">(0.895)</span></td>
+            <td><span class='badge badge-green'>+0.020</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Gemma 4 26B A4B IT (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.834</span> <span class="sub-score">(0.824)</span></td>
+            <td><span class="score-pill">0.835</span> <span class="sub-score">(0.832)</span></td>
+            <td><span class="score-pill score-highlight">0.832</span> <span class="sub-score">(0.832)</span></td>
+            <td><span class='badge badge-red'>-0.003</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Nemotron 3.5 Safety (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.754</span> <span class="sub-score">(0.816)</span></td>
+            <td><span class="score-pill">0.734</span> <span class="sub-score">(0.815)</span></td>
+            <td><span class="score-pill score-highlight">0.729</span> <span class="sub-score">(0.813)</span></td>
+            <td><span class='badge badge-red'>-0.025</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Dots 3 Note Preview (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.851</span> <span class="sub-score">(0.957)</span></td>
+            <td><span class="score-pill">0.779</span> <span class="sub-score">(0.872)</span></td>
+            <td><span class="score-pill score-highlight">0.788</span> <span class="sub-score">(0.876)</span></td>
+            <td><span class='badge badge-red'>-0.063</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Liquid LFM 2.5 2.6B (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.870</span> <span class="sub-score">(0.899)</span></td>
+            <td><span class="score-pill">0.749</span> <span class="sub-score">(0.817)</span></td>
+            <td><span class="score-pill score-highlight">0.749</span> <span class="sub-score">(0.815)</span></td>
+            <td><span class='badge badge-red'>-0.120</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>GLM 5.3 Flash</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill score-highlight">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class='badge badge-green'>+0.001</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Gemini 3.7 Flash</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.993</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill score-highlight">0.984</span> <span class="sub-score">(0.997)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Mimo V2.5</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill score-highlight">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class='badge badge-green'>+0.000</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Hy3</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill score-highlight">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class='badge badge-green'>+0.000</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>GPT 5.6 Luna</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill score-highlight">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class='badge badge-green'>+0.000</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Kimi K3</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill score-highlight">1.000</span> <span class="sub-score">(1.000)</span></td>
             <td><span class='badge badge-green'>+0.000</span></td>
         </tr>
         

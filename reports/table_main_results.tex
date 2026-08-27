@@ -7,7 +7,25 @@
 \cmidrule(lr){3-4} \cmidrule(lr){5-6} \cmidrule(lr){7-8}
 \textbf{Model / Scorer} & \textbf{Family} & \textbf{AUPRC} $\uparrow$ & \textbf{AUROC} $\uparrow$ & \textbf{AUPRC} $\uparrow$ & \textbf{AUROC} $\uparrow$ & \textbf{AUPRC} $\uparrow$ & \textbf{AUROC} $\uparrow$ \\
 \midrule
-Rule Based Lexicon & Custom & 0.000 & --- & 0.000 & --- & \textbf{0.000} & --- \\
+GLM 5.3 Flash & OpenRouter LLM & 0.999 & 1.000 & 1.000 & 1.000 & \textbf{1.000} & 1.000 \\
+Mimo V2.5 & OpenRouter LLM & 1.000 & 1.000 & 1.000 & 1.000 & \textbf{1.000} & 1.000 \\
+Hy3 & OpenRouter LLM & 1.000 & 1.000 & 1.000 & 1.000 & \textbf{1.000} & 1.000 \\
+Kimi K3 & OpenRouter LLM & 1.000 & 1.000 & 1.000 & 1.000 & \textbf{1.000} & 1.000 \\
+GPT 5.6 Luna & OpenRouter LLM & 0.999 & 1.000 & 1.000 & 1.000 & \textbf{0.999} & 1.000 \\
+Gemini 3.7 Flash & OpenRouter LLM & 0.993 & 0.999 & 1.000 & 1.000 & \textbf{0.984} & 0.997 \\
+Gemma 4 26B A4B IT (Free) & OpenRouter LLM & 0.834 & 0.824 & 0.835 & 0.832 & \textbf{0.832} & 0.832 \\
+Gemma 4 31B (Default Judge) & LLM Judge & 0.836 & 0.832 & 0.833 & 0.835 & \textbf{0.812} & 0.822 \\
+Dots 3 Note Preview (Free) & OpenRouter LLM & 0.851 & 0.957 & 0.779 & 0.872 & \textbf{0.788} & 0.876 \\
+Mistral Small Latest & Mistral LLM & 0.757 & 0.835 & 0.760 & 0.843 & \textbf{0.777} & 0.895 \\
+Liquid LFM 2.5 2.6B (Free) & OpenRouter LLM & 0.870 & 0.899 & 0.749 & 0.817 & \textbf{0.749} & 0.815 \\
+Nemotron 3.5 Safety (Free) & OpenRouter LLM & 0.754 & 0.816 & 0.734 & 0.815 & \textbf{0.729} & 0.813 \\
+\midrule
+Ensemble Moderator & Ensemble & 0.804 & 0.811 & 0.808 & 0.832 & \textbf{0.807} & 0.831 \\
+Raw Lexicon Match & Lexical Baseline & 0.763 & 0.800 & 0.763 & 0.800 & \textbf{0.763} & 0.800 \\
+Normalized Lexicon & Lexical Baseline & 0.763 & 0.800 & 0.763 & 0.800 & \textbf{0.763} & 0.800 \\
+Rule Safeguard Expert & Rule Baseline & 0.754 & 0.816 & 0.734 & 0.815 & \textbf{0.729} & 0.813 \\
+Full-Context Lexicon & Lexical Baseline & 0.763 & 0.800 & 0.745 & 0.806 & \textbf{0.714} & 0.738 \\
+Char N-Gram TF-IDF & Subword Baseline & 0.574 & 0.729 & 0.574 & 0.729 & \textbf{0.574} & 0.729 \\
 \bottomrule
 \end{tabular}
 \caption{YouthEscalateBench Causal Moderation Performance across Context Conditions.}

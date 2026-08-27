@@ -1,7 +1,7 @@
 # YouthEscalateBench Data Lifecycle & Corpus Report
 
 **Benchmark Version:** `0.1.0`  
-**Report Generated:** `2026-08-26 21:32:18 UTC`  
+**Report Generated:** `2026-08-27 00:29:38 UTC`  
 **Governance & Safety Status:** 🟢 All Data Stages Validated & Governance Gate Passed
 
 ---
@@ -10,13 +10,13 @@
 
 | Pipeline Stage | Process Description | Key Artifact / Metric | Status |
 | :--- | :--- | :--- | :---: |
-| **1. Source Audit** | Governance & License Verification | `21` Approved Sources (100% compliant) | 🟢 PASSED |
+| **1. Source Audit** | Governance & License Verification | `25` Approved Sources (100% compliant) | 🟢 PASSED |
 | **2. Ingestion** | Multi-Format Ingestion to Parquet | `103,400` Ingested Conversations | 🟢 PASSED |
 | **3. Redaction** | PII Detection & Safe Harbor Scrubbing | `66,261` PII Entities Sanitized | 🟢 PASSED |
 | **4. Threading** | DAG Topology & Temporal Ordering | `0` Causal Violations (100% Valid DAG) | 🟢 PASSED |
-| **5. Sampling** | Quota Sampling & MinHash Dedup | `39` Exact Dupes, `711` Near-Dupes Pruned | 🟢 PASSED |
-| **6. Adjudication** | Consensus Adjudication & Gold Freeze | `98` Gold Labels Frozen | 🟢 PASSED |
-| **7. Splitting** | Zero-Leakage Split (Train/Dev/Test) | Train: `2,019` | Dev: `1,009` | Test: `1,010` | 🟢 PASSED |
+| **5. Sampling** | Quota Sampling & MinHash Dedup | `49` Exact Dupes, `95807` Near-Dupes Pruned | 🟢 PASSED |
+| **6. Adjudication** | Consensus Adjudication & Gold Freeze | `1516` Gold Labels Frozen | 🟢 PASSED |
+| **7. Splitting** | Zero-Leakage Split (Train/Dev/Test) | Train: `2,134` | Dev: `1,067` | Test: `1,068` | 🟢 PASSED |
 
 ---
 
@@ -46,6 +46,10 @@
   - `tweeteval_offensive`
   - `tweeteval_hate`
   - `profanity_en_lexicon`
+  - `google_profanity_words`
+  - `dsojevic_profanity_list`
+  - `hurtlex_en`
+  - `hatecheck_lexicon`
 
 - **Regulatory Compliance Framework:**
   - **COPPA (Children's Online Privacy Protection Act, 15 U.S.C. §§ 6501–6506):** Strict de-identification of all underage user attributes.
@@ -82,8 +86,8 @@
 
 ## 6. Deduplication & Quota Sampling
 
-- **Exact Duplicate Groups Pruned:** `39`
-- **MinHash LSH Near-Duplicate Clusters Identified:** `711` (Jaccard similarity threshold >= 0.8)
+- **Exact Duplicate Groups Pruned:** `49`
+- **MinHash LSH Near-Duplicate Clusters Identified:** `95807` (Jaccard similarity threshold >= 0.8)
 - **Sampling Tier Allocations:**
 
 | Tier | Available Pool | Target Quota | Selected | Gap |
@@ -93,15 +97,15 @@
 | **Live** | 0 | 1,000 | **0** | 1,000 |
 | **Organic** | 103,396 | 4,000 | **4,000** | 0 |
 | **Staged** | 0 | 2,000 | **0** | 2,000 |
-| **Synthetic** | 14 | 3,000 | **14** | 2,986 |
+| **Synthetic** | 245 | 3,000 | **245** | 2,755 |
 
 ---
 
 ## 7. Consensus Adjudication & Gold Label Freeze
 
-- **Input Turn Annotations:** `98`
-- **Gold Frozen Labels:** `98`
-- **Freeze Timestamp:** `2026-08-26T19:56:51.334533+00:00`
+- **Input Turn Annotations:** `1516`
+- **Gold Frozen Labels:** `1516`
+- **Freeze Timestamp:** `2026-08-26T21:36:07.873387+00:00`
 - **Correction Policy:** `issue_correction_manifest_for_label_changes`
 - **Manifest Path:** [`reports/data/gold_freeze_manifest.yaml`](data/gold_freeze_manifest.yaml)
 
@@ -109,9 +113,9 @@
 
 ## 8. Zero-Leakage Data Partitioning
 
-- **Train Partition:** `2,019` conversations (50.0%)
-- **Dev Partition:** `1,009` conversations (25.0%)
-- **Test Partition:** `1,010` conversations (25.0%)
+- **Train Partition:** `2,134` conversations (50.0%)
+- **Dev Partition:** `1,067` conversations (25.0%)
+- **Test Partition:** `1,068` conversations (25.0%)
 - **Leakage Prevention:** Group-split on `conversation_id` and disjoint speaker IDs guarantees zero turn or speaker contamination across train/dev/test.
 
 ---
