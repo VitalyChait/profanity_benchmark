@@ -1,11 +1,25 @@
 # YouthEscalateBench
 
-Dynamic multi-turn youth safety moderation benchmark for causal cyberbullying and escalation detection. Includes a 12-stage pipeline, 14 audited research datasets & lexicons (79k+ turns, 2,508 unified profanity terms), 12 evaluated LLMs/baselines across 3 context conditions, automated difficulty ranking, autonomous agentic discovery, real-time interactive service dashboard, pre-flight model deduplication, and 100% test pass rate (137/137).
+Dynamic multi-turn youth safety moderation benchmark for causal cyberbullying and escalation detection. Includes a 12-stage pipeline, 14 audited research datasets & lexicons (79k+ turns, 2,508 unified profanity terms), 18 evaluated LLMs/baselines across 3 context conditions, controllable random seeds for example selection, automated difficulty ranking, autonomous agentic discovery, real-time interactive service dashboard, pre-flight model deduplication, and 100% test pass rate (144/144).
 
 ## Quick Start
 ```bash
 pip install -e ".[dev]"
-python main.py --all --extended-report
+# Run entire pipeline with reproducible seed and medium scale:
+python main.py --all --mode medium --seed 42 --extended-report
+```
+
+## Controllable Example Selection
+Control which examples are selected and evaluated across conditions using `--seed` and `--sample-strategy`:
+```bash
+# Evaluate 250 examples with reproducible seed 42:
+python main.py --step evaluate --mode medium --seed 42
+
+# Pure seeded random sampling with seed 101:
+python main.py --step evaluate --max-samples 100 --seed 101 --sample-strategy random
+
+# Stratified balanced sampling across benign and actionable labels:
+python main.py --step evaluate --max-samples 100 --seed 42 --sample-strategy stratified
 ```
 
 ## Running as a Service & Interactive Dashboard
@@ -20,6 +34,8 @@ Open **`http://localhost:8080/dashboard`** in your browser to interactively anal
 - ⚡ **Live Prediction Playground**: Interactively test moderation queries against live `/predict`.
 
 ## Useful CLI Commands
+- `python main.py --seed <int> --sample-strategy <auto|random|stratified|difficulty>`: Pipeline execution with controllable seed.
+- `yeb pipeline --seed <int>`: Run orchestrator via CLI with controllable random seed.
 - `yeb audit-models`: Audit configured LLMs and eliminate duplicate model targets before evaluation.
 - `yeb serve`: Launch evaluator microservice and web dashboard (`/dashboard`).
 - `yeb difficulty-ranking`: View hardest conversational turns and word vulnerability index.

@@ -218,6 +218,21 @@ def ingest_data_command(
     default=None,
     help="Explicitly override maximum evaluation samples across conditions.",
 )
+@click.option(
+    "--seed",
+    "--random-seed",
+    "seed",
+    type=int,
+    default=None,
+    help="Controllable random seed for reproducible example selection and pipeline stages.",
+)
+@click.option(
+    "--sample-strategy",
+    "sample_strategy",
+    type=click.Choice(["auto", "difficulty", "random", "stratified"]),
+    default="auto",
+    help="Example selection strategy: 'auto', 'difficulty', 'random', or 'stratified'.",
+)
 def pipeline_command(
     run_all: bool,
     resume: bool,
@@ -231,6 +246,8 @@ def pipeline_command(
     extended_report: bool = False,
     mode: str = "extra-small",
     max_samples: int | None = None,
+    seed: int | None = None,
+    sample_strategy: str = "auto",
 ) -> None:
     """Execute pipeline with automated checkpoints, state recovery, and error diagnostics."""
     from youth_escalate_bench.orchestrator import PipelineRunner
@@ -262,6 +279,8 @@ def pipeline_command(
         extended_report=extended_report,
         mode=mode,
         max_samples=max_samples,
+        seed=seed,
+        sample_strategy=sample_strategy,
     )
     if not success:
         raise SystemExit(1)

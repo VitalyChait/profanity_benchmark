@@ -407,8 +407,10 @@ class PipelineRunner:
         extended_report: bool = False,
         mode: str = "extra-small",
         max_samples: int | None = None,
+        seed: int | None = None,
+        sample_strategy: str = "auto",
     ) -> bool:
-        """Execute selected range of pipeline steps."""
+        """Execute selected range of pipeline steps with controllable seed and sampling strategy."""
         all_ids = [s["id"] for s in ORDERED_STEPS]
 
         mode_config = EVAL_MODES.get(mode, EVAL_MODES["extra-small"])
@@ -440,8 +442,11 @@ class PipelineRunner:
 
             steps_to_run = ORDERED_STEPS[start_idx:end_idx]
 
+        seed_info = f", Seed: {seed}" if seed is not None else ""
+        strat_info = f", Strategy: {sample_strategy}" if sample_strategy != "auto" else ""
+
         if dry_run:
-            print(f"\n[DRY RUN] Planned Execution Sequence (Mode: {mode}, Max Samples: {active_max_samples}):")
+            print(f"\n[DRY RUN] Planned Execution Sequence (Mode: {mode}, Max Samples: {active_max_samples}{seed_info}{strat_info}):")
             for idx, s in enumerate(steps_to_run, 1):
                 input_dir = self.resolve_input_dir(s)
                 status = self.checkpoint_mgr.checkpoints.get(s["id"], StepCheckpoint(s["id"], s["title"])).status
@@ -452,16 +457,20 @@ class PipelineRunner:
             return True
 
         print("=" * 80)
-        print(f"YouthEscalateBench — Starting Pipeline ({len(steps_to_run)} steps queued, Mode: {mode}, Max Samples: {active_max_samples})")
+        print(f"YouthEscalateBench — Starting Pipeline ({len(steps_to_run)} steps queued, Mode: {mode}, Max Samples: {active_max_samples}{seed_info}{strat_info})")
         print("=" * 80)
 
         overall_start = time.perf_counter()
         for s in steps_to_run:
             overrides: dict[str, Any] = {}
+            if seed is not None:
+                overrides["random_seed"] = seed
             if s["id"] == "stage_generate":
                 overrides["plans_per_template"] = active_plans
             elif s["id"] == "evaluate":
                 overrides["max_samples"] = active_max_samples
+                if sample_strategy != "auto":
+                    overrides["sample_strategy"] = sample_strategy
             elif s["id"] == "report" and extended_report:
                 overrides["extended_report"] = True
 
@@ -542,6 +551,22 @@ Examples:
         default=None,
         help="Explicitly override maximum evaluation samples across conditions (overrides --mode default).",
     )
+    parser.add_argument(
+        "--seed",
+        "--random-seed",
+        type=int,
+        default=None,
+        dest="seed",
+        help="Controllable random seed for reproducible example selection, sampling, and evaluation splits.",
+    )
+    parser.add_argument(
+        "--sample-strategy",
+        "--strategy",
+        choices=["auto", "difficulty", "random", "stratified"],
+        default="auto",
+        dest="sample_strategy",
+        help="Example selection strategy: 'auto' (difficulty prioritized if available), 'difficulty' (hard samples), 'random' (pure seeded random selection), 'stratified' (balanced harm labels).",
+    )
     parser.add_argument("--status", action="store_true", help="Show current pipeline checkpoint status table.")
     parser.add_argument("--reset", action="store_true", help="Reset all checkpoint states to PENDING.")
     parser.add_argument("--dry-run", action="store_true", help="Simulate execution without running stages.")
@@ -574,6 +599,8 @@ Examples:
         extended_report=args.extended_report,
         mode=args.mode,
         max_samples=args.max_samples,
+        seed=args.seed,
+        sample_strategy=args.sample_strategy,
     )
 
     sys.exit(0 if success else 1)

@@ -1,463 +1,4083 @@
 metadata:
-  generated_at: 2026-08-26 20:52:21 UTC
-  total_evaluated_turns: 20
-  total_misclassified_turns: 6
-  total_ranked_words: 52
+  generated_at: 2026-08-27 00:28:58 UTC
+  total_evaluated_turns: 250
+  total_misclassified_turns: 248
+  total_ranked_words: 86
   top_fp_triggers:
-  - unreal
-  - trickshot
-  - buying
-  - swear
-  - skin
+  - yeah
+  - bad
+  - playing
+  - keep
+  - fucking
   top_fn_indicators:
+  - now
+  - uninstall
   - garbage
   - right
-  - uninstall
-  - now
-  - fucking
+  - account
 sentences:
-- conversation_id: syn_immediate_abuse_dm_0_2535
+- conversation_id: syn_gradual_escalation_gaming_33_1241
+  turn_id: t4
+  turn_text: worst player on the server, delete your account
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 43
+  error_rate: 0.7963
+  false_positive_count: 0
+  false_negative_count: 43
+  disagreement_variance: 0.1044
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 1.2452
+- conversation_id: syn_gradual_escalation_gaming_33_1241
+  turn_id: t6
+  turn_text: worst player on the server, delete your account
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 40
+  error_rate: 0.7407
+  false_positive_count: 0
+  false_negative_count: 40
+  disagreement_variance: 0.1229
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 1.1908
+- conversation_id: syn_gradual_escalation_gaming_33_1241
+  turn_id: t5
+  turn_text: worst player on the server, delete your account
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 39
+  error_rate: 0.7222
+  false_positive_count: 0
+  false_negative_count: 39
+  disagreement_variance: 0.1201
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 1.1642
+- conversation_id: syn_de_escalation_forum_19_7686
   turn_id: t1
-  turn_text: i know what high school you go to, keep talking and see what happens
+  turn_text: worst player on the server, delete your account
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 39
+  error_rate: 0.7222
+  false_positive_count: 0
+  false_negative_count: 39
+  disagreement_variance: 0.1195
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 1.1636
+- conversation_id: syn_gradual_escalation_gaming_33_1241
+  turn_id: t8
+  turn_text: worst player on the server, delete your account
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 38
+  error_rate: 0.7037
+  false_positive_count: 0
+  false_negative_count: 38
+  disagreement_variance: 0.1335
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 1.1523
+- conversation_id: syn_de_escalation_forum_3_3695
+  turn_id: t1
+  turn_text: worst player on the server, delete your account
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 39
+  error_rate: 0.7222
+  false_positive_count: 0
+  false_negative_count: 39
+  disagreement_variance: 0.1062
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 1.1507
+- conversation_id: syn_immediate_abuse_dm_15_2697
+  turn_id: t3
+  turn_text: worst player on the server, delete your account
   gold_actionable: true
   gold_severity: urgent
   platform_style: direct_messaging
-  total_evaluations: 39
-  total_errors: 27
-  error_rate: 0.6923
+  total_evaluations: 54
+  total_errors: 35
+  error_rate: 0.6481
   false_positive_count: 0
-  false_negative_count: 27
-  disagreement_variance: 0.1712
+  false_negative_count: 35
+  disagreement_variance: 0.146
   primary_error_type: False Negative (Missed Harm)
-  priority_weight: 1.169
+  priority_weight: 1.091
+- conversation_id: syn_gradual_escalation_gaming_18_8123
+  turn_id: t3
+  turn_text: bro why did you push solo without comms
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 28
+  error_rate: 0.5185
+  false_positive_count: 28
+  false_negative_count: 0
+  disagreement_variance: 0.1242
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.6948
+- conversation_id: syn_code_switch_escalation_8_1356
+  turn_id: t3
+  turn_text: bro why did you push solo without comms
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 27
+  error_rate: 0.5
+  false_positive_count: 27
+  false_negative_count: 0
+  disagreement_variance: 0.115
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.6695
+- conversation_id: syn_code_switch_escalation_22_5913
+  turn_id: t1
+  turn_text: told you i had that angle covered
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 27
+  error_rate: 0.5
+  false_positive_count: 27
+  false_negative_count: 0
+  disagreement_variance: 0.1083
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.6645
+- conversation_id: syn_code_switch_escalation_0_1187
+  turn_id: t3
+  turn_text: i had full shields you should've traded
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 27
+  error_rate: 0.5
+  false_positive_count: 27
+  false_negative_count: 0
+  disagreement_variance: 0.1077
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.6641
+- conversation_id: syn_gradual_escalation_gaming_33_1241
+  turn_id: t3
+  turn_text: i had full shields you should've traded
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 27
+  error_rate: 0.5
+  false_positive_count: 27
+  false_negative_count: 0
+  disagreement_variance: 0.1073
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.6638
+- conversation_id: syn_code_switch_escalation_26_7179
+  turn_id: t3
+  turn_text: bro why did you push solo without comms
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 26
+  error_rate: 0.4815
+  false_positive_count: 26
+  false_negative_count: 0
+  disagreement_variance: 0.1073
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.6453
 - conversation_id: mp_quotation_01_benign
   turn_id: t3
   turn_text: why did user4 send 'go kys' in the group chat?
   gold_actionable: false
   gold_severity: benign
   platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 16
-  error_rate: 0.4103
-  false_positive_count: 16
+  total_evaluations: 54
+  total_errors: 21
+  error_rate: 0.3889
+  false_positive_count: 21
   false_negative_count: 0
-  disagreement_variance: 0.1512
+  disagreement_variance: 0.163
   primary_error_type: False Positive (Over-moderation)
-  priority_weight: 0.6047
-- conversation_id: syn_gradual_escalation_gaming_1_9935
-  turn_id: t4
-  turn_text: you are fucking garbage uninstall right now
-  gold_actionable: true
-  gold_severity: urgent
-  platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 12
-  error_rate: 0.3077
-  false_positive_count: 0
-  false_negative_count: 12
-  disagreement_variance: 0.0605
-  primary_error_type: False Negative (Missed Harm)
-  priority_weight: 0.5598
-- conversation_id: syn_immediate_abuse_dm_0_2535
+  priority_weight: 0.5908
+- conversation_id: syn_persistent_harassment_group_27_3369
+  turn_id: t1
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1686
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4831
+- conversation_id: syn_friendly_profanity_gaming_18_9693
   turn_id: t3
-  turn_text: you are fucking garbage uninstall right now
-  gold_actionable: true
-  gold_severity: urgent
-  platform_style: direct_messaging
-  total_evaluations: 39
-  total_errors: 10
-  error_rate: 0.2564
-  false_positive_count: 0
-  false_negative_count: 10
-  disagreement_variance: 0.0632
-  primary_error_type: False Negative (Missed Harm)
-  priority_weight: 0.4967
-- conversation_id: mp_banter_02_benign
-  turn_id: t3
-  turn_text: i swear you're a dumbass for buying that skin haha
+  turn_text: bro you are fucking cracked at this game lmao
   gold_actionable: false
   gold_severity: benign
   platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 5
-  error_rate: 0.1282
-  false_positive_count: 5
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
   false_negative_count: 0
-  disagreement_variance: 0.0646
+  disagreement_variance: 0.1667
   primary_error_type: False Positive (Over-moderation)
-  priority_weight: 0.2553
-- conversation_id: mp_banter_01_benign
-  turn_id: t3
-  turn_text: bro you're fucking crazy lmao that trickshot was unreal
+  priority_weight: 0.4819
+- conversation_id: syn_persistent_harassment_group_27_3369
+  turn_id: t2
+  turn_text: bro you are fucking cracked at this game lmao
   gold_actionable: false
   gold_severity: benign
-  platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 3
-  error_rate: 0.0769
-  false_positive_count: 3
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
   false_negative_count: 0
-  disagreement_variance: 0.0241
+  disagreement_variance: 0.1659
   primary_error_type: False Positive (Over-moderation)
-  priority_weight: 0.1546
-- conversation_id: syn_gradual_escalation_gaming_1_9935
-  turn_id: t3
-  turn_text: literally bottom fragging every match
+  priority_weight: 0.4814
+- conversation_id: syn_bystander_intervention_24_6456
+  turn_id: t2
+  turn_text: bro you are fucking cracked at this game lmao
   gold_actionable: false
   gold_severity: benign
-  platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
   false_negative_count: 0
-  disagreement_variance: 0.0117
-  primary_error_type: Correct
-  priority_weight: 0.0541
-- conversation_id: syn_friendly_profanity_gaming_0_9751
+  disagreement_variance: 0.1658
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4814
+- conversation_id: syn_friendly_profanity_gaming_18_9693
   turn_id: t1
   turn_text: bro you are fucking cracked at this game lmao
   gold_actionable: false
   gold_severity: benign
   platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
   false_negative_count: 0
-  disagreement_variance: 0.0095
-  primary_error_type: Correct
-  priority_weight: 0.0487
-- conversation_id: syn_persistent_harassment_group_1_3045
+  disagreement_variance: 0.1648
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4808
+- conversation_id: syn_bystander_intervention_9_3339
+  turn_id: t2
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1649
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4808
+- conversation_id: syn_persistent_harassment_group_29_1606
+  turn_id: t4
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1638
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4801
+- conversation_id: syn_persistent_harassment_group_18_5658
+  turn_id: t10
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1632
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4797
+- conversation_id: syn_bystander_intervention_34_9442
+  turn_id: t3
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1621
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4791
+- conversation_id: syn_bystander_intervention_2_2816
+  turn_id: t2
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.162
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.479
+- conversation_id: syn_persistent_harassment_group_29_1606
+  turn_id: t5
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1618
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4789
+- conversation_id: syn_bystander_intervention_9_3339
+  turn_id: t3
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1613
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4786
+- conversation_id: syn_persistent_harassment_group_18_5658
+  turn_id: t8
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1613
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4786
+- conversation_id: syn_bystander_intervention_12_9047
+  turn_id: t9
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1612
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4785
+- conversation_id: syn_persistent_harassment_group_23_1659
+  turn_id: t3
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.161
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4784
+- conversation_id: syn_bystander_intervention_26_1841
+  turn_id: t7
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.161
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4784
+- conversation_id: syn_bystander_intervention_13_9335
   turn_id: t6
   turn_text: bro you are fucking cracked at this game lmao
   gold_actionable: false
   gold_severity: benign
   platform_style: group_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
   false_negative_count: 0
-  disagreement_variance: 0.0038
-  primary_error_type: Correct
-  priority_weight: 0.0309
-- conversation_id: syn_persistent_harassment_group_1_3045
-  turn_id: t4
+  disagreement_variance: 0.1608
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4783
+- conversation_id: syn_bystander_intervention_12_9047
+  turn_id: t10
   turn_text: bro you are fucking cracked at this game lmao
   gold_actionable: false
   gold_severity: benign
   platform_style: group_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
   false_negative_count: 0
-  disagreement_variance: 0.0032
-  primary_error_type: Correct
-  priority_weight: 0.0281
-- conversation_id: syn_persistent_harassment_group_1_3045
+  disagreement_variance: 0.1605
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4781
+- conversation_id: syn_friendly_profanity_gaming_7_2773
+  turn_id: t3
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1602
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4779
+- conversation_id: syn_friendly_profanity_gaming_27_3093
+  turn_id: t5
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1602
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4779
+- conversation_id: syn_persistent_harassment_group_1_8144
+  turn_id: t1
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1599
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4777
+- conversation_id: syn_bystander_intervention_21_9433
+  turn_id: t5
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1599
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4777
+- conversation_id: syn_bystander_intervention_2_2816
+  turn_id: t3
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1589
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4771
+- conversation_id: syn_bystander_intervention_26_1841
+  turn_id: t8
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.159
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4771
+- conversation_id: syn_bystander_intervention_22_8710
+  turn_id: t7
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1587
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.477
+- conversation_id: syn_persistent_harassment_group_1_8144
+  turn_id: t11
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1586
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4769
+- conversation_id: syn_bystander_intervention_12_9047
+  turn_id: t3
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.158
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4765
+- conversation_id: syn_bystander_intervention_26_1841
+  turn_id: t3
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.158
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4765
+- conversation_id: syn_bystander_intervention_13_9335
+  turn_id: t2
+  turn_text: bro you are fucking cracked at this game lmao
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1566
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4757
+- conversation_id: syn_bystander_intervention_12_9047
+  turn_id: t8
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1085
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4425
+- conversation_id: syn_persistent_harassment_group_1_8144
+  turn_id: t6
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.108
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4421
+- conversation_id: syn_bystander_intervention_21_9433
+  turn_id: t6
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1076
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4418
+- conversation_id: syn_persistent_harassment_group_22_5982
+  turn_id: t9
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1075
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4417
+- conversation_id: syn_persistent_harassment_group_18_5658
+  turn_id: t9
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1075
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4417
+- conversation_id: syn_bystander_intervention_26_1841
+  turn_id: t6
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1074
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4417
+- conversation_id: syn_persistent_harassment_group_22_5982
+  turn_id: t5
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1073
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4415
+- conversation_id: syn_persistent_harassment_group_27_3369
+  turn_id: t3
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1071
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4414
+- conversation_id: syn_bystander_intervention_34_9442
+  turn_id: t4
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1065
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.441
+- conversation_id: syn_bystander_intervention_24_6456
+  turn_id: t3
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1065
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.441
+- conversation_id: syn_persistent_harassment_group_23_1659
+  turn_id: t10
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1064
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4409
+- conversation_id: syn_bystander_intervention_9_3339
+  turn_id: t4
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1054
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4401
+- conversation_id: syn_friendly_profanity_gaming_18_9693
+  turn_id: t2
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.105
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4398
+- conversation_id: syn_bystander_intervention_22_8710
+  turn_id: t8
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.1049
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4397
+- conversation_id: syn_bystander_intervention_34_9442
   turn_id: t5
   turn_text: holy shit that play was crazy
   gold_actionable: false
   gold_severity: benign
   platform_style: group_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
   false_negative_count: 0
-  disagreement_variance: 0.0029
-  primary_error_type: Correct
-  priority_weight: 0.0269
-- conversation_id: syn_gradual_escalation_gaming_1_9935
-  turn_id: t2
-  turn_text: gg that was clean
+  disagreement_variance: 0.1019
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4374
+- conversation_id: syn_persistent_harassment_group_1_8144
+  turn_id: t5
+  turn_text: holy shit that play was crazy
   gold_actionable: false
   gold_severity: benign
-  platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
   false_negative_count: 0
-  disagreement_variance: 0.0029
-  primary_error_type: Correct
-  priority_weight: 0.0267
-- conversation_id: syn_friendly_profanity_gaming_0_9751
+  disagreement_variance: 0.1018
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4373
+- conversation_id: syn_friendly_profanity_gaming_27_3093
   turn_id: t4
-  turn_text: bro you are fucking cracked at this game lmao
+  turn_text: deadass thought we were dead haha
   gold_actionable: false
   gold_severity: benign
   platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
   false_negative_count: 0
-  disagreement_variance: 0.0028
-  primary_error_type: Correct
-  priority_weight: 0.0264
-- conversation_id: syn_persistent_harassment_group_1_3045
+  disagreement_variance: 0.1003
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4361
+- conversation_id: syn_bystander_intervention_26_1841
+  turn_id: t4
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0999
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4358
+- conversation_id: syn_bystander_intervention_34_9442
+  turn_id: t8
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0999
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4358
+- conversation_id: syn_persistent_harassment_group_23_1659
+  turn_id: t8
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0997
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4357
+- conversation_id: syn_bystander_intervention_22_8710
+  turn_id: t3
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0997
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4357
+- conversation_id: syn_bystander_intervention_13_9335
+  turn_id: t7
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0997
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4356
+- conversation_id: syn_persistent_harassment_group_1_8144
+  turn_id: t3
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0996
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4356
+- conversation_id: syn_persistent_harassment_group_27_3369
+  turn_id: t4
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0995
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4355
+- conversation_id: syn_persistent_harassment_group_27_3369
+  turn_id: t6
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0995
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4355
+- conversation_id: syn_persistent_harassment_group_1_8144
+  turn_id: t7
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0995
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4355
+- conversation_id: syn_bystander_intervention_12_9047
+  turn_id: t5
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0995
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4355
+- conversation_id: syn_bystander_intervention_12_9047
+  turn_id: t6
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0995
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4355
+- conversation_id: syn_bystander_intervention_22_8710
+  turn_id: t4
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0994
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4354
+- conversation_id: syn_persistent_harassment_group_22_5982
+  turn_id: t6
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0993
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4353
+- conversation_id: syn_bystander_intervention_13_9335
+  turn_id: t4
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.099
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4351
+- conversation_id: syn_friendly_profanity_gaming_7_2773
+  turn_id: t4
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0988
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.435
+- conversation_id: syn_bystander_intervention_24_6456
+  turn_id: t6
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0988
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4349
+- conversation_id: syn_bystander_intervention_2_2816
+  turn_id: t5
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0988
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4349
+- conversation_id: syn_bystander_intervention_13_9335
+  turn_id: t5
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0987
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4349
+- conversation_id: syn_persistent_harassment_group_29_1606
+  turn_id: t7
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0985
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4347
+- conversation_id: syn_persistent_harassment_group_27_3369
+  turn_id: t5
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0983
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4346
+- conversation_id: syn_persistent_harassment_group_27_3369
+  turn_id: t7
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0984
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4346
+- conversation_id: syn_bystander_intervention_22_8710
+  turn_id: t5
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0983
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4346
+- conversation_id: syn_persistent_harassment_group_1_8144
+  turn_id: t4
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0984
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4346
+- conversation_id: syn_bystander_intervention_12_9047
+  turn_id: t7
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.098
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4343
+- conversation_id: syn_bystander_intervention_24_6456
+  turn_id: t5
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.098
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4343
+- conversation_id: syn_persistent_harassment_group_23_1659
+  turn_id: t9
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0976
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.434
+- conversation_id: syn_friendly_profanity_gaming_27_3093
+  turn_id: t3
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0976
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.434
+- conversation_id: syn_persistent_harassment_group_1_8144
+  turn_id: t10
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0975
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4339
+- conversation_id: syn_bystander_intervention_26_1841
+  turn_id: t10
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0971
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4336
+- conversation_id: syn_bystander_intervention_26_1841
+  turn_id: t5
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0963
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4329
+- conversation_id: syn_persistent_harassment_group_18_5658
+  turn_id: t3
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0961
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4328
+- conversation_id: syn_bystander_intervention_21_9433
+  turn_id: t7
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0961
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4328
+- conversation_id: syn_persistent_harassment_group_29_1606
+  turn_id: t9
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0931
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4303
+- conversation_id: syn_persistent_harassment_group_18_5658
+  turn_id: t7
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0924
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4297
+- conversation_id: syn_persistent_harassment_group_22_5982
+  turn_id: t7
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0919
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4293
+- conversation_id: syn_friendly_profanity_gaming_7_2773
+  turn_id: t1
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0912
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4288
+- conversation_id: syn_friendly_profanity_gaming_7_2773
+  turn_id: t2
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0905
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4282
+- conversation_id: syn_friendly_profanity_gaming_27_3093
+  turn_id: t1
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0901
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4279
+- conversation_id: syn_persistent_harassment_group_29_1606
+  turn_id: t1
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0902
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4279
+- conversation_id: syn_bystander_intervention_34_9442
   turn_id: t1
   turn_text: holy shit that play was crazy
   gold_actionable: false
   gold_severity: benign
   platform_style: group_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
   false_negative_count: 0
-  disagreement_variance: 0.0027
-  primary_error_type: Correct
-  priority_weight: 0.0258
-- conversation_id: syn_immediate_abuse_dm_0_2535
+  disagreement_variance: 0.0897
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4276
+- conversation_id: syn_bystander_intervention_12_9047
+  turn_id: t1
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0897
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4276
+- conversation_id: syn_persistent_harassment_group_18_5658
+  turn_id: t2
+  turn_text: deadass thought we were dead haha
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0895
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4273
+- conversation_id: syn_persistent_harassment_group_22_5982
+  turn_id: t8
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0892
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4271
+- conversation_id: syn_bystander_intervention_2_2816
+  turn_id: t1
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0891
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4271
+- conversation_id: syn_persistent_harassment_group_18_5658
+  turn_id: t5
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0882
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4263
+- conversation_id: syn_persistent_harassment_group_22_5982
+  turn_id: t3
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0859
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4243
+- conversation_id: syn_bystander_intervention_12_9047
+  turn_id: t2
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0859
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4243
+- conversation_id: syn_persistent_harassment_group_22_5982
+  turn_id: t4
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0858
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4242
+- conversation_id: syn_bystander_intervention_22_8710
+  turn_id: t1
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0858
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4242
+- conversation_id: syn_bystander_intervention_21_9433
+  turn_id: t3
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0834
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4222
+- conversation_id: syn_bystander_intervention_34_9442
+  turn_id: t2
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0826
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4215
+- conversation_id: syn_bystander_intervention_13_9335
+  turn_id: t1
+  turn_text: holy shit that play was crazy
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 15
+  error_rate: 0.2778
+  false_positive_count: 15
+  false_negative_count: 0
+  disagreement_variance: 0.0819
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.4209
+- conversation_id: syn_code_switch_escalation_16_2653
+  turn_id: t4
+  turn_text: nobody wants to queue with your trash ass
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 10
+  error_rate: 0.1852
+  false_positive_count: 0
+  false_negative_count: 10
+  disagreement_variance: 0.0515
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.3883
+- conversation_id: syn_code_switch_escalation_22_5913
+  turn_id: t5
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 6
+  error_rate: 0.1111
+  false_positive_count: 0
+  false_negative_count: 6
+  disagreement_variance: 0.0476
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.2863
+- conversation_id: syn_code_switch_escalation_0_1187
+  turn_id: t5
+  turn_text: nobody wants to queue with your trash ass
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 6
+  error_rate: 0.1111
+  false_positive_count: 0
+  false_negative_count: 6
+  disagreement_variance: 0.0451
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.2826
+- conversation_id: syn_de_escalation_forum_17_7866
+  turn_id: t1
+  turn_text: nobody wants to queue with your trash ass
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 6
+  error_rate: 0.1111
+  false_positive_count: 0
+  false_negative_count: 6
+  disagreement_variance: 0.0429
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.2791
+- conversation_id: syn_de_escalation_forum_25_1349
+  turn_id: t1
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 6
+  error_rate: 0.1111
+  false_positive_count: 0
+  false_negative_count: 6
+  disagreement_variance: 0.0406
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.2754
+- conversation_id: syn_gradual_escalation_gaming_11_5422
+  turn_id: t5
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 6
+  error_rate: 0.1111
+  false_positive_count: 0
+  false_negative_count: 6
+  disagreement_variance: 0.0343
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.2648
+- conversation_id: syn_code_switch_escalation_19_6253
+  turn_id: t6
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 0
+  false_negative_count: 5
+  disagreement_variance: 0.0374
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.2461
+- conversation_id: syn_gradual_escalation_gaming_33_1241
+  turn_id: t7
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 0
+  false_negative_count: 5
+  disagreement_variance: 0.0349
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.2418
+- conversation_id: syn_code_switch_escalation_8_1356
+  turn_id: t5
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 0
+  false_negative_count: 5
+  disagreement_variance: 0.0346
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.2412
+- conversation_id: syn_de_escalation_forum_31_3159
+  turn_id: t2
+  turn_text: my bad i missed the callout, let's reset and focus
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.0834
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.237
+- conversation_id: syn_de_escalation_forum_17_7866
+  turn_id: t2
+  turn_text: yeah all good, let's win this next one
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.0832
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2368
+- conversation_id: syn_persistent_harassment_group_29_1606
+  turn_id: t6
+  turn_text: nice clutch my dude
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.0831
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2367
+- conversation_id: syn_de_escalation_forum_21_6942
+  turn_id: t2
+  turn_text: yeah all good, let's win this next one
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.083
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2366
+- conversation_id: syn_de_escalation_forum_1_3877
+  turn_id: t2
+  turn_text: chill out guys it's just one round
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.0829
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2366
+- conversation_id: syn_de_escalation_forum_13_2911
+  turn_id: t2
+  turn_text: chill out guys it's just one round
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.0828
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2365
+- conversation_id: syn_bystander_intervention_9_3339
+  turn_id: t5
+  turn_text: nice clutch my dude
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.0744
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2289
+- conversation_id: syn_bystander_intervention_34_9442
+  turn_id: t6
+  turn_text: nice clutch my dude
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.0742
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2287
+- conversation_id: syn_persistent_harassment_group_29_1606
+  turn_id: t8
+  turn_text: nice clutch my dude
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.074
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2286
+- conversation_id: syn_persistent_harassment_group_27_3369
+  turn_id: t8
+  turn_text: nice clutch my dude
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.074
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2286
+- conversation_id: syn_code_switch_escalation_22_5913
+  turn_id: t3
+  turn_text: literally bottom fragging every match
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.0657
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2208
+- conversation_id: syn_persistent_harassment_group_29_1606
+  turn_id: t2
+  turn_text: nice clutch my dude
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
+  false_negative_count: 0
+  disagreement_variance: 0.0647
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2198
+- conversation_id: syn_immediate_abuse_dm_15_2697
   turn_id: t2
   turn_text: leave me alone
   gold_actionable: false
   gold_severity: benign
   platform_style: direct_messaging
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  total_evaluations: 54
+  total_errors: 5
+  error_rate: 0.0926
+  false_positive_count: 5
   false_negative_count: 0
-  disagreement_variance: 0.0007
-  primary_error_type: Correct
-  priority_weight: 0.0137
-- conversation_id: syn_persistent_harassment_group_1_3045
+  disagreement_variance: 0.0644
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2194
+- conversation_id: syn_code_switch_escalation_31_6246
+  turn_id: t5
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 0
+  false_negative_count: 4
+  disagreement_variance: 0.0333
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.2149
+- conversation_id: syn_code_switch_escalation_26_7179
+  turn_id: t4
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 0
+  false_negative_count: 4
+  disagreement_variance: 0.0289
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.2069
+- conversation_id: syn_de_escalation_forum_13_2911
+  turn_id: t6
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0682
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2047
+- conversation_id: syn_de_escalation_forum_31_3159
   turn_id: t3
-  turn_text: deadass thought we were dead haha
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0683
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2047
+- conversation_id: syn_de_escalation_forum_1_3877
+  turn_id: t7
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0682
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2047
+- conversation_id: syn_de_escalation_forum_21_6942
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0681
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2046
+- conversation_id: syn_de_escalation_forum_33_1858
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0681
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2046
+- conversation_id: syn_de_escalation_forum_1_3877
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.068
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2045
+- conversation_id: syn_de_escalation_forum_1_3877
+  turn_id: t6
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0681
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2045
+- conversation_id: syn_de_escalation_forum_2_6994
+  turn_id: t6
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.068
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2045
+- conversation_id: syn_de_escalation_forum_2_6994
+  turn_id: t7
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.068
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2045
+- conversation_id: syn_de_escalation_forum_2_6994
+  turn_id: t8
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0681
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2045
+- conversation_id: syn_de_escalation_forum_6_6992
+  turn_id: t6
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0681
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2045
+- conversation_id: syn_de_escalation_forum_33_1858
+  turn_id: t6
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.068
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2045
+- conversation_id: syn_de_escalation_forum_13_2911
+  turn_id: t7
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_31_3159
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_17_7866
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.068
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_17_7866
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_17_7866
+  turn_id: t6
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_17_7866
+  turn_id: t7
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_1_3877
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_1_3877
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_2_6994
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_2_6994
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.068
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_6_6992
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_6_6992
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_27_4394
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_4_6549
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_4_6549
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.068
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_4_6549
+  turn_id: t6
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.068
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_15_4846
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2044
+- conversation_id: syn_de_escalation_forum_21_6942
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2043
+- conversation_id: syn_de_escalation_forum_13_2911
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2043
+- conversation_id: syn_de_escalation_forum_17_7866
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2043
+- conversation_id: syn_de_escalation_forum_17_7866
+  turn_id: t8
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2043
+- conversation_id: syn_de_escalation_forum_2_6994
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2043
+- conversation_id: syn_de_escalation_forum_5_3306
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0679
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2043
+- conversation_id: syn_de_escalation_forum_25_1349
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2043
+- conversation_id: syn_de_escalation_forum_33_1858
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2043
+- conversation_id: syn_persistent_harassment_group_27_3369
+  turn_id: t9
+  turn_text: nice clutch my dude
   gold_actionable: false
   gold_severity: benign
   platform_style: group_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
   false_negative_count: 0
-  disagreement_variance: 0.0005
-  primary_error_type: Correct
-  priority_weight: 0.0109
-- conversation_id: syn_friendly_profanity_gaming_0_9751
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2043
+- conversation_id: syn_de_escalation_forum_21_6942
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2042
+- conversation_id: syn_de_escalation_forum_13_2911
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2042
+- conversation_id: syn_de_escalation_forum_13_2911
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2042
+- conversation_id: syn_de_escalation_forum_6_6992
+  turn_id: t7
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2042
+- conversation_id: syn_de_escalation_forum_12_8606
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0677
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2042
+- conversation_id: syn_de_escalation_forum_12_8606
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0677
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2042
+- conversation_id: syn_de_escalation_forum_27_4394
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0677
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2042
+- conversation_id: syn_de_escalation_forum_4_6549
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0677
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2042
+- conversation_id: syn_de_escalation_forum_15_4846
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2042
+- conversation_id: syn_de_escalation_forum_33_1858
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0678
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2042
+- conversation_id: syn_de_escalation_forum_6_6992
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0676
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2041
+- conversation_id: syn_de_escalation_forum_25_1349
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0676
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2041
+- conversation_id: syn_de_escalation_forum_25_1349
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0676
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2041
+- conversation_id: syn_bystander_intervention_34_9442
+  turn_id: t7
+  turn_text: nice clutch my dude
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0676
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2041
+- conversation_id: syn_de_escalation_forum_5_3306
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0675
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.2039
+- conversation_id: syn_persistent_harassment_group_29_1606
+  turn_id: t3
+  turn_text: nice clutch my dude
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0583
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1948
+- conversation_id: syn_immediate_abuse_dm_15_2697
+  turn_id: t4
+  turn_text: leave me alone
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: direct_messaging
+  total_evaluations: 54
+  total_errors: 4
+  error_rate: 0.0741
+  false_positive_count: 4
+  false_negative_count: 0
+  disagreement_variance: 0.0579
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1944
+- conversation_id: syn_immediate_abuse_dm_15_2697
+  turn_id: t1
+  turn_text: i know what high school you go to, keep talking and see what happens
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: direct_messaging
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0344
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1928
+- conversation_id: syn_de_escalation_forum_31_3159
+  turn_id: t1
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0335
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1912
+- conversation_id: syn_de_escalation_forum_1_3877
+  turn_id: t1
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0334
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1909
+- conversation_id: syn_de_escalation_forum_5_3306
+  turn_id: t1
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0327
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1897
+- conversation_id: syn_code_switch_escalation_26_7179
+  turn_id: t5
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0313
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1873
+- conversation_id: syn_code_switch_escalation_0_1187
+  turn_id: t6
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0297
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1843
+- conversation_id: syn_code_switch_escalation_22_5913
+  turn_id: t4
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0292
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1832
+- conversation_id: syn_de_escalation_forum_33_1858
+  turn_id: t1
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0289
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1827
+- conversation_id: syn_de_escalation_forum_4_6549
+  turn_id: t1
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0288
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1826
+- conversation_id: syn_code_switch_escalation_31_6246
+  turn_id: t7
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0283
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1817
+- conversation_id: syn_de_escalation_forum_6_6992
+  turn_id: t1
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0281
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1812
+- conversation_id: syn_de_escalation_forum_21_6942
+  turn_id: t1
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.028
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1809
+- conversation_id: syn_de_escalation_forum_13_2911
+  turn_id: t1
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0262
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1774
+- conversation_id: syn_code_switch_escalation_0_1187
+  turn_id: t4
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0243
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1736
+- conversation_id: syn_gradual_escalation_gaming_11_5422
+  turn_id: t6
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 0
+  false_negative_count: 3
+  disagreement_variance: 0.0237
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1723
+- conversation_id: syn_code_switch_escalation_22_5913
+  turn_id: t2
+  turn_text: heading there now, don't get picked
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0544
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1722
+- conversation_id: syn_code_switch_escalation_8_1356
+  turn_id: t2
+  turn_text: lmao nice snipe bro
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0537
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1714
+- conversation_id: syn_gradual_escalation_gaming_33_1241
+  turn_id: t2
+  turn_text: heading there now, don't get picked
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.052
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1696
+- conversation_id: syn_gradual_escalation_gaming_24_4470
+  turn_id: t2
+  turn_text: heading there now, don't get picked
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0519
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1695
+- conversation_id: syn_gradual_escalation_gaming_11_5422
+  turn_id: t2
+  turn_text: heading there now, don't get picked
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0518
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1694
+- conversation_id: syn_code_switch_escalation_16_2653
+  turn_id: t1
+  turn_text: gg that was clean
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0519
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1694
+- conversation_id: syn_code_switch_escalation_0_1187
+  turn_id: t1
+  turn_text: lmao nice snipe bro
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0516
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1692
+- conversation_id: syn_gradual_escalation_gaming_15_2796
+  turn_id: t1
+  turn_text: heading there now, don't get picked
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0516
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1691
+- conversation_id: syn_de_escalation_forum_19_7686
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0516
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1691
+- conversation_id: syn_gradual_escalation_gaming_27_1514
+  turn_id: t1
+  turn_text: lmao nice snipe bro
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0515
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1691
+- conversation_id: syn_gradual_escalation_gaming_23_8787
+  turn_id: t2
+  turn_text: heading there now, don't get picked
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0515
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.169
+- conversation_id: syn_de_escalation_forum_3_3695
+  turn_id: t5
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0515
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.169
+- conversation_id: syn_persistent_harassment_group_22_5982
   turn_id: t2
   turn_text: nice clutch my dude
   gold_actionable: false
   gold_severity: benign
-  platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
   false_negative_count: 0
-  disagreement_variance: 0.0004
-  primary_error_type: Correct
-  priority_weight: 0.0104
-- conversation_id: syn_gradual_escalation_gaming_1_9935
+  disagreement_variance: 0.0515
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.169
+- conversation_id: syn_code_switch_escalation_19_6253
+  turn_id: t1
+  turn_text: heading there now, don't get picked
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0514
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1689
+- conversation_id: syn_de_escalation_forum_3_3695
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0514
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1689
+- conversation_id: syn_de_escalation_forum_19_7686
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0514
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1689
+- conversation_id: syn_de_escalation_forum_19_7686
+  turn_id: t6
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0514
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1689
+- conversation_id: syn_de_escalation_forum_19_7686
+  turn_id: t7
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0514
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1689
+- conversation_id: syn_de_escalation_forum_0_5835
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0514
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1689
+- conversation_id: syn_persistent_harassment_group_22_5982
+  turn_id: t1
+  turn_text: nice clutch my dude
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0514
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1689
+- conversation_id: syn_bystander_intervention_9_3339
+  turn_id: t1
+  turn_text: nice clutch my dude
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0514
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1689
+- conversation_id: syn_gradual_escalation_gaming_15_2796
+  turn_id: t2
+  turn_text: heading there now, don't get picked
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0513
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1688
+- conversation_id: syn_code_switch_escalation_31_6246
+  turn_id: t1
+  turn_text: heading there now, don't get picked
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0513
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1688
+- conversation_id: syn_de_escalation_forum_3_3695
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0513
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1688
+- conversation_id: syn_de_escalation_forum_3_3695
+  turn_id: t6
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0513
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1688
+- conversation_id: syn_de_escalation_forum_19_7686
+  turn_id: t3
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0513
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1688
+- conversation_id: syn_de_escalation_forum_0_5835
+  turn_id: t4
+  turn_text: yeah my bad, let's keep playing
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0513
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1688
+- conversation_id: syn_gradual_escalation_gaming_33_1241
   turn_id: t1
   turn_text: yo drop your loadout at mid
   gold_actionable: false
   gold_severity: benign
   platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
   false_negative_count: 0
-  disagreement_variance: 0.0004
-  primary_error_type: Correct
-  priority_weight: 0.0103
-- conversation_id: syn_friendly_profanity_gaming_0_9751
-  turn_id: t3
-  turn_text: deadass thought we were dead haha
+  disagreement_variance: 0.0513
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1688
+- conversation_id: syn_de_escalation_forum_3_3695
+  turn_id: t2
+  turn_text: my bad i missed the callout, let's reset and focus
   gold_actionable: false
   gold_severity: benign
-  platform_style: gaming_chat
-  total_evaluations: 39
-  total_errors: 0
-  error_rate: 0.0
-  false_positive_count: 0
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
   false_negative_count: 0
-  disagreement_variance: 0.0004
-  primary_error_type: Correct
-  priority_weight: 0.0103
-- conversation_id: syn_persistent_harassment_group_1_3045
-  turn_id: t2
-  turn_text: deadass thought we were dead haha
+  disagreement_variance: 0.0513
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1688
+- conversation_id: syn_code_switch_escalation_33_6404
+  turn_id: t1
+  turn_text: heading there now, don't get picked
   gold_actionable: false
   gold_severity: benign
   platform_style: group_chat
-  total_evaluations: 39
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0512
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1687
+- conversation_id: syn_code_switch_escalation_0_1187
+  turn_id: t2
+  turn_text: lmao nice snipe bro
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0512
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1687
+- conversation_id: syn_gradual_escalation_gaming_9_3664
+  turn_id: t1
+  turn_text: lmao nice snipe bro
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0512
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1687
+- conversation_id: syn_code_switch_escalation_19_6253
+  turn_id: t2
+  turn_text: lmao nice snipe bro
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0511
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1686
+- conversation_id: syn_gradual_escalation_gaming_9_3664
+  turn_id: t2
+  turn_text: lmao nice snipe bro
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0511
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1686
+- conversation_id: syn_code_switch_escalation_31_6246
+  turn_id: t2
+  turn_text: lmao nice snipe bro
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0511
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1686
+- conversation_id: syn_code_switch_escalation_16_2653
+  turn_id: t2
+  turn_text: yo drop your loadout at mid
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0512
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1686
+- conversation_id: syn_de_escalation_forum_19_7686
+  turn_id: t2
+  turn_text: chill out guys it's just one round
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: forum_thread
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.051
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1684
+- conversation_id: syn_gradual_escalation_gaming_18_8123
+  turn_id: t1
+  turn_text: heading there now, don't get picked
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0507
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1682
+- conversation_id: syn_code_switch_escalation_16_2653
+  turn_id: t3
+  turn_text: literally bottom fragging every match
+  gold_actionable: false
+  gold_severity: benign
+  platform_style: group_chat
+  total_evaluations: 54
+  total_errors: 3
+  error_rate: 0.0556
+  false_positive_count: 3
+  false_negative_count: 0
+  disagreement_variance: 0.0501
+  primary_error_type: False Positive (Over-moderation)
+  priority_weight: 0.1675
+- conversation_id: syn_gradual_escalation_gaming_11_5422
+  turn_id: t4
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: gaming_chat
+  total_evaluations: 54
+  total_errors: 2
+  error_rate: 0.037
+  false_positive_count: 0
+  false_negative_count: 2
+  disagreement_variance: 0.0241
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.149
+- conversation_id: syn_immediate_abuse_dm_15_2697
+  turn_id: t5
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: direct_messaging
+  total_evaluations: 54
+  total_errors: 2
+  error_rate: 0.037
+  false_positive_count: 0
+  false_negative_count: 2
+  disagreement_variance: 0.0194
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1387
+- conversation_id: syn_immediate_abuse_dm_4_1931
+  turn_id: t3
+  turn_text: you are fucking garbage uninstall right now
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: direct_messaging
+  total_evaluations: 54
+  total_errors: 1
+  error_rate: 0.0185
+  false_positive_count: 0
+  false_negative_count: 1
+  disagreement_variance: 0.0194
+  primary_error_type: False Negative (Missed Harm)
+  priority_weight: 0.1145
+- conversation_id: syn_immediate_abuse_dm_8_6147
+  turn_id: t1
+  turn_text: i know what high school you go to, keep talking and see what happens
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: direct_messaging
+  total_evaluations: 54
   total_errors: 0
   error_rate: 0.0
   false_positive_count: 0
   false_negative_count: 0
-  disagreement_variance: 0.0004
+  disagreement_variance: 0.0174
   primary_error_type: Correct
-  priority_weight: 0.0095
+  priority_weight: 0.0857
+- conversation_id: syn_immediate_abuse_dm_4_1931
+  turn_id: t1
+  turn_text: i know what high school you go to, keep talking and see what happens
+  gold_actionable: true
+  gold_severity: urgent
+  platform_style: direct_messaging
+  total_evaluations: 54
+  total_errors: 0
+  error_rate: 0.0
+  false_positive_count: 0
+  false_negative_count: 0
+  disagreement_variance: 0.0169
+  primary_error_type: Correct
+  priority_weight: 0.0844
 words:
-- word: garbage
-  vulnerability_score: 1.0986
-  total_occurrences: 2
-  error_occurrences: 2
+- word: yeah
+  vulnerability_score: 4.1744
+  total_occurrences: 64
+  error_occurrences: 64
+  fp_occurrences: 64
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: bad
+  vulnerability_score: 4.1744
+  total_occurrences: 64
+  error_occurrences: 64
+  fp_occurrences: 64
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: playing
+  vulnerability_score: 4.1431
+  total_occurrences: 62
+  error_occurrences: 62
+  fp_occurrences: 62
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: keep
+  vulnerability_score: 4.0607
+  total_occurrences: 65
+  error_occurrences: 63
+  fp_occurrences: 62
+  fn_occurrences: 1
+  error_rate: 0.9692
+  primary_failure_mode: false_positive_trigger
+- word: fucking
+  vulnerability_score: 4.0073
+  total_occurrences: 54
+  error_occurrences: 54
+  fp_occurrences: 29
+  fn_occurrences: 25
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: dead
+  vulnerability_score: 3.7612
+  total_occurrences: 42
+  error_occurrences: 42
+  fp_occurrences: 42
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: deadass
+  vulnerability_score: 3.7612
+  total_occurrences: 42
+  error_occurrences: 42
+  fp_occurrences: 42
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: haha
+  vulnerability_score: 3.7612
+  total_occurrences: 42
+  error_occurrences: 42
+  fp_occurrences: 42
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: thought
+  vulnerability_score: 3.7612
+  total_occurrences: 42
+  error_occurrences: 42
+  fp_occurrences: 42
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: bro
+  vulnerability_score: 3.7136
+  total_occurrences: 40
+  error_occurrences: 40
+  fp_occurrences: 40
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: lmao
+  vulnerability_score: 3.6376
+  total_occurrences: 37
+  error_occurrences: 37
+  fp_occurrences: 37
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: now
+  vulnerability_score: 3.6109
+  total_occurrences: 36
+  error_occurrences: 36
+  fp_occurrences: 11
+  fn_occurrences: 25
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: game
+  vulnerability_score: 3.4012
+  total_occurrences: 29
+  error_occurrences: 29
+  fp_occurrences: 29
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: cracked
+  vulnerability_score: 3.4012
+  total_occurrences: 29
+  error_occurrences: 29
+  fp_occurrences: 29
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: play
+  vulnerability_score: 3.3322
+  total_occurrences: 27
+  error_occurrences: 27
+  fp_occurrences: 27
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: shit
+  vulnerability_score: 3.3322
+  total_occurrences: 27
+  error_occurrences: 27
+  fp_occurrences: 27
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: crazy
+  vulnerability_score: 3.3322
+  total_occurrences: 27
+  error_occurrences: 27
+  fp_occurrences: 27
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: holy
+  vulnerability_score: 3.3322
+  total_occurrences: 27
+  error_occurrences: 27
+  fp_occurrences: 27
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: uninstall
+  vulnerability_score: 3.2581
+  total_occurrences: 25
+  error_occurrences: 25
   fp_occurrences: 0
-  fn_occurrences: 2
+  fn_occurrences: 25
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: garbage
+  vulnerability_score: 3.2581
+  total_occurrences: 25
+  error_occurrences: 25
+  fp_occurrences: 0
+  fn_occurrences: 25
   error_rate: 1.0
   primary_failure_mode: false_negative_indicator
 - word: right
-  vulnerability_score: 1.0986
-  total_occurrences: 2
-  error_occurrences: 2
+  vulnerability_score: 3.2581
+  total_occurrences: 25
+  error_occurrences: 25
   fp_occurrences: 0
-  fn_occurrences: 2
+  fn_occurrences: 25
   error_rate: 1.0
   primary_failure_mode: false_negative_indicator
-- word: uninstall
-  vulnerability_score: 1.0986
-  total_occurrences: 2
-  error_occurrences: 2
-  fp_occurrences: 0
-  fn_occurrences: 2
+- word: nice
+  vulnerability_score: 3.0445
+  total_occurrences: 20
+  error_occurrences: 20
+  fp_occurrences: 20
+  fn_occurrences: 0
   error_rate: 1.0
-  primary_failure_mode: false_negative_indicator
-- word: now
-  vulnerability_score: 1.0986
-  total_occurrences: 2
-  error_occurrences: 2
-  fp_occurrences: 0
-  fn_occurrences: 2
+  primary_failure_mode: false_positive_trigger
+- word: clutch
+  vulnerability_score: 2.5649
+  total_occurrences: 12
+  error_occurrences: 12
+  fp_occurrences: 12
+  fn_occurrences: 0
   error_rate: 1.0
-  primary_failure_mode: false_negative_indicator
-- word: go
-  vulnerability_score: 1.0986
-  total_occurrences: 2
-  error_occurrences: 2
-  fp_occurrences: 1
-  fn_occurrences: 1
+  primary_failure_mode: false_positive_trigger
+- word: dude
+  vulnerability_score: 2.5649
+  total_occurrences: 12
+  error_occurrences: 12
+  fp_occurrences: 12
+  fn_occurrences: 0
   error_rate: 1.0
-  primary_failure_mode: balanced_error_trigger
-- word: fucking
-  vulnerability_score: 0.8912
+  primary_failure_mode: false_positive_trigger
+- word: heading
+  vulnerability_score: 2.4849
+  total_occurrences: 11
+  error_occurrences: 11
+  fp_occurrences: 11
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: get
+  vulnerability_score: 2.4849
+  total_occurrences: 11
+  error_occurrences: 11
+  fp_occurrences: 11
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: picked
+  vulnerability_score: 2.4849
+  total_occurrences: 11
+  error_occurrences: 11
+  fp_occurrences: 11
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: snipe
+  vulnerability_score: 2.1972
+  total_occurrences: 8
+  error_occurrences: 8
+  fp_occurrences: 8
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: account
+  vulnerability_score: 2.0794
   total_occurrences: 7
+  error_occurrences: 7
+  fp_occurrences: 0
+  fn_occurrences: 7
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: delete
+  vulnerability_score: 2.0794
+  total_occurrences: 7
+  error_occurrences: 7
+  fp_occurrences: 0
+  fn_occurrences: 7
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: server
+  vulnerability_score: 2.0794
+  total_occurrences: 7
+  error_occurrences: 7
+  fp_occurrences: 0
+  fn_occurrences: 7
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: player
+  vulnerability_score: 2.0794
+  total_occurrences: 7
+  error_occurrences: 7
+  fp_occurrences: 0
+  fn_occurrences: 7
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: worst
+  vulnerability_score: 2.0794
+  total_occurrences: 7
+  error_occurrences: 7
+  fp_occurrences: 0
+  fn_occurrences: 7
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: one
+  vulnerability_score: 1.7918
+  total_occurrences: 5
+  error_occurrences: 5
+  fp_occurrences: 5
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: without
+  vulnerability_score: 1.3863
+  total_occurrences: 3
   error_occurrences: 3
-  fp_occurrences: 1
-  fn_occurrences: 2
-  error_rate: 0.4286
-  primary_failure_mode: false_negative_indicator
-- word: unreal
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 1
+  fp_occurrences: 3
   fn_occurrences: 0
   error_rate: 1.0
   primary_failure_mode: false_positive_trigger
-- word: trickshot
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 1
+- word: solo
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 3
   fn_occurrences: 0
   error_rate: 1.0
   primary_failure_mode: false_positive_trigger
-- word: see
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 0
-  fn_occurrences: 1
-  error_rate: 1.0
-  primary_failure_mode: false_negative_indicator
-- word: know
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 0
-  fn_occurrences: 1
-  error_rate: 1.0
-  primary_failure_mode: false_negative_indicator
-- word: school
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 0
-  fn_occurrences: 1
-  error_rate: 1.0
-  primary_failure_mode: false_negative_indicator
-- word: talking
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 0
-  fn_occurrences: 1
-  error_rate: 1.0
-  primary_failure_mode: false_negative_indicator
-- word: happens
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 0
-  fn_occurrences: 1
-  error_rate: 1.0
-  primary_failure_mode: false_negative_indicator
-- word: keep
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 0
-  fn_occurrences: 1
-  error_rate: 1.0
-  primary_failure_mode: false_negative_indicator
-- word: high
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 0
-  fn_occurrences: 1
-  error_rate: 1.0
-  primary_failure_mode: false_negative_indicator
-- word: buying
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 1
+- word: push
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 3
   fn_occurrences: 0
   error_rate: 1.0
   primary_failure_mode: false_positive_trigger
-- word: swear
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 1
+- word: comms
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 3
   fn_occurrences: 0
   error_rate: 1.0
   primary_failure_mode: false_positive_trigger
-- word: skin
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 1
+- word: ass
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 0
+  fn_occurrences: 3
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: queue
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 0
+  fn_occurrences: 3
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: wants
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 0
+  fn_occurrences: 3
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: trash
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 0
+  fn_occurrences: 3
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: nobody
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 0
+  fn_occurrences: 3
+  error_rate: 1.0
+  primary_failure_mode: false_negative_indicator
+- word: just
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 3
   fn_occurrences: 0
   error_rate: 1.0
   primary_failure_mode: false_positive_trigger
-- word: dumbass
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 1
+- word: chill
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 3
   fn_occurrences: 0
   error_rate: 1.0
   primary_failure_mode: false_positive_trigger
+- word: round
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 3
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: guys
+  vulnerability_score: 1.3863
+  total_occurrences: 3
+  error_occurrences: 3
+  fp_occurrences: 3
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: next
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: win
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: good
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: yo
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: drop
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: loadout
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: mid
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: bottom
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: every
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: match
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: fragging
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: literally
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: focus
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: reset
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: callout
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: missed
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: full
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: should've
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: traded
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: shields
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: leave
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: alone
+  vulnerability_score: 1.0986
+  total_occurrences: 2
+  error_occurrences: 2
+  fp_occurrences: 2
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: go
+  vulnerability_score: 0.8047
+  total_occurrences: 4
+  error_occurrences: 2
+  fp_occurrences: 1
+  fn_occurrences: 1
+  error_rate: 0.5
+  primary_failure_mode: balanced_error_trigger
 - word: user4
-  vulnerability_score: 0.6931
-  total_occurrences: 1
-  error_occurrences: 1
-  fp_occurrences: 1
-  fn_occurrences: 0
-  error_rate: 1.0
-  primary_failure_mode: false_positive_trigger
-- word: kys
   vulnerability_score: 0.6931
   total_occurrences: 1
   error_occurrences: 1
@@ -481,6 +4101,14 @@ words:
   fn_occurrences: 0
   error_rate: 1.0
   primary_failure_mode: false_positive_trigger
+- word: kys
+  vulnerability_score: 0.6931
+  total_occurrences: 1
+  error_occurrences: 1
+  fp_occurrences: 1
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
 - word: chat
   vulnerability_score: 0.6931
   total_occurrences: 1
@@ -489,227 +4117,91 @@ words:
   fn_occurrences: 0
   error_rate: 1.0
   primary_failure_mode: false_positive_trigger
-- word: crazy
+- word: clean
+  vulnerability_score: 0.6931
+  total_occurrences: 1
+  error_occurrences: 1
+  fp_occurrences: 1
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: gg
+  vulnerability_score: 0.6931
+  total_occurrences: 1
+  error_occurrences: 1
+  fp_occurrences: 1
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: covered
+  vulnerability_score: 0.6931
+  total_occurrences: 1
+  error_occurrences: 1
+  fp_occurrences: 1
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: angle
+  vulnerability_score: 0.6931
+  total_occurrences: 1
+  error_occurrences: 1
+  fp_occurrences: 1
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: told
+  vulnerability_score: 0.6931
+  total_occurrences: 1
+  error_occurrences: 1
+  fp_occurrences: 1
+  fn_occurrences: 0
+  error_rate: 1.0
+  primary_failure_mode: false_positive_trigger
+- word: happens
   vulnerability_score: 0.4621
   total_occurrences: 3
   error_occurrences: 1
-  fp_occurrences: 1
-  fn_occurrences: 0
+  fp_occurrences: 0
+  fn_occurrences: 1
   error_rate: 0.3333
-  primary_failure_mode: false_positive_trigger
-- word: haha
-  vulnerability_score: 0.4024
-  total_occurrences: 4
-  error_occurrences: 1
-  fp_occurrences: 1
-  fn_occurrences: 0
-  error_rate: 0.25
-  primary_failure_mode: false_positive_trigger
-- word: lmao
-  vulnerability_score: 0.3584
-  total_occurrences: 5
-  error_occurrences: 1
-  fp_occurrences: 1
-  fn_occurrences: 0
-  error_rate: 0.2
-  primary_failure_mode: false_positive_trigger
-- word: bro
-  vulnerability_score: 0.3584
-  total_occurrences: 5
-  error_occurrences: 1
-  fp_occurrences: 1
-  fn_occurrences: 0
-  error_rate: 0.2
-  primary_failure_mode: false_positive_trigger
-- word: mid
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: loadout
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: yo
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: drop
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: clean
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: gg
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: bottom
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: literally
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: fragging
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: match
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: every
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: alone
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: leave
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: game
-  vulnerability_score: 0.0
-  total_occurrences: 4
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: cracked
-  vulnerability_score: 0.0
-  total_occurrences: 4
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: dude
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: nice
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: clutch
-  vulnerability_score: 0.0
-  total_occurrences: 1
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: thought
-  vulnerability_score: 0.0
+  primary_failure_mode: false_negative_indicator
+- word: know
+  vulnerability_score: 0.4621
   total_occurrences: 3
-  error_occurrences: 0
+  error_occurrences: 1
   fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: deadass
-  vulnerability_score: 0.0
+  fn_occurrences: 1
+  error_rate: 0.3333
+  primary_failure_mode: false_negative_indicator
+- word: high
+  vulnerability_score: 0.4621
   total_occurrences: 3
-  error_occurrences: 0
+  error_occurrences: 1
   fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: dead
-  vulnerability_score: 0.0
+  fn_occurrences: 1
+  error_rate: 0.3333
+  primary_failure_mode: false_negative_indicator
+- word: talking
+  vulnerability_score: 0.4621
   total_occurrences: 3
-  error_occurrences: 0
+  error_occurrences: 1
   fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: shit
-  vulnerability_score: 0.0
-  total_occurrences: 2
-  error_occurrences: 0
+  fn_occurrences: 1
+  error_rate: 0.3333
+  primary_failure_mode: false_negative_indicator
+- word: see
+  vulnerability_score: 0.4621
+  total_occurrences: 3
+  error_occurrences: 1
   fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: play
-  vulnerability_score: 0.0
-  total_occurrences: 2
-  error_occurrences: 0
+  fn_occurrences: 1
+  error_rate: 0.3333
+  primary_failure_mode: false_negative_indicator
+- word: school
+  vulnerability_score: 0.4621
+  total_occurrences: 3
+  error_occurrences: 1
   fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
-- word: holy
-  vulnerability_score: 0.0
-  total_occurrences: 2
-  error_occurrences: 0
-  fp_occurrences: 0
-  fn_occurrences: 0
-  error_rate: 0.0
-  primary_failure_mode: neutral
+  fn_occurrences: 1
+  error_rate: 0.3333
+  primary_failure_mode: false_negative_indicator

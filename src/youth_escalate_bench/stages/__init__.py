@@ -303,6 +303,7 @@ def run_evaluate(config: dict[str, Any], input_dir: Path, output_dir: Path) -> d
         max_samples=config.get("max_samples", 20),
         difficulty_index=prior_difficulty,
         prioritize_hard_samples=config.get("prioritize_hard_samples", True),
+        sample_strategy=config.get("sample_strategy", "auto"),
     )
 
     meta = write_evaluation_bundle(bundle, output_dir)

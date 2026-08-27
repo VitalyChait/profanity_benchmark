@@ -56,6 +56,79 @@ class EvaluationBundle:
     results: list[EvaluationResult] = field(default_factory=list)
     predictions: list[PredictionRow] = field(default_factory=list)
     difficulty_index: DifficultyIndex | None = None
+    seed: int = 42
+    sample_strategy: str = "auto"
+
+
+def select_evaluation_pairs(
+    pairs: list[tuple[InferenceRequest, bool]],
+    max_samples: int | None = None,
+    seed: int = 42,
+    difficulty_index: DifficultyIndex | None = None,
+    prioritize_hard_samples: bool = True,
+    sample_strategy: str = "auto",
+) -> list[tuple[InferenceRequest, bool]]:
+    """Deterministically select evaluation examples using a controllable seed and strategy.
+
+    Strategies:
+    - 'random': Pure seeded pseudo-random subsample. Different seeds select different examples.
+    - 'stratified': Balanced sampling across actionable and benign labels using the seed.
+    - 'difficulty': Prioritize hardest/misclassified examples, breaking ties deterministically via seed.
+    - 'auto': Uses 'difficulty' if difficulty_index is provided and prioritize_hard_samples is True,
+              otherwise falls back to seeded 'random' subsampling.
+    """
+    if not max_samples or len(pairs) <= max_samples:
+        return pairs
+
+    import random
+
+    rng = random.Random(seed)
+
+    # Strategy: pure seeded random selection
+    if sample_strategy == "random" or (not prioritize_hard_samples and sample_strategy == "auto"):
+        shuffled = list(pairs)
+        rng.shuffle(shuffled)
+        return shuffled[:max_samples]
+
+    # Strategy: stratified (balanced actionable vs non-actionable labels)
+    if sample_strategy == "stratified":
+        pos = [p for p in pairs if p[1]]
+        neg = [p for p in pairs if not p[1]]
+        rng.shuffle(pos)
+        rng.shuffle(neg)
+        half = max_samples // 2
+        n_pos = min(len(pos), half)
+        n_neg = min(len(neg), max_samples - n_pos)
+        if n_pos + n_neg < max_samples:
+            if len(pos) > n_pos:
+                n_pos = min(len(pos), max_samples - n_neg)
+            elif len(neg) > n_neg:
+                n_neg = min(len(neg), max_samples - n_pos)
+        selected = pos[:n_pos] + neg[:n_neg]
+        rng.shuffle(selected)
+        return selected
+
+    # Strategy: difficulty (prioritize hardest, break ties & sub-sample using controllable seed)
+    if difficulty_index and prioritize_hard_samples:
+        # Deterministically shuffle before stable sort so that equal-difficulty ties
+        # are broken according to the controllable seed
+        shuffled = list(pairs)
+        rng.shuffle(shuffled)
+        shuffled.sort(
+            key=lambda p: score_request_difficulty(
+                difficulty_index,
+                p[0].conversation_id,
+                p[0].current_turn_id,
+                p[0].turns[-1].text if p[0].turns else "",
+            ),
+            reverse=True,
+        )
+        return shuffled[:max_samples]
+
+    # Fallback to seeded random sample
+    shuffled = list(pairs)
+    rng.shuffle(shuffled)
+    return shuffled[:max_samples]
 
 
 def load_labels(path: Path) -> dict[tuple[str, str], bool]:
@@ -86,15 +159,16 @@ def run_evaluation(
     max_samples: int | None = None,
     difficulty_index: DifficultyIndex | None = None,
     prioritize_hard_samples: bool = True,
+    sample_strategy: str = "auto",
 ) -> EvaluationBundle:
     from concurrent.futures import ThreadPoolExecutor
 
     import structlog
 
     eval_logger = structlog.get_logger()
-    bundle = EvaluationBundle()
+    bundle = EvaluationBundle(seed=seed, sample_strategy=sample_strategy)
 
-    # Pre-collect labeled inference requests per condition
+    # Pre-collect labeled inference requests per condition with controllable seed selection
     target_requests: dict[ContextCondition, list[tuple[InferenceRequest, bool]]] = {}
     for condition in conditions:
         pairs: list[tuple[InferenceRequest, bool]] = []
@@ -124,28 +198,27 @@ def run_evaluation(
                 if key in labels:
                     pairs.append((req, labels[key]))
 
-        # Prioritize hard samples / misclassified examples if difficulty index is available
-        if difficulty_index and prioritize_hard_samples and pairs:
-            pairs.sort(
-                key=lambda p: score_request_difficulty(
-                    difficulty_index,
-                    p[0].conversation_id,
-                    p[0].current_turn_id,
-                    p[0].turns[-1].text if p[0].turns else "",
-                ),
-                reverse=True,
-            )
-            eval_logger.info(
-                "priority_hard_sampling_applied",
-                condition=condition.value,
-                total_candidates=len(pairs),
-                prioritized_max=max_samples,
-            )
+        total_candidates = len(pairs)
+        selected_pairs = select_evaluation_pairs(
+            pairs=pairs,
+            max_samples=max_samples,
+            seed=seed,
+            difficulty_index=difficulty_index,
+            prioritize_hard_samples=prioritize_hard_samples,
+            sample_strategy=sample_strategy,
+        )
 
-        if max_samples and len(pairs) > max_samples:
-            pairs = pairs[:max_samples]
+        eval_logger.info(
+            "evaluation_examples_selected",
+            condition=condition.value,
+            total_candidates=total_candidates,
+            selected_count=len(selected_pairs),
+            seed=seed,
+            sample_strategy=sample_strategy,
+            prioritize_hard_samples=prioritize_hard_samples,
+        )
 
-        target_requests[condition] = pairs
+        target_requests[condition] = selected_pairs
 
     # Run predictions concurrently per scorer
     import structlog
@@ -247,6 +320,7 @@ def evaluate_from_parquet(
     max_samples: int | None = None,
     difficulty_index: DifficultyIndex | None = None,
     prioritize_hard_samples: bool = True,
+    sample_strategy: str = "auto",
 ) -> EvaluationBundle:
     conversations = read_conversations(parquet_path)
     labels = load_labels(labels_path)
@@ -259,8 +333,8 @@ def evaluate_from_parquet(
         max_samples=max_samples,
         difficulty_index=difficulty_index,
         prioritize_hard_samples=prioritize_hard_samples,
+        sample_strategy=sample_strategy,
     )
-
 
 
 def write_evaluation_bundle(bundle: EvaluationBundle, output_dir: Path) -> dict[str, Any]:
@@ -300,5 +374,10 @@ def write_evaluation_bundle(bundle: EvaluationBundle, output_dir: Path) -> dict[
 
     return {
         "output_files": ["evaluation_results.yaml", "predictions.jsonl"],
-        "metadata": {"result_count": len(bundle.results), "predictions": len(bundle.predictions)},
+        "metadata": {
+            "result_count": len(bundle.results),
+            "predictions": len(bundle.predictions),
+            "random_seed": bundle.seed,
+            "sample_strategy": bundle.sample_strategy,
+        },
     }

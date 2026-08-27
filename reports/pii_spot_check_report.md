@@ -1,12 +1,12 @@
 # Independent PII Audit & Spot-Check Report
 
-**Audit Timestamp:** `2026-08-26 21:31:47 UTC`  
+**Audit Timestamp:** `2026-08-27 00:33:28 UTC`  
 **Dataset Evaluated:** `data/processed/split/split_test.parquet`  
 **Audit Status:** 🟢 **AUDIT PASSED (Zero PII Residue Detected)**  
 
 ## 1. Summary Statistics
 
-- **Total Conversations in File:** 1,010
+- **Total Conversations in File:** 1,068
 - **Sample Size Audited:** 5 conversations
 - **Total Turns Inspected:** 5 turns
 - **Residual Risk Flags:** 0
@@ -29,4 +29,4 @@
 - [x] Public release clearance approved for non-commercial research
 
 **Audited By:** Vitaly Chait (YouthEscalateBench Safety Team)  
-**Sign-off Date:** `2026-08-26`  
+**Sign-off Date:** `2026-08-27`  
