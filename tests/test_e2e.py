@@ -17,20 +17,24 @@ def _run_chain(output_dir: Path) -> None:
     fixture_ingest_cfg = output_dir / "ingest_fixture.yaml"
     output_dir.mkdir(parents=True, exist_ok=True)
     import yaml
+
     with fixture_ingest_cfg.open("w", encoding="utf-8") as f:
-        yaml.safe_dump({
-            "stage": "ingest",
-            "benchmark_version": "0.1.0",
-            "default_language_mode": "english",
-            "allow_fixture_sources": True,
-            "sources": [
-                {
-                    "source_id": "fixture",
-                    "input_path": "tests/fixtures/sample_conversations.jsonl",
-                    "adapter": "jsonl",
-                }
-            ],
-        }, f)
+        yaml.safe_dump(
+            {
+                "stage": "ingest",
+                "benchmark_version": "0.1.0",
+                "default_language_mode": "english",
+                "allow_fixture_sources": True,
+                "sources": [
+                    {
+                        "source_id": "fixture",
+                        "input_path": "tests/fixtures/sample_conversations.jsonl",
+                        "adapter": "jsonl",
+                    }
+                ],
+            },
+            f,
+        )
 
     configs = {
         "source_audit": Path("configs/stages/source_audit.yaml"),
@@ -69,7 +73,6 @@ def _run_chain(output_dir: Path) -> None:
         run_stage(stage, configs[stage], input_for(stage), processed / stage, runner)
 
 
-
 def test_e2e_pipeline(e2e_output: Path) -> None:
     _run_chain(e2e_output)
     processed = e2e_output / "processed"
@@ -101,20 +104,24 @@ def test_full_12_stage_pipeline(e2e_output: Path) -> None:
     fixture_ingest_cfg = e2e_output / "ingest_fixture_12.yaml"
     e2e_output.mkdir(parents=True, exist_ok=True)
     import yaml
+
     with fixture_ingest_cfg.open("w", encoding="utf-8") as f:
-        yaml.safe_dump({
-            "stage": "ingest",
-            "benchmark_version": "0.1.0",
-            "default_language_mode": "english",
-            "allow_fixture_sources": True,
-            "sources": [
-                {
-                    "source_id": "fixture",
-                    "input_path": "tests/fixtures/sample_conversations.jsonl",
-                    "adapter": "jsonl",
-                }
-            ],
-        }, f)
+        yaml.safe_dump(
+            {
+                "stage": "ingest",
+                "benchmark_version": "0.1.0",
+                "default_language_mode": "english",
+                "allow_fixture_sources": True,
+                "sources": [
+                    {
+                        "source_id": "fixture",
+                        "input_path": "tests/fixtures/sample_conversations.jsonl",
+                        "adapter": "jsonl",
+                    }
+                ],
+            },
+            f,
+        )
 
     configs = {
         "source_audit": Path("configs/stages/source_audit.yaml"),

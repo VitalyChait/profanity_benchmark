@@ -37,7 +37,13 @@ def _create_sample_conversations() -> list[ConversationRecord]:
             source_tier=SourceTier.SYNTHETIC,
             platform_style="direct_messaging",
             turns=[
-                StoredTurn(turn_id="t1", speaker_id="u1", role="user", relative_time="0s", text="i will find you after school"),
+                StoredTurn(
+                    turn_id="t1",
+                    speaker_id="u1",
+                    role="user",
+                    relative_time="0s",
+                    text="i will find you after school",
+                ),
             ],
         ),
         ConversationRecord(
@@ -46,7 +52,13 @@ def _create_sample_conversations() -> list[ConversationRecord]:
             source_tier=SourceTier.SYNTHETIC,
             platform_style="direct_messaging",
             turns=[
-                StoredTurn(turn_id="t1", speaker_id="u2", role="user", relative_time="0s", text="hello friend how are you"),
+                StoredTurn(
+                    turn_id="t1",
+                    speaker_id="u2",
+                    role="user",
+                    relative_time="0s",
+                    text="hello friend how are you",
+                ),
             ],
         ),
         ConversationRecord(
@@ -55,7 +67,13 @@ def _create_sample_conversations() -> list[ConversationRecord]:
             source_tier=SourceTier.SYNTHETIC,
             platform_style="gaming_chat",
             turns=[
-                StoredTurn(turn_id="t1", speaker_id="u3", role="user", relative_time="0s", text="why did he say kys in quote"),
+                StoredTurn(
+                    turn_id="t1",
+                    speaker_id="u3",
+                    role="user",
+                    relative_time="0s",
+                    text="why did he say kys in quote",
+                ),
             ],
         ),
     ]
@@ -64,9 +82,9 @@ def _create_sample_conversations() -> list[ConversationRecord]:
 def test_compute_difficulty_index() -> None:
     conversations = _create_sample_conversations()
     labels = {
-        ("conv_hard_1", "t1"): True,   # Gold actionable
+        ("conv_hard_1", "t1"): True,  # Gold actionable
         ("conv_easy_2", "t1"): False,  # Gold benign
-        ("conv_fp_3", "t1"): False,    # Gold benign
+        ("conv_fp_3", "t1"): False,  # Gold benign
     }
 
     # Model 1 and Model 2 predictions

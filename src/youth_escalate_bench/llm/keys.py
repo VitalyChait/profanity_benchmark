@@ -268,12 +268,14 @@ def audit_llm_model_duplicates() -> list[dict[str, str]]:
         for idx, m in enumerate(raw_models):
             key = m.lower()
             if key in seen_or:
-                removed_items.append({
-                    "scope": "OPENROUTER_MODELS",
-                    "duplicate_model": m,
-                    "location": f"index {idx} in OPENROUTER_MODELS",
-                    "reason": "Exact duplicate model in OPENROUTER_MODELS list",
-                })
+                removed_items.append(
+                    {
+                        "scope": "OPENROUTER_MODELS",
+                        "duplicate_model": m,
+                        "location": f"index {idx} in OPENROUTER_MODELS",
+                        "reason": "Exact duplicate model in OPENROUTER_MODELS list",
+                    }
+                )
             else:
                 seen_or.add(key)
 
@@ -288,13 +290,13 @@ def audit_llm_model_duplicates() -> list[dict[str, str]]:
             direct_model = get_provider_model(p)
             clean_direct = direct_model.split("/")[-1].lower()
             if clean_direct in or_models_norm:
-                removed_items.append({
-                    "scope": "cross_provider",
-                    "duplicate_model": f"{p}:{direct_model}",
-                    "location": f"Provider {p} and OpenRouter ({or_models_norm[clean_direct]})",
-                    "reason": f"Direct provider model '{direct_model}' also evaluated via OpenRouter proxy",
-                })
+                removed_items.append(
+                    {
+                        "scope": "cross_provider",
+                        "duplicate_model": f"{p}:{direct_model}",
+                        "location": f"Provider {p} and OpenRouter ({or_models_norm[clean_direct]})",
+                        "reason": f"Direct provider model '{direct_model}' also evaluated via OpenRouter proxy",
+                    }
+                )
 
     return removed_items
-
-

@@ -102,7 +102,9 @@ class UrbanDictionaryClient:
 
     def _request(self, endpoint: str, params: dict[str, Any]) -> dict[str, Any] | None:
         query_str = urllib.parse.urlencode({k: str(v) for k, v in params.items() if v is not None})
-        url = f"{self.base_url}{endpoint}?{query_str}" if query_str else f"{self.base_url}{endpoint}"
+        url = (
+            f"{self.base_url}{endpoint}?{query_str}" if query_str else f"{self.base_url}{endpoint}"
+        )
 
         headers = {
             "User-Agent": self.user_agent,

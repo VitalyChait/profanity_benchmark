@@ -102,7 +102,11 @@ def generate_pii_audit_markdown(audit_results: dict[str, Any]) -> str:
     """Generate a formal PII audit spot-check report."""
     now_utc = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
     passed = audit_results.get("status") == "passed"
-    status_badge = "🟢 **AUDIT PASSED (Zero PII Residue Detected)**" if passed else "🟡 **WARNING (Potential Residual Entities Detected)**"
+    status_badge = (
+        "🟢 **AUDIT PASSED (Zero PII Residue Detected)**"
+        if passed
+        else "🟡 **WARNING (Potential Residual Entities Detected)**"
+    )
 
     lines = [
         "# Independent PII Audit & Spot-Check Report",
@@ -126,33 +130,41 @@ def generate_pii_audit_markdown(audit_results: dict[str, Any]) -> str:
 
     flags = audit_results.get("residual_flags", [])
     if not flags:
-        lines.extend([
-            "> [!NOTE]",
-            "> All sampled conversation turns successfully adhered to the PII redaction protocol.",
-            "> No emails, telephone numbers, IP addresses, or unredacted user handles were detected.",
-            "",
-        ])
+        lines.extend(
+            [
+                "> [!NOTE]",
+                "> All sampled conversation turns successfully adhered to the PII redaction protocol.",
+                "> No emails, telephone numbers, IP addresses, or unredacted user handles were detected.",
+                "",
+            ]
+        )
     else:
-        lines.extend([
-            "| Conv ID | Turn ID | Pattern | Detected Snippet |",
-            "| :--- | :--- | :--- | :--- |",
-        ])
+        lines.extend(
+            [
+                "| Conv ID | Turn ID | Pattern | Detected Snippet |",
+                "| :--- | :--- | :--- | :--- |",
+            ]
+        )
         for f in flags[:25]:
-            lines.append(f"| `{f['conversation_id']}` | `{f['turn_id']}` | `{f['pattern']}` | `{f['snippet']}` |")
+            lines.append(
+                f"| `{f['conversation_id']}` | `{f['turn_id']}` | `{f['pattern']}` | `{f['snippet']}` |"
+            )
         lines.append("")
 
-    lines.extend([
-        "---",
-        "",
-        "## 3. Human Reviewer Verification Checklist",
-        "",
-        "- [x] Automated regex & scrubber pipeline executed on all turns (`stage_redact`)",
-        "- [x] High-recall secondary regex heuristics evaluated on sample",
-        "- [x] Zero-width spaces, leetspeak, and algospeak text checked for embedded PII",
-        "- [x] Public release clearance approved for non-commercial research",
-        "",
-        "**Audited By:** Vitaly Chait (YouthEscalateBench Safety Team)  ",
-        f"**Sign-off Date:** `{datetime.now(UTC).strftime('%Y-%m-%d')}`  ",
-    ])
+    lines.extend(
+        [
+            "---",
+            "",
+            "## 3. Human Reviewer Verification Checklist",
+            "",
+            "- [x] Automated regex & scrubber pipeline executed on all turns (`stage_redact`)",
+            "- [x] High-recall secondary regex heuristics evaluated on sample",
+            "- [x] Zero-width spaces, leetspeak, and algospeak text checked for embedded PII",
+            "- [x] Public release clearance approved for non-commercial research",
+            "",
+            "**Audited By:** Vitaly Chait (YouthEscalateBench Safety Team)  ",
+            f"**Sign-off Date:** `{datetime.now(UTC).strftime('%Y-%m-%d')}`  ",
+        ]
+    )
 
     return "\n".join(lines) + "\n"

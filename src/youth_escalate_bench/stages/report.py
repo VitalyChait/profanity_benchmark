@@ -61,15 +61,23 @@ def _generate_latex_table(data_by_scorer: dict[str, dict[str, dict[str, Any]]]) 
         f_row = data_by_scorer[s].get("full_prefix", {})
 
         p_turn = f"{_get_float(t_row, 'auprc', 0.0):.3f}"
-        r_turn = f"{_get_float(t_row, 'auroc', 0.0):.3f}" if t_row.get("auroc") is not None else "---"
+        r_turn = (
+            f"{_get_float(t_row, 'auroc', 0.0):.3f}" if t_row.get("auroc") is not None else "---"
+        )
 
         p_pair = f"{_get_float(p_row, 'auprc', 0.0):.3f}"
-        r_pair = f"{_get_float(p_row, 'auroc', 0.0):.3f}" if p_row.get("auroc") is not None else "---"
+        r_pair = (
+            f"{_get_float(p_row, 'auroc', 0.0):.3f}" if p_row.get("auroc") is not None else "---"
+        )
 
         p_pref = f"{_get_float(f_row, 'auprc', 0.0):.3f}"
-        r_pref = f"{_get_float(f_row, 'auroc', 0.0):.3f}" if f_row.get("auroc") is not None else "---"
+        r_pref = (
+            f"{_get_float(f_row, 'auroc', 0.0):.3f}" if f_row.get("auroc") is not None else "---"
+        )
 
-        lines.append(f"{escaped_name} & {escaped_fam} & {p_turn} & {r_turn} & {p_pair} & {r_pair} & \\textbf{{{p_pref}}} & {r_pref} \\\\")
+        lines.append(
+            f"{escaped_name} & {escaped_fam} & {p_turn} & {r_turn} & {p_pair} & {r_pair} & \\textbf{{{p_pref}}} & {r_pref} \\\\"
+        )
 
     lines.extend(
         [
@@ -154,7 +162,11 @@ def _extract_llm_error_cases(
                         pred = json.loads(line)
                         scorer = pred.get("scorer", "")
                         display_name, family = _get_display_name(scorer)
-                        if "LLM" not in family and not scorer.startswith("llm_") and scorer != "prompted_llm_judge":
+                        if (
+                            "LLM" not in family
+                            and not scorer.startswith("llm_")
+                            and scorer != "prompted_llm_judge"
+                        ):
                             continue
 
                         conv_id = pred.get("conversation_id", "")
@@ -171,14 +183,21 @@ def _extract_llm_error_cases(
                         pred_act = prob >= 0.5 or pred.get("actionable", False)
 
                         if pred_act != gold_act:
-                            err_type = "False Positive (Over-moderation)" if (pred_act and not gold_act) else "False Negative (Missed Harm)"
+                            err_type = (
+                                "False Positive (Over-moderation)"
+                                if (pred_act and not gold_act)
+                                else "False Negative (Missed Harm)"
+                            )
                             t_info = turn_lookup.get(key, {})
                             turn_text = t_info.get("text", f"[{turn_id} text unavailable]")
                             history = t_info.get("history", [])
 
                             # Generate diagnostic rationale
                             if err_type == "False Positive (Over-moderation)":
-                                if "banter" in conv_id or gold.get("pragmatic_use") == "affiliative_banter":
+                                if (
+                                    "banter" in conv_id
+                                    or gold.get("pragmatic_use") == "affiliative_banter"
+                                ):
                                     diag = "Benign affiliative peer banter with informal/playful swearing misjudged as hostile abuse."
                                 elif "quotation" in conv_id:
                                     diag = "Third-party quotation or reference of swear word flagged without recognizing non-directed context."
@@ -195,23 +214,25 @@ def _extract_llm_error_cases(
                             if scorer not in model_errors:
                                 model_errors[scorer] = []
 
-                            model_errors[scorer].append({
-                                "conversation_id": conv_id,
-                                "turn_id": turn_id,
-                                "condition": cond,
-                                "error_type": err_type,
-                                "predicted_harm_probability": round(prob, 4),
-                                "predicted_actionable": pred_act,
-                                "gold_actionable": gold_act,
-                                "gold_severity": gold.get("severity"),
-                                "gold_harm_types": gold.get("harm_types", []),
-                                "gold_pragmatic_use": gold.get("pragmatic_use"),
-                                "turn_text": turn_text,
-                                "speaker_id": t_info.get("speaker_id", "unknown"),
-                                "platform_style": t_info.get("platform_style", "group_chat"),
-                                "dialogue_history": history,
-                                "diagnostic_reason": diag,
-                            })
+                            model_errors[scorer].append(
+                                {
+                                    "conversation_id": conv_id,
+                                    "turn_id": turn_id,
+                                    "condition": cond,
+                                    "error_type": err_type,
+                                    "predicted_harm_probability": round(prob, 4),
+                                    "predicted_actionable": pred_act,
+                                    "gold_actionable": gold_act,
+                                    "gold_severity": gold.get("severity"),
+                                    "gold_harm_types": gold.get("harm_types", []),
+                                    "gold_pragmatic_use": gold.get("pragmatic_use"),
+                                    "turn_text": turn_text,
+                                    "speaker_id": t_info.get("speaker_id", "unknown"),
+                                    "platform_style": t_info.get("platform_style", "group_chat"),
+                                    "dialogue_history": history,
+                                    "diagnostic_reason": diag,
+                                }
+                            )
             except Exception:
                 pass
             break
@@ -363,7 +384,11 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
         ]
     )
 
-    llm_scorers_ranked = sorted(llm_scorers, key=lambda s: _get_float(data_by_scorer[s].get("full_prefix", {}), "auprc", 0.0), reverse=True)
+    llm_scorers_ranked = sorted(
+        llm_scorers,
+        key=lambda s: _get_float(data_by_scorer[s].get("full_prefix", {}), "auprc", 0.0),
+        reverse=True,
+    )
     for rank, s in enumerate(llm_scorers_ranked, 1):
         name, _ = _get_display_name(s)
         t_row = data_by_scorer[s].get("current_turn_only", {})
@@ -374,8 +399,16 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
         p_pair = f"{_get_float(p_row, 'auprc', 0.0):.3f}"
         p_pref = f"{_get_float(f_row, 'auprc', 0.0):.3f}"
         r_pref = f"{_get_float(f_row, 'auroc', 0.0):.3f}" if f_row.get("auroc") is not None else "—"
-        p95 = f"{_get_float(f_row, 'precision_at_recall_95', 0.0):.3f}" if f_row.get("precision_at_recall_95") is not None else "—"
-        rfpr1 = f"{_get_float(f_row, 'recall_at_fpr_1pct', 0.0):.3f}" if f_row.get("recall_at_fpr_1pct") is not None else "—"
+        p95 = (
+            f"{_get_float(f_row, 'precision_at_recall_95', 0.0):.3f}"
+            if f_row.get("precision_at_recall_95") is not None
+            else "—"
+        )
+        rfpr1 = (
+            f"{_get_float(f_row, 'recall_at_fpr_1pct', 0.0):.3f}"
+            if f_row.get("recall_at_fpr_1pct") is not None
+            else "—"
+        )
         delta = _get_float(f_row, "auprc", 0.0) - _get_float(t_row, "auprc", 0.0)
 
         medal = "🥇" if rank == 1 else ("🥈" if rank == 2 else ("🥉" if rank == 3 else f"{rank}"))
@@ -497,14 +530,14 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
                     f"- **Context Condition:** `{cond}`",
                     f"- **LLM Prediction:** Harm Probability = `{prob:.3f}` (Actionable = `{prob >= 0.5}`)",
                     f"- **Gold Ground Truth:** Severity = `{gold_sev}` (Actionable = `{gold_act}`)",
-                    f"- **Evaluated Turn Text:** > *\"{turn_text}\"*",
+                    f'- **Evaluated Turn Text:** > *"{turn_text}"*',
                 ]
             )
 
             if history:
                 error_section_lines.append("- **Dialogue Context:**")
                 for spk, txt in history[-3:]:
-                    error_section_lines.append(f"  - `{spk}`: *\"{txt}\"*")
+                    error_section_lines.append(f'  - `{spk}`: *"{txt}"*')
 
             error_section_lines.extend(
                 [
@@ -569,7 +602,10 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
         "onset_dynamics": onset_data,
         "annotation_quality": quality,
         "infographics": infographic_files,
-        "llm_error_summary": {k: {"total": v["total_errors"], "fp": v["false_positives"], "fn": v["false_negatives"]} for k, v in by_model_errs.items()},
+        "llm_error_summary": {
+            k: {"total": v["total_errors"], "fp": v["false_positives"], "fn": v["false_negatives"]}
+            for k, v in by_model_errs.items()
+        },
     }
     with summary_path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(summary, f)
@@ -608,7 +644,9 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
     diff_files: list[str] = []
     if diff_index:
         diff_report_md = output_dir / "difficulty_ranking_report.md"
-        diff_report_md.write_text(generate_difficulty_markdown_report(diff_index) + "\n", encoding="utf-8")
+        diff_report_md.write_text(
+            generate_difficulty_markdown_report(diff_index) + "\n", encoding="utf-8"
+        )
         diff_files.append("difficulty_ranking_report.md")
         if not (output_dir / "difficulty_ranking.yaml").exists() and diff_path.exists():
             shutil.copy2(diff_path, output_dir / "difficulty_ranking.yaml")
@@ -617,16 +655,20 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
     # Export all final evaluation and data reports to top-level reports/ dir
     exported_to_reports = _export_reports_to_reports_dir(output_dir, config)
 
-    output_files = [
-        "evaluation_report.md",
-        "extended_evaluation_report.md",
-        "data_report.md",
-        "llm_error_cases.yaml",
-        "llm_error_cases.json",
-        "table_main_results.tex",
-        "report_summary.yaml",
-        "error_analysis_bundle.yaml",
-    ] + diff_files + infographic_files
+    output_files = (
+        [
+            "evaluation_report.md",
+            "extended_evaluation_report.md",
+            "data_report.md",
+            "llm_error_cases.yaml",
+            "llm_error_cases.json",
+            "table_main_results.tex",
+            "report_summary.yaml",
+            "error_analysis_bundle.yaml",
+        ]
+        + diff_files
+        + infographic_files
+    )
 
     return {
         "output_files": output_files,
@@ -722,90 +764,96 @@ def _generate_data_report(config: dict[str, Any], input_dir: Path) -> str:
     for s in approved_sources:
         lines.append(f"  - `{s}`")
 
-    lines.extend([
-        "",
-        "- **Regulatory Compliance Framework:**",
-        "  - **COPPA (Children's Online Privacy Protection Act, 15 U.S.C. §§ 6501–6506):** Strict de-identification of all underage user attributes.",
-        "  - **GDPR-K (General Data Protection Regulation Art. 8):** De-identification and pseudonymization protocols verified.",
-        "  - **UK Age Appropriate Design Code (AADC):** Privacy-by-default safeguards adhered to.",
-        "  - **IRB Ethics Protocol:** Exemption/approval guidelines documented in [`docs/irb_ethics_package.md`](../docs/irb_ethics_package.md).",
-        "",
-        "---",
-        "",
-        "## 3. Ingestion & Preprocessing",
-        "",
-        f"- **Total Multi-Turn Dialogues:** `{conv_count:,}`",
-        "- **Canonical Storage Format:** Columnar Apache Parquet with Snappy compression and strict Pydantic schemas.",
-        "- **Platform Style Coverage:** Group Chat, Direct Messaging (DM), Forum Threads, and Social Feeds.",
-        "",
-        "---",
-        "",
-        "## 4. Privacy & PII Redaction",
-        "",
-        f"- **Total Conversations Audited:** `{conv_count:,}`",
-        f"- **Total PII Hits Neutralized:** `{pii_hits:,}`",
-        "- **Redacted Entity Classes:** Direct identifiers (email addresses, phone numbers, IP addresses, full legal names, social handles).",
-        "- **Replacement Standard:** Safe Harbor placeholder tokens (e.g. `[EMAIL]`, `[PHONE]`, `[USERNAME]`).",
-        "",
-        "---",
-        "",
-        "## 5. Thread Topology & Causal Validity",
-        "",
-        f"- **Causal Inconsistencies Detected:** `{topo_issues}`",
-        "- **Reconstruction Engine:** Turn-level directed acyclic graph (DAG) reconstruction.",
-        "- **Temporal Monotonicity:** Every conversational turn strictly references prior historical turns with non-decreasing timestamps.",
-        "",
-        "---",
-        "",
-        "## 6. Deduplication & Quota Sampling",
-        "",
-        f"- **Exact Duplicate Groups Pruned:** `{exact_dupes}`",
-        f"- **MinHash LSH Near-Duplicate Clusters Identified:** `{near_dupes}` (Jaccard similarity threshold >= 0.8)",
-        "- **Sampling Tier Allocations:**",
-        "",
-        "| Tier | Available Pool | Target Quota | Selected | Gap |",
-        "| :--- | :---: | :---: | :---: | :---: |",
-    ])
+    lines.extend(
+        [
+            "",
+            "- **Regulatory Compliance Framework:**",
+            "  - **COPPA (Children's Online Privacy Protection Act, 15 U.S.C. §§ 6501–6506):** Strict de-identification of all underage user attributes.",
+            "  - **GDPR-K (General Data Protection Regulation Art. 8):** De-identification and pseudonymization protocols verified.",
+            "  - **UK Age Appropriate Design Code (AADC):** Privacy-by-default safeguards adhered to.",
+            "  - **IRB Ethics Protocol:** Exemption/approval guidelines documented in [`docs/irb_ethics_package.md`](https://github.com/VitalyChait/profanity_benchmark/blob/master/docs/irb_ethics_package.md).",
+            "",
+            "---",
+            "",
+            "## 3. Ingestion & Preprocessing",
+            "",
+            f"- **Total Multi-Turn Dialogues:** `{conv_count:,}`",
+            "- **Canonical Storage Format:** Columnar Apache Parquet with Snappy compression and strict Pydantic schemas.",
+            "- **Platform Style Coverage:** Group Chat, Direct Messaging (DM), Forum Threads, and Social Feeds.",
+            "",
+            "---",
+            "",
+            "## 4. Privacy & PII Redaction",
+            "",
+            f"- **Total Conversations Audited:** `{conv_count:,}`",
+            f"- **Total PII Hits Neutralized:** `{pii_hits:,}`",
+            "- **Redacted Entity Classes:** Direct identifiers (email addresses, phone numbers, IP addresses, full legal names, social handles).",
+            "- **Replacement Standard:** Safe Harbor placeholder tokens (e.g. `[EMAIL]`, `[PHONE]`, `[USERNAME]`).",
+            "",
+            "---",
+            "",
+            "## 5. Thread Topology & Causal Validity",
+            "",
+            f"- **Causal Inconsistencies Detected:** `{topo_issues}`",
+            "- **Reconstruction Engine:** Turn-level directed acyclic graph (DAG) reconstruction.",
+            "- **Temporal Monotonicity:** Every conversational turn strictly references prior historical turns with non-decreasing timestamps.",
+            "",
+            "---",
+            "",
+            "## 6. Deduplication & Quota Sampling",
+            "",
+            f"- **Exact Duplicate Groups Pruned:** `{exact_dupes}`",
+            f"- **MinHash LSH Near-Duplicate Clusters Identified:** `{near_dupes}` (Jaccard similarity threshold >= 0.8)",
+            "- **Sampling Tier Allocations:**",
+            "",
+            "| Tier | Available Pool | Target Quota | Selected | Gap |",
+            "| :--- | :---: | :---: | :---: | :---: |",
+        ]
+    )
 
     for tier_name, tinfo in quotas.items():
         avail = tinfo.get("available", 0)
         tgt = tinfo.get("target", 0)
         sel = tinfo.get("selected", 0)
         gap = tinfo.get("gap", 0)
-        lines.append(f"| **{tier_name.capitalize()}** | {avail:,} | {tgt:,} | **{sel:,}** | {gap:,} |")
+        lines.append(
+            f"| **{tier_name.capitalize()}** | {avail:,} | {tgt:,} | **{sel:,}** | {gap:,} |"
+        )
 
-    lines.extend([
-        "",
-        "---",
-        "",
-        "## 7. Consensus Adjudication & Gold Label Freeze",
-        "",
-        f"- **Input Turn Annotations:** `{gold.get('input_annotations', gold_count)}`",
-        f"- **Gold Frozen Labels:** `{gold_count}`",
-        f"- **Freeze Timestamp:** `{frozen_at}`",
-        f"- **Correction Policy:** `{gold.get('correction_policy', 'issue_correction_manifest_for_label_changes')}`",
-        "- **Manifest Path:** [`reports/data/gold_freeze_manifest.yaml`](data/gold_freeze_manifest.yaml)",
-        "",
-        "---",
-        "",
-        "## 8. Zero-Leakage Data Partitioning",
-        "",
-        f"- **Train Partition:** `{train_c:,}` conversations ({train_c / total_split * 100:.1f}%)",
-        f"- **Dev Partition:** `{dev_c:,}` conversations ({dev_c / total_split * 100:.1f}%)",
-        f"- **Test Partition:** `{test_c:,}` conversations ({test_c / total_split * 100:.1f}%)",
-        "- **Leakage Prevention:** Group-split on `conversation_id` and disjoint speaker IDs guarantees zero turn or speaker contamination across train/dev/test.",
-        "",
-        "---",
-        "",
-        "## 9. Exported Stage Artifacts",
-        "",
-        "- **Source Audit:** [`reports/data/audit_report.yaml`](data/audit_report.yaml)",
-        "- **PII Audit:** [`reports/data/pii_report.yaml`](data/pii_report.yaml)",
-        "- **Topology Report:** [`reports/data/topology_report.yaml`](data/topology_report.yaml)",
-        "- **Quota Report:** [`reports/data/quota_report.yaml`](data/quota_report.yaml)",
-        "- **Gold Manifest:** [`reports/data/gold_freeze_manifest.yaml`](data/gold_freeze_manifest.yaml)",
-        "- **Onset Dynamics:** [`reports/data/onset_metrics.yaml`](data/onset_metrics.yaml)",
-    ])
+    lines.extend(
+        [
+            "",
+            "---",
+            "",
+            "## 7. Consensus Adjudication & Gold Label Freeze",
+            "",
+            f"- **Input Turn Annotations:** `{gold.get('input_annotations', gold_count)}`",
+            f"- **Gold Frozen Labels:** `{gold_count}`",
+            f"- **Freeze Timestamp:** `{frozen_at}`",
+            f"- **Correction Policy:** `{gold.get('correction_policy', 'issue_correction_manifest_for_label_changes')}`",
+            "- **Manifest Path:** [`reports/data/gold_freeze_manifest.yaml`](data/gold_freeze_manifest.yaml)",
+            "",
+            "---",
+            "",
+            "## 8. Zero-Leakage Data Partitioning",
+            "",
+            f"- **Train Partition:** `{train_c:,}` conversations ({train_c / total_split * 100:.1f}%)",
+            f"- **Dev Partition:** `{dev_c:,}` conversations ({dev_c / total_split * 100:.1f}%)",
+            f"- **Test Partition:** `{test_c:,}` conversations ({test_c / total_split * 100:.1f}%)",
+            "- **Leakage Prevention:** Group-split on `conversation_id` and disjoint speaker IDs guarantees zero turn or speaker contamination across train/dev/test.",
+            "",
+            "---",
+            "",
+            "## 9. Exported Stage Artifacts",
+            "",
+            "- **Source Audit:** [`reports/data/audit_report.yaml`](data/audit_report.yaml)",
+            "- **PII Audit:** [`reports/data/pii_report.yaml`](data/pii_report.yaml)",
+            "- **Topology Report:** [`reports/data/topology_report.yaml`](data/topology_report.yaml)",
+            "- **Quota Report:** [`reports/data/quota_report.yaml`](data/quota_report.yaml)",
+            "- **Gold Manifest:** [`reports/data/gold_freeze_manifest.yaml`](data/gold_freeze_manifest.yaml)",
+            "- **Onset Dynamics:** [`reports/data/onset_metrics.yaml`](data/onset_metrics.yaml)",
+        ]
+    )
 
     return "\n".join(lines)
 
@@ -855,5 +903,16 @@ def _export_reports_to_reports_dir(output_dir: Path, config: dict[str, Any]) -> 
                     exported.append(f"reports/data/{dest_name}")
             except Exception:
                 pass
+
+    # Ensure output_dir/data also exists so relative links from output_dir/data_report.md resolve
+    if output_dir.resolve() != reports_dir.resolve():
+        output_data_dir = output_dir / "data"
+        output_data_dir.mkdir(parents=True, exist_ok=True)
+        for df in reports_data_dir.glob("*"):
+            if df.is_file():
+                try:
+                    shutil.copy2(df, output_data_dir / df.name)
+                except Exception:
+                    pass
 
     return exported

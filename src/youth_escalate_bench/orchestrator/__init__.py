@@ -150,8 +150,7 @@ class CheckpointManager:
 
     def _init_defaults(self) -> None:
         self.checkpoints = {
-            s["id"]: StepCheckpoint(step_id=s["id"], title=s["title"])
-            for s in ORDERED_STEPS
+            s["id"]: StepCheckpoint(step_id=s["id"], title=s["title"]) for s in ORDERED_STEPS
         }
 
     def save(self) -> None:
@@ -228,7 +227,9 @@ class CheckpointManager:
         print("\n" + "=" * 80)
         print("YouthEscalateBench — Pipeline Checkpoint Status")
         print("=" * 80)
-        print(f"{'#':<3} {'Step ID':<18} {'Status':<12} {'Duration':<10} {'Output Files / Summary'}")
+        print(
+            f"{'#':<3} {'Step ID':<18} {'Status':<12} {'Duration':<10} {'Output Files / Summary'}"
+        )
         print("-" * 80)
 
         status_icons = {
@@ -350,9 +351,13 @@ class PipelineRunner:
             reports_data_dir.mkdir(parents=True, exist_ok=True)
             for entry in manifest.outputs:
                 src_path = Path(entry.path)
-                if src_path.name.endswith(("_report.yaml", "_manifest.yaml", "manifest.json", "_ranking.yaml")):
+                if src_path.name.endswith(
+                    ("_report.yaml", "_manifest.yaml", "manifest.json", "_ranking.yaml")
+                ):
                     dest_file = reports_data_dir / (
-                        f"{step_id}_{src_path.name}" if src_path.name == "manifest.json" else src_path.name
+                        f"{step_id}_{src_path.name}"
+                        if src_path.name == "manifest.json"
+                        else src_path.name
                     )
                     try:
                         shutil.copy2(src_path, dest_file)
@@ -392,7 +397,9 @@ class PipelineRunner:
             print(f"   Detailed error log saved to: {log_path}")
             print("   To debug this step individually, run:")
             print(f"     python scripts/run_pipeline.py --step {step_id} --force")
-            print(f"     python -m youth_escalate_bench.cli run --stage {step_id} --config {config_path}")
+            print(
+                f"     python -m youth_escalate_bench.cli run --stage {step_id} --config {config_path}"
+            )
             print("!" * 80 + "\n")
             return False
 
@@ -446,10 +453,14 @@ class PipelineRunner:
         strat_info = f", Strategy: {sample_strategy}" if sample_strategy != "auto" else ""
 
         if dry_run:
-            print(f"\n[DRY RUN] Planned Execution Sequence (Mode: {mode}, Max Samples: {active_max_samples}{seed_info}{strat_info}):")
+            print(
+                f"\n[DRY RUN] Planned Execution Sequence (Mode: {mode}, Max Samples: {active_max_samples}{seed_info}{strat_info}):"
+            )
             for idx, s in enumerate(steps_to_run, 1):
                 input_dir = self.resolve_input_dir(s)
-                status = self.checkpoint_mgr.checkpoints.get(s["id"], StepCheckpoint(s["id"], s["title"])).status
+                status = self.checkpoint_mgr.checkpoints.get(
+                    s["id"], StepCheckpoint(s["id"], s["title"])
+                ).status
                 print(
                     f"  {idx}. {s['id']:<18} | Status: {status:<10} | Input: {input_dir} -> Output: data/processed/{s['id']}"
                 )
@@ -457,7 +468,9 @@ class PipelineRunner:
             return True
 
         print("=" * 80)
-        print(f"YouthEscalateBench — Starting Pipeline ({len(steps_to_run)} steps queued, Mode: {mode}, Max Samples: {active_max_samples}{seed_info}{strat_info})")
+        print(
+            f"YouthEscalateBench — Starting Pipeline ({len(steps_to_run)} steps queued, Mode: {mode}, Max Samples: {active_max_samples}{seed_info}{strat_info})"
+        )
         print("=" * 80)
 
         overall_start = time.perf_counter()
@@ -480,7 +493,9 @@ class PipelineRunner:
                 config_overrides=overrides if overrides else None,
             )
             if not success:
-                print(f"\n⛔ Pipeline halted at step '{s['id']}'. Fix error or re-run with --force.")
+                print(
+                    f"\n⛔ Pipeline halted at step '{s['id']}'. Fix error or re-run with --force."
+                )
                 self.checkpoint_mgr.display_status()
                 return False
 
@@ -525,11 +540,20 @@ Examples:
     )
 
     parser.add_argument("--all", "-a", action="store_true", help="Run all pipeline stages.")
-    parser.add_argument("--resume", "-r", action="store_true", help="Auto-resume from earliest incomplete checkpoint.")
-    parser.add_argument("--step", "-s", nargs="+", choices=STEP_NAMES, help="Run specific pipeline step(s).")
+    parser.add_argument(
+        "--resume",
+        "-r",
+        action="store_true",
+        help="Auto-resume from earliest incomplete checkpoint.",
+    )
+    parser.add_argument(
+        "--step", "-s", nargs="+", choices=STEP_NAMES, help="Run specific pipeline step(s)."
+    )
     parser.add_argument("--from-step", choices=STEP_NAMES, help="Start execution from this step.")
     parser.add_argument("--to-step", choices=STEP_NAMES, help="Stop execution after this step.")
-    parser.add_argument("--force", "-f", action="store_true", help="Force re-execution of already completed steps.")
+    parser.add_argument(
+        "--force", "-f", action="store_true", help="Force re-execution of already completed steps."
+    )
     parser.add_argument(
         "--extended-report",
         "-e",
@@ -567,9 +591,15 @@ Examples:
         dest="sample_strategy",
         help="Example selection strategy: 'auto' (difficulty prioritized if available), 'difficulty' (hard samples), 'random' (pure seeded random selection), 'stratified' (balanced harm labels).",
     )
-    parser.add_argument("--status", action="store_true", help="Show current pipeline checkpoint status table.")
-    parser.add_argument("--reset", action="store_true", help="Reset all checkpoint states to PENDING.")
-    parser.add_argument("--dry-run", action="store_true", help="Simulate execution without running stages.")
+    parser.add_argument(
+        "--status", action="store_true", help="Show current pipeline checkpoint status table."
+    )
+    parser.add_argument(
+        "--reset", action="store_true", help="Reset all checkpoint states to PENDING."
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Simulate execution without running stages."
+    )
 
     args = parser.parse_args()
     runner = PipelineRunner()
@@ -584,7 +614,13 @@ Examples:
         runner.checkpoint_mgr.display_status()
         return
 
-    if not args.all and not args.resume and not args.step and not args.from_step and not args.dry_run:
+    if (
+        not args.all
+        and not args.resume
+        and not args.step
+        and not args.from_step
+        and not args.dry_run
+    ):
         runner.checkpoint_mgr.display_status()
         parser.print_help()
         return

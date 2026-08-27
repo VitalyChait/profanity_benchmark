@@ -53,7 +53,14 @@ class VerifierAgent:
             )
 
         # High-confidence slur / hate speech patterns
-        slur_cues = ["hate speech", "racial slur", "homophobic", "transphobic", "derogatory term for", "ethnic slur"]
+        slur_cues = [
+            "hate speech",
+            "racial slur",
+            "homophobic",
+            "transphobic",
+            "derogatory term for",
+            "ethnic slur",
+        ]
         for cue in slur_cues:
             if cue in text:
                 return VerificationResult(
@@ -66,7 +73,17 @@ class VerifierAgent:
                 )
 
         # Sexual vulgarity patterns
-        sexual_cues = ["sexual", "penis", "vagina", "anal", "blowjob", "fuck", "masturbat", "cum", "porn"]
+        sexual_cues = [
+            "sexual",
+            "penis",
+            "vagina",
+            "anal",
+            "blowjob",
+            "fuck",
+            "masturbat",
+            "cum",
+            "porn",
+        ]
         for cue in sexual_cues:
             if re.search(r"\b" + cue, text):
                 return VerificationResult(
@@ -79,7 +96,17 @@ class VerifierAgent:
                 )
 
         # Harassment / Insult cues
-        insult_cues = ["insult", "offensive", "derogatory", "stupid person", "idiot", "ugly", "annoying person", "kill yourself", "die"]
+        insult_cues = [
+            "insult",
+            "offensive",
+            "derogatory",
+            "stupid person",
+            "idiot",
+            "ugly",
+            "annoying person",
+            "kill yourself",
+            "die",
+        ]
         for cue in insult_cues:
             if cue in text:
                 sev = 3 if "kill" in cue or "die" in cue else 2
@@ -93,7 +120,16 @@ class VerifierAgent:
                 )
 
         # Gaming toxicity cues
-        gaming_cues = ["gaming", "gamer", "bot", "noob", "uninstall", "trash player", "diff", "feeding"]
+        gaming_cues = [
+            "gaming",
+            "gamer",
+            "bot",
+            "noob",
+            "uninstall",
+            "trash player",
+            "diff",
+            "feeding",
+        ]
         for cue in gaming_cues:
             if cue in text:
                 return VerificationResult(
@@ -115,7 +151,9 @@ class VerifierAgent:
             confidence=0.75,
         )
 
-    def convert_to_profanity_term(self, res: VerificationResult, source: str) -> ProfanityTerm | None:
+    def convert_to_profanity_term(
+        self, res: VerificationResult, source: str
+    ) -> ProfanityTerm | None:
         """Convert a toxic/profane verification result into a standardized ProfanityTerm."""
         if not res.is_profane_or_toxic:
             return None

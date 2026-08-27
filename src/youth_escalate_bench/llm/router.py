@@ -42,7 +42,11 @@ class LLMRouter:
             active_provider = parts[0]
             if not model:
                 model = parts[1]
-        elif active_provider and active_provider.startswith("openrouter/") and "/" in active_provider[11:]:
+        elif (
+            active_provider
+            and active_provider.startswith("openrouter/")
+            and "/" in active_provider[11:]
+        ):
             parts_model = active_provider[11:]
             active_provider = "openrouter"
             if not model:

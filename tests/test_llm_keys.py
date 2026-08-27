@@ -89,4 +89,3 @@ def test_openrouter_multi_model_configuration():
         or_targets = [t for t in targets if t[0] == "openrouter"]
         assert len(or_targets) == 3
         assert ("openrouter", "openai/gpt-4o-mini") in or_targets
-

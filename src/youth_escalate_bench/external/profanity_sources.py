@@ -138,7 +138,9 @@ def fetch_source_text(url: str, cache_path: Path, timeout: float = 12.0) -> str:
 
     req = urllib.request.Request(
         url,
-        headers={"User-Agent": "YouthEscalateBench/0.1.0 (+https://github.com/VitalyChait/profanity_benchmark)"},
+        headers={
+            "User-Agent": "YouthEscalateBench/0.1.0 (+https://github.com/VitalyChait/profanity_benchmark)"
+        },
     )
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -404,12 +406,14 @@ def sync_lexicon_files(
         "# ----------------------------------------------------",
     ]
     final_lines.extend(original_seeds)
-    final_lines.extend([
-        "",
-        "# ----------------------------------------------------",
-        "# Section 2: Ingested Trusted Sources (Google, dsojevic, LDNOOBW, HurtLex, HateCheck)",
-        "# ----------------------------------------------------",
-    ])
+    final_lines.extend(
+        [
+            "",
+            "# ----------------------------------------------------",
+            "# Section 2: Ingested Trusted Sources (Google, dsojevic, LDNOOBW, HurtLex, HateCheck)",
+            "# ----------------------------------------------------",
+        ]
+    )
     final_lines.extend(remaining_terms)
 
     lexicon_txt_path.parent.mkdir(parents=True, exist_ok=True)

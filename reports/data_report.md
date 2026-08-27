@@ -1,7 +1,7 @@
 # YouthEscalateBench Data Lifecycle & Corpus Report
 
 **Benchmark Version:** `0.1.0`  
-**Report Generated:** `2026-08-27 00:34:26 UTC`  
+**Report Generated:** `2026-08-27 00:39:44 UTC`  
 **Governance & Safety Status:** 🟢 All Data Stages Validated & Governance Gate Passed
 
 ---
@@ -55,7 +55,7 @@
   - **COPPA (Children's Online Privacy Protection Act, 15 U.S.C. §§ 6501–6506):** Strict de-identification of all underage user attributes.
   - **GDPR-K (General Data Protection Regulation Art. 8):** De-identification and pseudonymization protocols verified.
   - **UK Age Appropriate Design Code (AADC):** Privacy-by-default safeguards adhered to.
-  - **IRB Ethics Protocol:** Exemption/approval guidelines documented in [`docs/irb_ethics_package.md`](../docs/irb_ethics_package.md).
+  - **IRB Ethics Protocol:** Exemption/approval guidelines documented in [`docs/irb_ethics_package.md`](https://github.com/VitalyChait/profanity_benchmark/blob/master/docs/irb_ethics_package.md).
 
 ---
 

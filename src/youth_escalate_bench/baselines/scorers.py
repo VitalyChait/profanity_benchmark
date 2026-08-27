@@ -275,9 +275,7 @@ class PromptedLLMScorer(ModerationScorer):
             router = get_default_router()
             prompt = self.build_prompt(request)
             try:
-                data = router.call_llm_json(
-                    prompt=prompt, provider=self.provider, model=self.model
-                )
+                data = router.call_llm_json(prompt=prompt, provider=self.provider, model=self.model)
                 prob = float(data.get("harm_probability", 0.0))
                 harm_types = data.get("harm_types", [])
                 out = _score_to_output(
@@ -295,7 +293,6 @@ class PromptedLLMScorer(ModerationScorer):
         out = self._fallback_scorer.predict(request)
         self._cache[cache_key] = out
         return out
-
 
 
 class EnsembleScorer(ModerationScorer):
@@ -365,22 +362,26 @@ def deduplicate_scorers(
                 del deduped[existing_name]
                 deduped[name] = scorer
                 seen_targets[target_key] = name
-                removed.append({
-                    "removed_scorer": existing_name,
-                    "retained_scorer": name,
-                    "provider": prov,
-                    "model": mdl,
-                    "reason": f"Generic fallback '{existing_name}' replaced by explicit model scorer '{name}'",
-                })
+                removed.append(
+                    {
+                        "removed_scorer": existing_name,
+                        "retained_scorer": name,
+                        "provider": prov,
+                        "model": mdl,
+                        "reason": f"Generic fallback '{existing_name}' replaced by explicit model scorer '{name}'",
+                    }
+                )
             else:
                 # Drop this subsequent duplicate
-                removed.append({
-                    "removed_scorer": name,
-                    "retained_scorer": existing_name,
-                    "provider": prov,
-                    "model": mdl,
-                    "reason": f"Duplicate evaluation of model '{mdl}' already covered by '{existing_name}'",
-                })
+                removed.append(
+                    {
+                        "removed_scorer": name,
+                        "retained_scorer": existing_name,
+                        "provider": prov,
+                        "model": mdl,
+                        "reason": f"Duplicate evaluation of model '{mdl}' already covered by '{existing_name}'",
+                    }
+                )
         else:
             seen_targets[target_key] = name
             deduped[name] = scorer
@@ -443,5 +444,3 @@ def build_default_scorers(lexicon_path: Path | str) -> dict[str, ModerationScore
     scorers_dict = {s.name: s for s in scorers}
     deduped_scorers, _ = deduplicate_scorers(scorers_dict)
     return deduped_scorers
-
-

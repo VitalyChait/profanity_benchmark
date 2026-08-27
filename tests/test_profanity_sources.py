@@ -80,20 +80,22 @@ EN3\tn\tqas\tno\tneutralword\tinclusive
 
 
 def test_profanity_database_operations(tmp_path: Path) -> None:
-    db = ProfanityDatabase({
-        "trash": ProfanityTerm(
-            word="trash",
-            severity=3,
-            categories=["derogatory_insult"],
-            sources=["bench_seeds"],
-        ),
-        "fag": ProfanityTerm(
-            word="fag",
-            severity=4,
-            categories=["slur_hate_speech"],
-            sources=["hatecheck", "dsojevic"],
-        ),
-    })
+    db = ProfanityDatabase(
+        {
+            "trash": ProfanityTerm(
+                word="trash",
+                severity=3,
+                categories=["derogatory_insult"],
+                sources=["bench_seeds"],
+            ),
+            "fag": ProfanityTerm(
+                word="fag",
+                severity=4,
+                categories=["slur_hate_speech"],
+                sources=["hatecheck", "dsojevic"],
+            ),
+        }
+    )
 
     assert db.is_profane("trash")
     assert db.is_profane("TRASH")
@@ -119,11 +121,13 @@ def test_sync_lexicon_files(tmp_path: Path) -> None:
     seed_file = tmp_path / "seeds.txt"
     seed_file.write_text("trash\nkys\n", encoding="utf-8")
 
-    db = ProfanityDatabase({
-        "trash": ProfanityTerm("trash", severity=3, sources=["bench_seeds"]),
-        "kys": ProfanityTerm("kys", severity=3, sources=["bench_seeds"]),
-        "newprofanity": ProfanityTerm("newprofanity", severity=2, sources=["google"]),
-    })
+    db = ProfanityDatabase(
+        {
+            "trash": ProfanityTerm("trash", severity=3, sources=["bench_seeds"]),
+            "kys": ProfanityTerm("kys", severity=3, sources=["bench_seeds"]),
+            "newprofanity": ProfanityTerm("newprofanity", severity=2, sources=["google"]),
+        }
+    )
 
     lexicon_out = tmp_path / "profanity_lexicon.txt"
     db_out = tmp_path / "db.json"

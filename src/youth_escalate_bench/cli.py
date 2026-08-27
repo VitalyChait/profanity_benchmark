@@ -469,13 +469,17 @@ def audit_models_command(lexicon: Path) -> None:
     # 1. Audit environment keys and openrouter list
     env_duplicates = audit_llm_model_duplicates()
     if env_duplicates:
-        click.echo(f"\n⚠️  Found {len(env_duplicates)} potential duplicate definitions in .env configuration:")
+        click.echo(
+            f"\n⚠️  Found {len(env_duplicates)} potential duplicate definitions in .env configuration:"
+        )
         for d in env_duplicates:
             click.echo(f"   • Duplicate Model : {d['duplicate_model']}")
             click.echo(f"     Scope/Location  : {d['location']}")
             click.echo(f"     Reason          : {d['reason']}")
     else:
-        click.echo("\n✅ .env configuration check: Zero duplicate model entries in OPENROUTER_MODELS.")
+        click.echo(
+            "\n✅ .env configuration check: Zero duplicate model entries in OPENROUTER_MODELS."
+        )
 
     # 2. Expanded evaluation targets
     targets = get_expanded_eval_targets()
@@ -487,13 +491,17 @@ def audit_models_command(lexicon: Path) -> None:
     scorers = build_default_scorers(lexicon)
     _, removed = deduplicate_scorers(scorers)
     if removed:
-        click.echo(f"\n⚠️  Deduplication gate removed {len(removed)} duplicate scorers from evaluation panel:")
+        click.echo(
+            f"\n⚠️  Deduplication gate removed {len(removed)} duplicate scorers from evaluation panel:"
+        )
         for r in removed:
             click.echo(f"   • Removed  : '{r['removed_scorer']}' ({r['provider']}:{r['model']})")
             click.echo(f"     Retained : '{r['retained_scorer']}'")
             click.echo("     Action   : Excluded from evaluation to save time and API tokens.")
     else:
-        click.echo("\n✅ Scorer panel check: All moderation scorers and LLM targets are 100% distinct.")
+        click.echo(
+            "\n✅ Scorer panel check: All moderation scorers and LLM targets are 100% distinct."
+        )
 
     click.echo("\n" + "=" * 72 + "\n")
 
@@ -502,7 +510,9 @@ def audit_models_command(lexicon: Path) -> None:
 @click.argument("term", required=False, default=None)
 @click.option("--limit", "-l", default=3, type=int, help="Maximum definitions to display.")
 @click.option("--strict", is_flag=True, default=False, help="Match query term strictly.")
-@click.option("--random", "-r", "fetch_random", is_flag=True, default=False, help="Fetch random slang terms.")
+@click.option(
+    "--random", "-r", "fetch_random", is_flag=True, default=False, help="Fetch random slang terms."
+)
 @click.option(
     "--api-url",
     default=None,
@@ -553,8 +563,12 @@ def urban_dict_command(
 
 
 @main.command("difficulty-ranking")
-@click.option("--top-sentences", "-s", default=10, type=int, help="Number of hardest sentences to display.")
-@click.option("--top-words", "-w", default=15, type=int, help="Number of most vulnerable words to display.")
+@click.option(
+    "--top-sentences", "-s", default=10, type=int, help="Number of hardest sentences to display."
+)
+@click.option(
+    "--top-words", "-w", default=15, type=int, help="Number of most vulnerable words to display."
+)
 @click.option(
     "--path",
     type=click.Path(path_type=Path),
@@ -607,12 +621,16 @@ def difficulty_ranking_command(top_sentences: int, top_words: int, path: Path | 
         if len(clean_text) > 45:
             clean_text = clean_text[:42] + "..."
         err_str = f"{s.error_rate * 100:.0f}% ({s.total_errors}/{s.total_evaluations})"
-        click.echo(f"#{rank:<4} {s.priority_weight:<9.2f} {err_str:<12} {s.primary_error_type[:20]:<22} \"{clean_text}\"")
+        click.echo(
+            f'#{rank:<4} {s.priority_weight:<9.2f} {err_str:<12} {s.primary_error_type[:20]:<22} "{clean_text}"'
+        )
 
     # 2. Top Words
     click.echo(f"\n[ Top {top_words} Most Vulnerable Words / Slang Terms ]")
     click.echo("-" * 80)
-    click.echo(f"{'Rank':<5} {'Word/Slang':<18} {'Vuln Score':<12} {'Count':<8} {'Error Rate':<12} {'Failure Mode'}")
+    click.echo(
+        f"{'Rank':<5} {'Word/Slang':<18} {'Vuln Score':<12} {'Count':<8} {'Error Rate':<12} {'Failure Mode'}"
+    )
     click.echo("-" * 80)
     for rank, w in enumerate(index.words[:top_words], 1):
         err_rate_str = f"{w.error_rate * 100:.0f}%"
@@ -692,7 +710,9 @@ def update_lexicon_command() -> None:
 
 
 @main.command("audit-pii")
-@click.option("--sample-size", "-n", default=200, type=int, help="Number of random conversations to inspect.")
+@click.option(
+    "--sample-size", "-n", default=200, type=int, help="Number of random conversations to inspect."
+)
 @click.option(
     "--dataset",
     type=click.Path(path_type=Path),
@@ -753,8 +773,16 @@ def create_snapshot_command(tag: str, output_dir: Path) -> None:
 
 
 @main.command("agent-discover")
-@click.option("--random-limit", "-r", default=5, type=int, help="Number of random Urban Dictionary terms to scout.")
-@click.option("--terms", "-t", default=None, type=str, help="Comma-separated target slang terms to verify.")
+@click.option(
+    "--random-limit",
+    "-r",
+    default=5,
+    type=int,
+    help="Number of random Urban Dictionary terms to scout.",
+)
+@click.option(
+    "--terms", "-t", default=None, type=str, help="Comma-separated target slang terms to verify."
+)
 def agent_discover_command(random_limit: int, terms: str | None) -> None:
     """Run an autonomous agentic discovery pass to scout and verify new profanity/slang."""
     from youth_escalate_bench.agents.runner import DiscoveryLoop

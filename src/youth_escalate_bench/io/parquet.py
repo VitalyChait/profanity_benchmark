@@ -46,7 +46,6 @@ def conversations_to_frame(conversations: list[ConversationRecord]) -> pl.DataFr
     return pl.DataFrame(rows, schema=schema)
 
 
-
 def frame_to_conversations(df: pl.DataFrame) -> list[ConversationRecord]:
     if df.is_empty():
         return []

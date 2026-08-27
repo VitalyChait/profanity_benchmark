@@ -28,7 +28,9 @@ def test_checkpoint_lifecycle(tmp_path: Path):
     assert mgr.checkpoints[step].status == "RUNNING"
     assert mgr.checkpoints[step].started_at is not None
 
-    mgr.mark_success(step, duration=1.23, output_files=["report.yaml"], row_counts={"report.yaml": 10})
+    mgr.mark_success(
+        step, duration=1.23, output_files=["report.yaml"], row_counts={"report.yaml": 10}
+    )
     assert mgr.is_success(step)
     assert mgr.checkpoints[step].duration_sec == 1.23
     assert mgr.checkpoints[step].output_files == ["report.yaml"]

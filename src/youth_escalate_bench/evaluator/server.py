@@ -86,7 +86,7 @@ class PredictHandler(BaseHTTPRequestHandler):
         # 4. Static reports, figures, heatmaps, and summaries
         filename = path.lstrip("/")
         if filename.startswith("reports/"):
-            filename = filename[len("reports/"):]
+            filename = filename[len("reports/") :]
 
         candidate_dirs = [
             self.reports_dir,

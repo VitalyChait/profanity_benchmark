@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+import pytest
 import yaml
 
 from youth_escalate_bench.schemas.export import export_all
@@ -23,7 +24,9 @@ def test_configs_stages_yaml_integrity() -> None:
         assert "stage" in data, f"{path.name} must declare 'stage' key"
         assert "benchmark_version" in data, f"{path.name} must declare 'benchmark_version'"
         # Stage name should match filename stem
-        assert data["stage"] == path.stem, f"Stage '{data['stage']}' does not match filename stem '{path.stem}'"
+        assert data["stage"] == path.stem, (
+            f"Stage '{data['stage']}' does not match filename stem '{path.stem}'"
+        )
 
 
 def test_source_registry_file_integrity() -> None:
@@ -43,8 +46,12 @@ def test_source_registry_file_integrity() -> None:
         src_id = info.get("source_id", "unknown")
         for field in required_fields:
             assert field in info, f"Source '{src_id}' missing required field '{field}'"
-        assert info["status"] == "approved", f"Source '{src_id}' must have status 'approved', found {info['status']}"
-        assert info.get("reviewer") is not None, f"Source '{src_id}' must have a designated reviewer"
+        assert info["status"] == "approved", (
+            f"Source '{src_id}' must have status 'approved', found {info['status']}"
+        )
+        assert info.get("reviewer") is not None, (
+            f"Source '{src_id}' must have a designated reviewer"
+        )
 
 
 def test_profanity_lexicon_txt_integrity() -> None:
@@ -63,7 +70,24 @@ def test_profanity_lexicon_txt_integrity() -> None:
     assert all(len(w) > 0 for w in lines)
 
     # Core canonical benchmark seed words should be present
-    seed_words = ["trash", "stupid", "idiot", "loser", "ugly", "hate", "kill", "die", "unalive", "kys", "moron", "jerk", "dumb", "worthless", "scum", "garbage"]
+    seed_words = [
+        "trash",
+        "stupid",
+        "idiot",
+        "loser",
+        "ugly",
+        "hate",
+        "kill",
+        "die",
+        "unalive",
+        "kys",
+        "moron",
+        "jerk",
+        "dumb",
+        "worthless",
+        "scum",
+        "garbage",
+    ]
     for seed in seed_words:
         assert seed in lines, f"Canonical seed '{seed}' missing from profanity lexicon"
 
@@ -84,7 +108,9 @@ def test_profanity_database_json_integrity() -> None:
     for word, item in list(terms.items())[:200]:
         assert "word" in item
         assert "severity" in item
-        assert item["severity"] in (1, 2, 3, 4), f"Severity must be in [1,2,3,4], got {item['severity']}"
+        assert item["severity"] in (1, 2, 3, 4), (
+            f"Severity must be in [1,2,3,4], got {item['severity']}"
+        )
         assert "categories" in item and isinstance(item["categories"], list)
         assert len(item["categories"]) > 0
         assert "sources" in item and isinstance(item["sources"], list)
@@ -218,7 +244,9 @@ def test_env_example_no_secrets_leakage() -> None:
             key = key.strip()
             val = val.strip().strip("\"'")
             if key in sensitive_keys:
-                assert val == "", f"Security risk: {key} has non-empty default value in .env.example: '{val}'"
+                assert val == "", (
+                    f"Security risk: {key} has non-empty default value in .env.example: '{val}'"
+                )
 
 
 def test_exported_json_schemas_validity(tmp_path: Path) -> None:
@@ -231,3 +259,60 @@ def test_exported_json_schemas_validity(tmp_path: Path) -> None:
         content = json.loads(schema_path.read_text(encoding="utf-8"))
         assert "title" in content or "properties" in content
         assert content.get("type") == "object"
+
+
+def test_markdown_files_relative_links_validity() -> None:
+    """Verify that all internal relative links in Markdown files resolve to existing files."""
+    import re
+
+    md_files = [
+        p
+        for p in Path(".").rglob("*.md")
+        if ".git" not in p.parts and ".pytest_cache" not in p.parts and "venv" not in p.parts
+    ]
+    assert len(md_files) >= 10, f"Expected at least 10 markdown files, found {len(md_files)}"
+
+    broken_links = []
+    for mdf in md_files:
+        content = mdf.read_text(encoding="utf-8", errors="ignore")
+        links = re.findall(r"\[([^\]]+)\]\(([^)]+)\)", content)
+        for text, link in links:
+            if link.startswith(("http://", "https://", "#", "mailto:")):
+                continue
+            target_path = link.split("#")[0].split("?")[0]
+            if not target_path:
+                continue
+            resolved = (mdf.parent / target_path).resolve()
+            root_resolved = Path(target_path).resolve()
+            if not resolved.exists() and not root_resolved.exists():
+                broken_links.append((str(mdf), link, text))
+
+    assert not broken_links, (
+        f"Found {len(broken_links)} broken relative markdown links: {broken_links[:5]}"
+    )
+
+
+def test_repo_json_and_yaml_files_syntax() -> None:
+    """Verify that all JSON and YAML files across the repository parse without syntax errors."""
+    repo_files = [
+        p
+        for p in Path(".").rglob("*")
+        if ".git" not in p.parts
+        and ".pytest_cache" not in p.parts
+        and "venv" not in p.parts
+        and p.is_file()
+    ]
+
+    for p in repo_files:
+        if p.suffix == ".json":
+            try:
+                with p.open("r", encoding="utf-8") as f:
+                    json.load(f)
+            except Exception as e:
+                pytest.fail(f"Invalid JSON syntax in {p}: {e}")
+        elif p.suffix in (".yaml", ".yml"):
+            try:
+                with p.open("r", encoding="utf-8") as f:
+                    yaml.safe_load(f)
+            except Exception as e:
+                pytest.fail(f"Invalid YAML syntax in {p}: {e}")

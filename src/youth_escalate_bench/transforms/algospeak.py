@@ -202,7 +202,11 @@ def apply_algospeak_transform(
 ) -> str:
     """Apply a single algospeak transformation operator by name or enum."""
     try:
-        fam = TransformFamily(transform_family) if isinstance(transform_family, str) else transform_family
+        fam = (
+            TransformFamily(transform_family)
+            if isinstance(transform_family, str)
+            else transform_family
+        )
     except ValueError:
         fam = TransformFamily.LEETSPEAK
     op = OPERATORS.get(fam, apply_leetspeak)

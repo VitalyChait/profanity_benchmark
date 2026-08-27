@@ -40,7 +40,9 @@ def test_get_expanded_eval_targets_has_zero_duplicates() -> None:
     """Verify that get_expanded_eval_targets produces strictly unique (provider, model) pairs."""
     targets = get_expanded_eval_targets()
     normalized_keys = [(p.lower(), m.lower()) for p, m in targets]
-    assert len(normalized_keys) == len(set(normalized_keys)), "Expanded eval targets must contain zero duplicates"
+    assert len(normalized_keys) == len(set(normalized_keys)), (
+        "Expanded eval targets must contain zero duplicates"
+    )
 
 
 def test_deduplicate_scorers_removes_redundant_llm_entries() -> None:
@@ -48,8 +50,12 @@ def test_deduplicate_scorers_removes_redundant_llm_entries() -> None:
     lexicon = load_lexicon("configs/profanity_lexicon.txt")
     guard = RuleBasedSafeguardScorer(lexicon)
 
-    llm1 = PromptedLLMScorer(provider="openrouter", model="meta-llama/llama-3-8b", name="llm_llama3_a")
-    llm2 = PromptedLLMScorer(provider="openrouter", model="meta-llama/llama-3-8b", name="llm_llama3_b")
+    llm1 = PromptedLLMScorer(
+        provider="openrouter", model="meta-llama/llama-3-8b", name="llm_llama3_a"
+    )
+    llm2 = PromptedLLMScorer(
+        provider="openrouter", model="meta-llama/llama-3-8b", name="llm_llama3_b"
+    )
     llm3 = PromptedLLMScorer(provider="openrouter", model="google/gemini-flash", name="llm_gemini")
 
     scorers = {
@@ -138,7 +144,13 @@ def test_run_evaluation_deduplication_gate(capsys) -> None:
             platform_style="gaming_chat",
             language_mode="english",
             turns=[
-                StoredTurn(turn_id="t1", speaker_id="u1", role="user", text="hello there", relative_time="0s"),
+                StoredTurn(
+                    turn_id="t1",
+                    speaker_id="u1",
+                    role="user",
+                    text="hello there",
+                    relative_time="0s",
+                ),
             ],
         )
     ]

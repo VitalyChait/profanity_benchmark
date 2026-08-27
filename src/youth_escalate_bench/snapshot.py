@@ -109,19 +109,43 @@ def create_snapshot_bundle(
             shutil.copy2(src, dest)
             copied_files.append(f"manifests/{src.name}")
 
-    # 3. Reports & LaTeX tables
+    # 3. Reports, Infographics, LaTeX tables & diagnostics
     report_sources = [
         reps / "evaluation_report.md",
+        reps / "extended_evaluation_report.md",
         reps / "data_report.md",
         reps / "difficulty_ranking_report.md",
         reps / "table_main_results.tex",
         reps / "difficulty_ranking.yaml",
+        reps / "llm_error_cases.yaml",
+        reps / "llm_error_cases.json",
+        reps / "infographic_dashboard.html",
     ]
     for src in report_sources:
         if src.exists():
             dest = snapshot_staging / src.name
             shutil.copy2(src, dest)
             copied_files.append(f"reports/{src.name}")
+
+    for img in reps.glob("*.png"):
+        dest = snapshot_staging / img.name
+        shutil.copy2(img, dest)
+        copied_files.append(f"reports/{img.name}")
+
+    if (reps / "data").exists():
+        data_dest = snapshot_staging / "data"
+        shutil.copytree(reps / "data", data_dest, dirs_exist_ok=True)
+        for dp in data_dest.rglob("*"):
+            if dp.is_file():
+                copied_files.append(f"reports/data/{dp.name}")
+
+    # Copy documentation package for ethics/compliance
+    docs_src = Path("docs/irb_ethics_package.md")
+    if docs_src.exists():
+        docs_dest = snapshot_staging / "docs"
+        docs_dest.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(docs_src, docs_dest / docs_src.name)
+        copied_files.append(f"docs/{docs_src.name}")
 
     # 4. Lexicons
     lexicon_sources = [

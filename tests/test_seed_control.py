@@ -146,7 +146,9 @@ def test_run_evaluation_respects_seed_and_strategy() -> None:
             platform_style="gaming_chat",
             language_mode="english",
             turns=[
-                StoredTurn(turn_id="t1", speaker_id="u1", role="user", text="hey there", relative_time="0s"),
+                StoredTurn(
+                    turn_id="t1", speaker_id="u1", role="user", text="hey there", relative_time="0s"
+                ),
             ],
         )
         for i in range(15)

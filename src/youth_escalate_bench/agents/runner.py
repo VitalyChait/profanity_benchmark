@@ -42,7 +42,11 @@ class DiscoveryLoop:
         random_limit: int = 5,
     ) -> dict[str, Any]:
         """Execute one complete discovery pass."""
-        logger.info("discovery_cycle_started", target_count=len(target_terms or []), random_limit=random_limit)
+        logger.info(
+            "discovery_cycle_started",
+            target_count=len(target_terms or []),
+            random_limit=random_limit,
+        )
 
         # 1. Scout candidates
         candidates = []
@@ -62,7 +66,9 @@ class DiscoveryLoop:
 
             # 3. If toxic/profane, incorporate into database if new
             if res.is_profane_or_toxic and not self.db.is_profane(cand.term):
-                p_term = self.verifier.convert_to_profanity_term(res, source="urban_dictionary_agent")
+                p_term = self.verifier.convert_to_profanity_term(
+                    res, source="urban_dictionary_agent"
+                )
                 if p_term:
                     self.db.terms[p_term.word] = p_term
                     newly_added_terms.append(p_term.word)

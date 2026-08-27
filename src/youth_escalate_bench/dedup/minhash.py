@@ -20,7 +20,6 @@ def _shingles(text: str, n: int = 5) -> set[str]:
     return {normalized[i : i + n] for i in range(len(normalized) - n + 1)}
 
 
-
 def minhash_signature(text: str, num_perm: int = 64, ngram: int = 5) -> tuple[int, ...]:
     shingles = _shingles(text, ngram)
     if not shingles:
@@ -43,7 +42,6 @@ def minhash_signature(text: str, num_perm: int = 64, ngram: int = 5) -> tuple[in
     permuted = (shingle_hashes[:, None] * a[None, :] + b[None, :]) % _MERSENNE_PRIME
     min_sig = np.min(permuted, axis=0)
     return tuple(min_sig.tolist())
-
 
 
 def minhash_jaccard(sig_a: tuple[int, ...], sig_b: tuple[int, ...]) -> float:

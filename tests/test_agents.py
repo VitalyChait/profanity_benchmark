@@ -101,14 +101,16 @@ def test_discovery_loop_run(tmp_path: Path) -> None:
         digest_path=digest_path,
     )
     # Mock scout to return fixed candidate
-    loop.scout.scout_targeted_terms = MagicMock(return_value=[
-        SlangCandidate(
-            term="scuzzbag",
-            meaning="an offensive derogatory insult for a disgusting person",
-            example="you are a scuzzbag",
-            source="mock",
-        )
-    ])
+    loop.scout.scout_targeted_terms = MagicMock(
+        return_value=[
+            SlangCandidate(
+                term="scuzzbag",
+                meaning="an offensive derogatory insult for a disgusting person",
+                example="you are a scuzzbag",
+                source="mock",
+            )
+        ]
+    )
     loop.scout.scout_random_slang = MagicMock(return_value=[])
 
     res = loop.run_discovery_cycle(target_terms=["scuzzbag"], random_limit=0)

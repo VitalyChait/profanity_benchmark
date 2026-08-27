@@ -39,38 +39,60 @@ def generate_service_dashboard_html(
     alt_rep_dir = Path("data/processed/report")
 
     # Locate report artifacts
-    summary_path = rep_dir / "report_summary.yaml" if (rep_dir / "report_summary.yaml").exists() else alt_rep_dir / "report_summary.yaml"
-    errors_path = rep_dir / "llm_error_cases.json" if (rep_dir / "llm_error_cases.json").exists() else alt_rep_dir / "llm_error_cases.json"
-    difficulty_path = rep_dir / "difficulty_ranking.yaml" if (rep_dir / "difficulty_ranking.yaml").exists() else alt_rep_dir / "difficulty_ranking.yaml"
+    summary_path = (
+        rep_dir / "report_summary.yaml"
+        if (rep_dir / "report_summary.yaml").exists()
+        else alt_rep_dir / "report_summary.yaml"
+    )
+    errors_path = (
+        rep_dir / "llm_error_cases.json"
+        if (rep_dir / "llm_error_cases.json").exists()
+        else alt_rep_dir / "llm_error_cases.json"
+    )
+    difficulty_path = (
+        rep_dir / "difficulty_ranking.yaml"
+        if (rep_dir / "difficulty_ranking.yaml").exists()
+        else alt_rep_dir / "difficulty_ranking.yaml"
+    )
 
     summary_data = _load_yaml_safe(summary_path)
     errors_data = _load_json_safe(errors_path)
     difficulty_data = _load_yaml_safe(difficulty_path)
 
     # Extract high-level summary KPIs
-    models_count = len(errors_data.get("by_model", {})) or len(summary_data.get("llm_error_summary", {})) or 6
+    models_count = (
+        len(errors_data.get("by_model", {})) or len(summary_data.get("llm_error_summary", {})) or 6
+    )
     total_errors = errors_data.get("summary", {}).get("total_error_instances", 22)
     hardest_turns_count = len(difficulty_data.get("sentences", []))
-    top_fp_triggers = ", ".join(difficulty_data.get("metadata", {}).get("top_fp_triggers", [])[:4]) or "unreal, trickshot, swear"
-    top_fn_indicators = ", ".join(difficulty_data.get("metadata", {}).get("top_fn_indicators", [])[:4]) or "garbage, uninstall, fucking"
+    top_fp_triggers = (
+        ", ".join(difficulty_data.get("metadata", {}).get("top_fp_triggers", [])[:4])
+        or "unreal, trickshot, swear"
+    )
+    top_fn_indicators = (
+        ", ".join(difficulty_data.get("metadata", {}).get("top_fn_indicators", [])[:4])
+        or "garbage, uninstall, fucking"
+    )
 
     # Prepare error cases list for interactive table
     all_error_cases = []
     for model_id, model_info in errors_data.get("by_model", {}).items():
         disp = model_info.get("display_name", model_id)
         for c in model_info.get("cases", []):
-            all_error_cases.append({
-                "model": disp,
-                "conv_id": c.get("conversation_id", ""),
-                "turn_id": c.get("turn_id", ""),
-                "condition": c.get("condition", ""),
-                "error_type": c.get("error_type", ""),
-                "prob": c.get("predicted_harm_probability", 0.0),
-                "gold_actionable": c.get("gold_actionable", False),
-                "gold_severity": c.get("gold_severity", ""),
-                "turn_text": c.get("turn_text", ""),
-                "reason": c.get("diagnostic_reason", ""),
-            })
+            all_error_cases.append(
+                {
+                    "model": disp,
+                    "conv_id": c.get("conversation_id", ""),
+                    "turn_id": c.get("turn_id", ""),
+                    "condition": c.get("condition", ""),
+                    "error_type": c.get("error_type", ""),
+                    "prob": c.get("predicted_harm_probability", 0.0),
+                    "gold_actionable": c.get("gold_actionable", False),
+                    "gold_severity": c.get("gold_severity", ""),
+                    "turn_text": c.get("turn_text", ""),
+                    "reason": c.get("diagnostic_reason", ""),
+                }
+            )
 
     # Prepare difficulty sentences list
     difficulty_sentences = difficulty_data.get("sentences", [])[:15]
@@ -596,13 +618,13 @@ def generate_service_dashboard_html(
         badge_cls = "badge-amber" if is_fp else "badge-rose"
         label_short = "FP (Over-mod)" if is_fp else "FN (Missed)"
         html += f"""
-                            <tr data-type="{row['error_type']}">
-                                <td class="cell-mono"><strong>{row['model']}</strong></td>
-                                <td style="max-width: 320px; font-weight: 500;">"{row['turn_text']}"</td>
+                            <tr data-type="{row["error_type"]}">
+                                <td class="cell-mono"><strong>{row["model"]}</strong></td>
+                                <td style="max-width: 320px; font-weight: 500;">"{row["turn_text"]}"</td>
                                 <td><span class="badge {badge_cls}">{label_short}</span></td>
-                                <td><span class="badge badge-indigo">{row['gold_severity']}</span></td>
-                                <td class="cell-mono" style="font-weight: 700;">{row['prob']:.2f}</td>
-                                <td style="color: var(--text-secondary); font-size: 0.8rem;">{row['reason']}</td>
+                                <td><span class="badge badge-indigo">{row["gold_severity"]}</span></td>
+                                <td class="cell-mono" style="font-weight: 700;">{row["prob"]:.2f}</td>
+                                <td style="color: var(--text-secondary); font-size: 0.8rem;">{row["reason"]}</td>
                             </tr>
 """
 
@@ -646,11 +668,11 @@ def generate_service_dashboard_html(
         html += f"""
                             <tr>
                                 <td class="cell-mono">#{idx}</td>
-                                <td style="max-width: 400px; font-weight: 600;">"{s.get('turn_text', '')}"</td>
+                                <td style="max-width: 400px; font-weight: 600;">"{s.get("turn_text", "")}"</td>
                                 <td><span class="badge {mode_badge}">{mode}</span></td>
                                 <td class="cell-mono" style="font-weight: 700; color: var(--accent-rose);">{err_rate * 100:.1f}%</td>
                                 <td class="cell-mono" style="color: var(--accent-cyan); font-weight: 700;">{prio:.3f}x</td>
-                                <td><span class="badge badge-indigo">{s.get('platform_style', 'chat')}</span></td>
+                                <td><span class="badge badge-indigo">{s.get("platform_style", "chat")}</span></td>
                             </tr>
 """
 

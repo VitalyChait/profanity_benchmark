@@ -308,7 +308,9 @@ class GenericConversationAdapter(IngestAdapter):
             turns: list[StoredTurn] = []
             seen_tids: set[str] = set()
             for t_idx, r in enumerate(group):
-                tid = str(r.get(turn_id_key) or f"t{t_idx * 2 + 1 if has_model_output else t_idx + 1}")
+                tid = str(
+                    r.get(turn_id_key) or f"t{t_idx * 2 + 1 if has_model_output else t_idx + 1}"
+                )
                 if tid in seen_tids:
                     tid = f"t{len(turns) + 1}_{tid}"
                 seen_tids.add(tid)

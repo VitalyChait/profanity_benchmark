@@ -232,9 +232,13 @@ def run_evaluation(
     if removed_duplicates:
         print("\n" + "=" * 72)
         print("🔍 [LLM PRE-FLIGHT DEDUPLICATION GATE] Verifying Model Targets")
-        print(f"⚠️  Detected and removed {len(removed_duplicates)} duplicate model entries to save tokens and inference time:")
+        print(
+            f"⚠️  Detected and removed {len(removed_duplicates)} duplicate model entries to save tokens and inference time:"
+        )
         for rem in removed_duplicates:
-            print(f"   • REMOVED : '{rem['removed_scorer']}' (targets {rem['provider']}:{rem['model']})")
+            print(
+                f"   • REMOVED : '{rem['removed_scorer']}' (targets {rem['provider']}:{rem['model']})"
+            )
             print(f"     RETAINED: '{rem['retained_scorer']}'")
             print(f"     REASON  : {rem['reason']}")
             eval_logger.warning(
@@ -260,7 +264,10 @@ def run_evaluation(
         )
 
         for scorer_name, scorer in scorers.items():
-            def _score_one(pair: tuple[InferenceRequest, bool]) -> tuple[InferenceRequest, bool, ModelOutput]:
+
+            def _score_one(
+                pair: tuple[InferenceRequest, bool],
+            ) -> tuple[InferenceRequest, bool, ModelOutput]:
                 req, label = pair
                 out = scorer.predict(req)
                 return req, label, out

@@ -89,49 +89,49 @@ def _get_display_name(scorer_id: str) -> tuple[str, str]:
 
     # Pattern-based provider matching for OpenRouter and LLM providers
     if scorer_id.startswith("llm_openrouter_"):
-        slug = scorer_id[len("llm_openrouter_"):]
+        slug = scorer_id[len("llm_openrouter_") :]
         return (_format_model_from_spec(slug), "OpenRouter LLM")
     if scorer_id.startswith("openrouter_"):
-        slug = scorer_id[len("openrouter_"):]
+        slug = scorer_id[len("openrouter_") :]
         return (_format_model_from_spec(slug), "OpenRouter LLM")
     if scorer_id.startswith("llm_groq_"):
-        slug = scorer_id[len("llm_groq_"):]
+        slug = scorer_id[len("llm_groq_") :]
         return (_format_model_from_spec(slug), "Groq LLM")
     if scorer_id.startswith("llm_mistral_"):
-        slug = scorer_id[len("llm_mistral_"):]
+        slug = scorer_id[len("llm_mistral_") :]
         return (_format_model_from_spec(slug), "Mistral LLM")
     if scorer_id.startswith("llm_gemini_"):
-        slug = scorer_id[len("llm_gemini_"):]
+        slug = scorer_id[len("llm_gemini_") :]
         return (_format_model_from_spec(slug), "Gemini LLM")
     if scorer_id.startswith("llm_openai_"):
-        slug = scorer_id[len("llm_openai_"):]
+        slug = scorer_id[len("llm_openai_") :]
         return (_format_model_from_spec(slug), "OpenAI LLM")
     if scorer_id.startswith("llm_anthropic_"):
-        slug = scorer_id[len("llm_anthropic_"):]
+        slug = scorer_id[len("llm_anthropic_") :]
         return (_format_model_from_spec(slug), "Anthropic LLM")
     if scorer_id.startswith("llm_together_"):
-        slug = scorer_id[len("llm_together_"):]
+        slug = scorer_id[len("llm_together_") :]
         return (_format_model_from_spec(slug), "Together LLM")
     if scorer_id.startswith("llm_cohere_"):
-        slug = scorer_id[len("llm_cohere_"):]
+        slug = scorer_id[len("llm_cohere_") :]
         return (_format_model_from_spec(slug), "Cohere LLM")
     if scorer_id.startswith("llm_deepseek_"):
-        slug = scorer_id[len("llm_deepseek_"):]
+        slug = scorer_id[len("llm_deepseek_") :]
         return (_format_model_from_spec(slug), "DeepSeek LLM")
     if scorer_id.startswith("llm_qwen_"):
-        slug = scorer_id[len("llm_qwen_"):]
+        slug = scorer_id[len("llm_qwen_") :]
         return (_format_model_from_spec(slug), "Qwen LLM")
     if scorer_id.startswith("llm_glm_"):
-        slug = scorer_id[len("llm_glm_"):]
+        slug = scorer_id[len("llm_glm_") :]
         return (_format_model_from_spec(slug), "GLM LLM")
     if scorer_id.startswith("llm_ollama_"):
-        slug = scorer_id[len("llm_ollama_"):]
+        slug = scorer_id[len("llm_ollama_") :]
         return (_format_model_from_spec(slug), "Ollama Local LLM")
     if scorer_id.startswith("llm_huggingface_"):
-        slug = scorer_id[len("llm_huggingface_"):]
+        slug = scorer_id[len("llm_huggingface_") :]
         return (_format_model_from_spec(slug), "HuggingFace LLM")
     if scorer_id.startswith("llm_"):
-        slug = scorer_id[len("llm_"):]
+        slug = scorer_id[len("llm_") :]
         return (_format_model_from_spec(slug), "LLM Model")
 
     return (scorer_id.replace("_", " ").title(), "Custom")
@@ -173,13 +173,17 @@ def generate_all_infographics(
 
     # Try generating figures with matplotlib
     try:
-        f1 = _generate_multipanel_infographic(data_by_scorer, output_dir / "infographic_models_comparison.png")
+        f1 = _generate_multipanel_infographic(
+            data_by_scorer, output_dir / "infographic_models_comparison.png"
+        )
         if f1:
             generated_files.append(f1)
         f2 = _generate_heatmap_infographic(data_by_scorer, output_dir / "figure_auprc_heatmap.png")
         if f2:
             generated_files.append(f2)
-        f3 = _generate_context_trajectory(data_by_scorer, output_dir / "figure_context_trajectory.png")
+        f3 = _generate_context_trajectory(
+            data_by_scorer, output_dir / "figure_context_trajectory.png"
+        )
         if f3:
             generated_files.append(f3)
         f4 = _generate_llm_leaderboard(data_by_scorer, output_dir / "figure_llm_leaderboard.png")
@@ -190,7 +194,9 @@ def generate_all_infographics(
 
     # Generate interactive standalone HTML dashboard
     try:
-        f_html = _generate_html_dashboard(data_by_scorer, onset_data, output_dir / "infographic_dashboard.html")
+        f_html = _generate_html_dashboard(
+            data_by_scorer, onset_data, output_dir / "infographic_dashboard.html"
+        )
         if f_html:
             generated_files.append(f_html)
     except Exception as e:
@@ -204,14 +210,16 @@ def _generate_multipanel_infographic(
     out_path: Path,
 ) -> str:
     """Generate high-resolution 4-panel infographic comparison figure."""
-    plt.style.use("seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default")
+    plt.style.use(
+        "seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default"
+    )
     fig, axes = plt.subplots(2, 2, figsize=(16, 12), dpi=300)
     fig.patch.set_facecolor("#0b0f19")
 
     # Colors
-    c_turn = "#38bdf8"     # Sky blue
-    c_pair = "#818cf8"     # Indigo
-    c_prefix = "#34d399"   # Emerald
+    c_turn = "#38bdf8"  # Sky blue
+    c_pair = "#818cf8"  # Indigo
+    c_prefix = "#34d399"  # Emerald
 
     # Text & Grid styles
     for ax in axes.flat:
@@ -223,6 +231,7 @@ def _generate_multipanel_infographic(
 
     # Order models: LLMs first, then Ensemble, then Baselines
     scorers = list(data.keys())
+
     def sort_key(s: str) -> tuple[int, float]:
         name, family = _get_display_name(s)
         pref = _get_float(data[s].get("full_prefix"), "auprc", 0.0)
@@ -237,38 +246,108 @@ def _generate_multipanel_infographic(
     y = np.arange(len(sorted_scorers))
     height = 0.26
 
-    auprc_turn = [_get_float(data[s].get("current_turn_only"), "auprc", 0.0) for s in sorted_scorers]
-    auprc_pair = [_get_float(data[s].get("prev_plus_current"), "auprc", 0.0) for s in sorted_scorers]
+    auprc_turn = [
+        _get_float(data[s].get("current_turn_only"), "auprc", 0.0) for s in sorted_scorers
+    ]
+    auprc_pair = [
+        _get_float(data[s].get("prev_plus_current"), "auprc", 0.0) for s in sorted_scorers
+    ]
     auprc_pref = [_get_float(data[s].get("full_prefix"), "auprc", 0.0) for s in sorted_scorers]
 
-    ax1.barh(y + height, auprc_turn, height, label="Turn Only", color=c_turn, alpha=0.9, edgecolor="#0284c7")
-    ax1.barh(y, auprc_pair, height, label="Prev + Turn", color=c_pair, alpha=0.9, edgecolor="#6366f1")
-    ax1.barh(y - height, auprc_pref, height, label="Full Prefix", color=c_prefix, alpha=0.9, edgecolor="#059669")
+    ax1.barh(
+        y + height,
+        auprc_turn,
+        height,
+        label="Turn Only",
+        color=c_turn,
+        alpha=0.9,
+        edgecolor="#0284c7",
+    )
+    ax1.barh(
+        y, auprc_pair, height, label="Prev + Turn", color=c_pair, alpha=0.9, edgecolor="#6366f1"
+    )
+    ax1.barh(
+        y - height,
+        auprc_pref,
+        height,
+        label="Full Prefix",
+        color=c_prefix,
+        alpha=0.9,
+        edgecolor="#059669",
+    )
 
     ax1.set_yticks(y)
     ax1.set_yticklabels(names, fontsize=9, color="#f1f5f9", fontweight="medium")
     ax1.set_xlim(0, 1.05)
-    ax1.set_xlabel("AUPRC (Area Under Precision-Recall Curve)", color="#cbd5e1", fontsize=10, fontweight="bold")
-    ax1.set_title("A. Moderation Performance (AUPRC) across Context Conditions", color="#f8fafc", fontsize=12, fontweight="bold", pad=12)
-    ax1.legend(loc="lower right", facecolor="#1e293b", edgecolor="#475569", labelcolor="#f8fafc", fontsize=9)
+    ax1.set_xlabel(
+        "AUPRC (Area Under Precision-Recall Curve)", color="#cbd5e1", fontsize=10, fontweight="bold"
+    )
+    ax1.set_title(
+        "A. Moderation Performance (AUPRC) across Context Conditions",
+        color="#f8fafc",
+        fontsize=12,
+        fontweight="bold",
+        pad=12,
+    )
+    ax1.legend(
+        loc="lower right",
+        facecolor="#1e293b",
+        edgecolor="#475569",
+        labelcolor="#f8fafc",
+        fontsize=9,
+    )
     ax1.invert_yaxis()
 
     # --- Panel 2: AUROC across Conditions ---
     ax2 = axes[0, 1]
-    auroc_turn = [_get_float(data[s].get("current_turn_only"), "auroc", 0.0) for s in sorted_scorers]
-    auroc_pair = [_get_float(data[s].get("prev_plus_current"), "auroc", 0.0) for s in sorted_scorers]
+    auroc_turn = [
+        _get_float(data[s].get("current_turn_only"), "auroc", 0.0) for s in sorted_scorers
+    ]
+    auroc_pair = [
+        _get_float(data[s].get("prev_plus_current"), "auroc", 0.0) for s in sorted_scorers
+    ]
     auroc_pref = [_get_float(data[s].get("full_prefix"), "auroc", 0.0) for s in sorted_scorers]
 
-    ax2.barh(y + height, auroc_turn, height, label="Turn Only", color=c_turn, alpha=0.9, edgecolor="#0284c7")
-    ax2.barh(y, auroc_pair, height, label="Prev + Turn", color=c_pair, alpha=0.9, edgecolor="#6366f1")
-    ax2.barh(y - height, auroc_pref, height, label="Full Prefix", color=c_prefix, alpha=0.9, edgecolor="#059669")
+    ax2.barh(
+        y + height,
+        auroc_turn,
+        height,
+        label="Turn Only",
+        color=c_turn,
+        alpha=0.9,
+        edgecolor="#0284c7",
+    )
+    ax2.barh(
+        y, auroc_pair, height, label="Prev + Turn", color=c_pair, alpha=0.9, edgecolor="#6366f1"
+    )
+    ax2.barh(
+        y - height,
+        auroc_pref,
+        height,
+        label="Full Prefix",
+        color=c_prefix,
+        alpha=0.9,
+        edgecolor="#059669",
+    )
 
     ax2.set_yticks(y)
     ax2.set_yticklabels([])
     ax2.set_xlim(0.4, 1.05)
     ax2.set_xlabel("AUROC (Area Under ROC Curve)", color="#cbd5e1", fontsize=10, fontweight="bold")
-    ax2.set_title("B. Discrimination Power (AUROC) across Context Conditions", color="#f8fafc", fontsize=12, fontweight="bold", pad=12)
-    ax2.legend(loc="lower right", facecolor="#1e293b", edgecolor="#475569", labelcolor="#f8fafc", fontsize=9)
+    ax2.set_title(
+        "B. Discrimination Power (AUROC) across Context Conditions",
+        color="#f8fafc",
+        fontsize=12,
+        fontweight="bold",
+        pad=12,
+    )
+    ax2.legend(
+        loc="lower right",
+        facecolor="#1e293b",
+        edgecolor="#475569",
+        labelcolor="#f8fafc",
+        fontsize=9,
+    )
     ax2.invert_yaxis()
 
     # --- Panel 3: Context Sensitivity Delta (Full Prefix - Turn Only) ---
@@ -276,19 +355,41 @@ def _generate_multipanel_infographic(
     delta_auprc = [p - t for p, t in zip(auprc_pref, auprc_turn, strict=True)]
     delta_colors = ["#10b981" if d >= 0 else "#ef4444" for d in delta_auprc]
 
-    bars = ax3.barh(y, delta_auprc, height=0.55, color=delta_colors, alpha=0.85, edgecolor="#334155")
+    bars = ax3.barh(
+        y, delta_auprc, height=0.55, color=delta_colors, alpha=0.85, edgecolor="#334155"
+    )
     ax3.axvline(0, color="#64748b", linewidth=1.2, linestyle="--")
     ax3.set_yticks(y)
     ax3.set_yticklabels(names, fontsize=9, color="#f1f5f9", fontweight="medium")
-    ax3.set_xlabel(r"$\Delta$ AUPRC ($\text{Full Prefix} - \text{Turn Only}$)", color="#cbd5e1", fontsize=10, fontweight="bold")
-    ax3.set_title("C. Causal Context Sensitivity Gain / Shift", color="#f8fafc", fontsize=12, fontweight="bold", pad=12)
+    ax3.set_xlabel(
+        r"$\Delta$ AUPRC ($\text{Full Prefix} - \text{Turn Only}$)",
+        color="#cbd5e1",
+        fontsize=10,
+        fontweight="bold",
+    )
+    ax3.set_title(
+        "C. Causal Context Sensitivity Gain / Shift",
+        color="#f8fafc",
+        fontsize=12,
+        fontweight="bold",
+        pad=12,
+    )
     ax3.invert_yaxis()
 
     # Add text labels on bars
     for bar, d in zip(bars, delta_auprc, strict=True):
         offset = 0.01 if d >= 0 else -0.01
         ha = "left" if d >= 0 else "right"
-        ax3.text(d + offset, bar.get_y() + bar.get_height() / 2, f"{d:+.3f}", va="center", ha=ha, fontsize=8, color="#e2e8f0", fontweight="bold")
+        ax3.text(
+            d + offset,
+            bar.get_y() + bar.get_height() / 2,
+            f"{d:+.3f}",
+            va="center",
+            ha=ha,
+            fontsize=8,
+            color="#e2e8f0",
+            fontweight="bold",
+        )
 
     # --- Panel 4: LLM Frontier vs Baselines Comparison ---
     ax4 = axes[1, 1]
@@ -297,23 +398,61 @@ def _generate_multipanel_infographic(
     llm_names = [_get_display_name(s)[0] for s in llm_scorers]
     llm_y = np.arange(len(llm_scorers))
 
-    p95 = [_get_float(data[s].get("full_prefix"), "precision_at_recall_95", 0.0) for s in llm_scorers]
+    p95 = [
+        _get_float(data[s].get("full_prefix"), "precision_at_recall_95", 0.0) for s in llm_scorers
+    ]
     rfpr1 = [_get_float(data[s].get("full_prefix"), "recall_at_fpr_1pct", 0.0) for s in llm_scorers]
 
     w = 0.35
     if len(llm_scorers) > 0:
-        ax4.barh(llm_y + w / 2, p95, w, label="Precision @ Recall 95%", color="#f59e0b", alpha=0.9, edgecolor="#d97706")
-        ax4.barh(llm_y - w / 2, rfpr1, w, label="Recall @ FPR 1%", color="#ec4899", alpha=0.9, edgecolor="#db2777")
+        ax4.barh(
+            llm_y + w / 2,
+            p95,
+            w,
+            label="Precision @ Recall 95%",
+            color="#f59e0b",
+            alpha=0.9,
+            edgecolor="#d97706",
+        )
+        ax4.barh(
+            llm_y - w / 2,
+            rfpr1,
+            w,
+            label="Recall @ FPR 1%",
+            color="#ec4899",
+            alpha=0.9,
+            edgecolor="#db2777",
+        )
         ax4.set_yticks(llm_y)
         ax4.set_yticklabels(llm_names, fontsize=9, color="#f1f5f9", fontweight="medium")
-        ax4.legend(loc="lower right", facecolor="#1e293b", edgecolor="#475569", labelcolor="#f8fafc", fontsize=9)
+        ax4.legend(
+            loc="lower right",
+            facecolor="#1e293b",
+            edgecolor="#475569",
+            labelcolor="#f8fafc",
+            fontsize=9,
+        )
     ax4.set_xlim(0, 1.05)
-    ax4.set_xlabel("High-Precision / Low-FPR Operating Points", color="#cbd5e1", fontsize=10, fontweight="bold")
-    ax4.set_title("D. LLM Safety Regimes (Full Prefix Operating Points)", color="#f8fafc", fontsize=12, fontweight="bold", pad=12)
+    ax4.set_xlabel(
+        "High-Precision / Low-FPR Operating Points", color="#cbd5e1", fontsize=10, fontweight="bold"
+    )
+    ax4.set_title(
+        "D. LLM Safety Regimes (Full Prefix Operating Points)",
+        color="#f8fafc",
+        fontsize=12,
+        fontweight="bold",
+        pad=12,
+    )
     ax4.invert_yaxis()
 
     # Supertitle and Metadata
-    plt.suptitle("YouthEscalateBench — Automated Multi-Model Causal Moderation Benchmark", fontsize=16, fontweight="bold", color="#ffffff", y=0.99)
+    plt.suptitle(
+        "YouthEscalateBench — Automated Multi-Model Causal Moderation Benchmark",
+        fontsize=16,
+        fontweight="bold",
+        color="#ffffff",
+        y=0.99,
+    )
     plt.tight_layout(rect=[0, 0.02, 1, 0.97])
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -328,6 +467,7 @@ def _generate_heatmap_infographic(
 ) -> str:
     """Generate high-contrast color heatmap of AUPRC and AUROC matrix."""
     scorers = list(data.keys())
+
     def sort_key(s: str) -> tuple[int, float]:
         name, family = _get_display_name(s)
         pref = _get_float(data[s].get("full_prefix"), "auprc", 0.0)
@@ -360,13 +500,24 @@ def _generate_heatmap_infographic(
     ax1.set_xticklabels(cond_labels, color="#f8fafc", fontsize=10, fontweight="bold")
     ax1.set_yticks(range(len(sorted_scorers)))
     ax1.set_yticklabels(names, color="#f8fafc", fontsize=9, fontweight="medium")
-    ax1.set_title("AUPRC Across Context Conditions", color="#f8fafc", fontsize=12, fontweight="bold", pad=12)
+    ax1.set_title(
+        "AUPRC Across Context Conditions", color="#f8fafc", fontsize=12, fontweight="bold", pad=12
+    )
 
     for i in range(len(sorted_scorers)):
         for j in range(len(conditions)):
             val = matrix_auprc[i, j]
             text_color = "black" if val > 0.85 else "white"
-            ax1.text(j, i, f"{val:.3f}", ha="center", va="center", color=text_color, fontweight="bold", fontsize=9)
+            ax1.text(
+                j,
+                i,
+                f"{val:.3f}",
+                ha="center",
+                va="center",
+                color=text_color,
+                fontweight="bold",
+                fontsize=9,
+            )
 
     # AUROC Heatmap
     ax2.imshow(matrix_auroc, cmap="plasma", vmin=0.8, vmax=1.0, aspect="auto")
@@ -374,15 +525,32 @@ def _generate_heatmap_infographic(
     ax2.set_xticklabels(cond_labels, color="#f8fafc", fontsize=10, fontweight="bold")
     ax2.set_yticks(range(len(sorted_scorers)))
     ax2.set_yticklabels([])
-    ax2.set_title("AUROC Across Context Conditions", color="#f8fafc", fontsize=12, fontweight="bold", pad=12)
+    ax2.set_title(
+        "AUROC Across Context Conditions", color="#f8fafc", fontsize=12, fontweight="bold", pad=12
+    )
 
     for i in range(len(sorted_scorers)):
         for j in range(len(conditions)):
             val = matrix_auroc[i, j]
             text_color = "black" if val > 0.95 else "white"
-            ax2.text(j, i, f"{val:.3f}", ha="center", va="center", color=text_color, fontweight="bold", fontsize=9)
+            ax2.text(
+                j,
+                i,
+                f"{val:.3f}",
+                ha="center",
+                va="center",
+                color=text_color,
+                fontweight="bold",
+                fontsize=9,
+            )
 
-    plt.suptitle("YouthEscalateBench — Performance Heatmaps by Model & Context Condition", color="#ffffff", fontsize=14, fontweight="bold", y=0.98)
+    plt.suptitle(
+        "YouthEscalateBench — Performance Heatmaps by Model & Context Condition",
+        color="#ffffff",
+        fontsize=14,
+        fontweight="bold",
+        y=0.98,
+    )
     plt.tight_layout(rect=[0, 0.02, 1, 0.95])
 
     plt.savefig(out_path, dpi=300, facecolor=fig.get_facecolor(), bbox_inches="tight")
@@ -407,7 +575,18 @@ def _generate_context_trajectory(
     cond_labels = ["1. Isolated Turn", "2. Prev + Current", "3. Full Prefix"]
     x = [1, 2, 3]
 
-    colors = ["#38bdf8", "#34d399", "#f59e0b", "#ec4899", "#818cf8", "#a78bfa", "#f43f5e", "#10b981", "#64748b", "#cbd5e1"]
+    colors = [
+        "#38bdf8",
+        "#34d399",
+        "#f59e0b",
+        "#ec4899",
+        "#818cf8",
+        "#a78bfa",
+        "#f43f5e",
+        "#10b981",
+        "#64748b",
+        "#cbd5e1",
+    ]
     scorers = list(data.keys())
 
     for idx, s in enumerate(scorers):
@@ -418,14 +597,36 @@ def _generate_context_trajectory(
         linewidth = 2.5 if "LLM" in family else 1.5
         marker = "o" if "LLM" in family else "s"
 
-        ax.plot(x, y_vals, style, color=color, linewidth=linewidth, marker=marker, markersize=6, label=f"{name}")
+        ax.plot(
+            x,
+            y_vals,
+            style,
+            color=color,
+            linewidth=linewidth,
+            marker=marker,
+            markersize=6,
+            label=f"{name}",
+        )
 
     ax.set_xticks(x)
     ax.set_xticklabels(cond_labels, color="#f8fafc", fontsize=11, fontweight="bold")
     ax.set_ylabel("AUPRC Score", color="#f8fafc", fontsize=11, fontweight="bold")
     ax.set_ylim(0.4, 1.05)
-    ax.set_title("Causal Context Trajectory: Model Performance Dynamics as Context Expands", color="#f8fafc", fontsize=13, fontweight="bold", pad=15)
-    ax.legend(bbox_to_anchor=(1.02, 1), loc="upper left", facecolor="#1e293b", edgecolor="#475569", labelcolor="#f8fafc", fontsize=8.5)
+    ax.set_title(
+        "Causal Context Trajectory: Model Performance Dynamics as Context Expands",
+        color="#f8fafc",
+        fontsize=13,
+        fontweight="bold",
+        pad=15,
+    )
+    ax.legend(
+        bbox_to_anchor=(1.02, 1),
+        loc="upper left",
+        facecolor="#1e293b",
+        edgecolor="#475569",
+        labelcolor="#f8fafc",
+        fontsize=8.5,
+    )
 
     plt.tight_layout()
     plt.savefig(out_path, dpi=300, facecolor=fig.get_facecolor(), bbox_inches="tight")
@@ -447,24 +648,43 @@ def _generate_llm_leaderboard(
         spine.set_color("#334155")
 
     llm_scorers = [s for s in data.keys() if "LLM" in _get_display_name(s)[1]]
-    llm_scorers.sort(key=lambda s: _get_float(data[s].get("full_prefix"), "auprc", 0.0), reverse=True)
+    llm_scorers.sort(
+        key=lambda s: _get_float(data[s].get("full_prefix"), "auprc", 0.0), reverse=True
+    )
 
     names = [_get_display_name(s)[0] for s in llm_scorers]
     scores = [_get_float(data[s].get("full_prefix"), "auprc", 0.0) for s in llm_scorers]
     y = np.arange(len(llm_scorers))
 
     palette = ["#38bdf8", "#34d399", "#818cf8", "#f59e0b", "#ec4899", "#a78bfa"]
-    bars = ax.barh(y, scores, height=0.55, color=palette[:len(llm_scorers)], alpha=0.9, edgecolor="#334155")
+    bars = ax.barh(
+        y, scores, height=0.55, color=palette[: len(llm_scorers)], alpha=0.9, edgecolor="#334155"
+    )
 
     ax.set_yticks(y)
     ax.set_yticklabels(names, color="#f8fafc", fontsize=10, fontweight="bold")
     ax.set_xlim(0, 1.1)
     ax.set_xlabel("Full Prefix AUPRC", color="#f8fafc", fontsize=11, fontweight="bold")
-    ax.set_title("LLM Moderation Leaderboard (Full Conversation Context)", color="#f8fafc", fontsize=13, fontweight="bold", pad=15)
+    ax.set_title(
+        "LLM Moderation Leaderboard (Full Conversation Context)",
+        color="#f8fafc",
+        fontsize=13,
+        fontweight="bold",
+        pad=15,
+    )
     ax.invert_yaxis()
 
     for bar, val in zip(bars, scores, strict=True):
-        ax.text(val + 0.02, bar.get_y() + bar.get_height() / 2, f"{val:.3f}", va="center", ha="left", fontsize=10, color="#ffffff", fontweight="bold")
+        ax.text(
+            val + 0.02,
+            bar.get_y() + bar.get_height() / 2,
+            f"{val:.3f}",
+            va="center",
+            ha="left",
+            fontsize=10,
+            color="#ffffff",
+            fontweight="bold",
+        )
 
     plt.tight_layout()
     plt.savefig(out_path, dpi=300, facecolor=fig.get_facecolor(), bbox_inches="tight")
@@ -488,15 +708,29 @@ def _generate_html_dashboard(
         c_pref = data[s].get("full_prefix", {})
 
         p_turn = f"{_get_float(c_turn, 'auprc', 0.0):.3f}"
-        r_turn = f"{_get_float(c_turn, 'auroc', 0.0):.3f}" if c_turn.get("auroc") is not None else "—"
+        r_turn = (
+            f"{_get_float(c_turn, 'auroc', 0.0):.3f}" if c_turn.get("auroc") is not None else "—"
+        )
         p_pair = f"{_get_float(c_pair, 'auprc', 0.0):.3f}"
-        r_pair = f"{_get_float(c_pair, 'auroc', 0.0):.3f}" if c_pair.get("auroc") is not None else "—"
+        r_pair = (
+            f"{_get_float(c_pair, 'auroc', 0.0):.3f}" if c_pair.get("auroc") is not None else "—"
+        )
         p_pref = f"{_get_float(c_pref, 'auprc', 0.0):.3f}"
-        r_pref = f"{_get_float(c_pref, 'auroc', 0.0):.3f}" if c_pref.get("auroc") is not None else "—"
+        r_pref = (
+            f"{_get_float(c_pref, 'auroc', 0.0):.3f}" if c_pref.get("auroc") is not None else "—"
+        )
 
         delta = _get_float(c_pref, "auprc", 0.0) - _get_float(c_turn, "auprc", 0.0)
         delta_badge = f"<span class='badge {'badge-green' if delta >= 0 else 'badge-red'}'>{delta:+.3f}</span>"
-        fam_badge = f"<span class='badge badge-purple'>{family}</span>" if "LLM" in family else (f"<span class='badge badge-blue'>{family}</span>" if "Ensemble" in family else f"<span class='badge badge-gray'>{family}</span>")
+        fam_badge = (
+            f"<span class='badge badge-purple'>{family}</span>"
+            if "LLM" in family
+            else (
+                f"<span class='badge badge-blue'>{family}</span>"
+                if "Ensemble" in family
+                else f"<span class='badge badge-gray'>{family}</span>"
+            )
+        )
 
         rows_html.append(f"""
         <tr>
@@ -512,8 +746,22 @@ def _generate_html_dashboard(
     table_rows = "\n".join(rows_html)
 
     # Top stats
-    best_llm_score = max((_get_float(data[s].get("full_prefix"), "auprc", 0.0) for s in scorers if "LLM" in _get_display_name(s)[1]), default=0.0)
-    best_baseline_score = max((_get_float(data[s].get("full_prefix"), "auprc", 0.0) for s in scorers if "Baseline" in _get_display_name(s)[1]), default=0.0)
+    best_llm_score = max(
+        (
+            _get_float(data[s].get("full_prefix"), "auprc", 0.0)
+            for s in scorers
+            if "LLM" in _get_display_name(s)[1]
+        ),
+        default=0.0,
+    )
+    best_baseline_score = max(
+        (
+            _get_float(data[s].get("full_prefix"), "auprc", 0.0)
+            for s in scorers
+            if "Baseline" in _get_display_name(s)[1]
+        ),
+        default=0.0,
+    )
 
     html_content = f"""<!DOCTYPE html>
 <html lang="en">

@@ -52,7 +52,9 @@ class GeneratorAgent:
     ) -> ContrastivePair:
         """Create a paired benign vs hostile turn and apply algospeak mutation."""
         benign = self.BENIGN_TEMPLATES[template_idx % len(self.BENIGN_TEMPLATES)].format(term=term)
-        hostile = self.HOSTILE_TEMPLATES[template_idx % len(self.HOSTILE_TEMPLATES)].format(term=term)
+        hostile = self.HOSTILE_TEMPLATES[template_idx % len(self.HOSTILE_TEMPLATES)].format(
+            term=term
+        )
 
         # Apply algospeak evasion transform
         transformed = apply_algospeak_transform(
@@ -87,8 +89,16 @@ class GeneratorAgent:
             source_tier=SourceTier.SYNTHETIC,
             platform_style="gaming_chat",
             turns=[
-                StoredTurn(turn_id="t1", speaker_id="u1", role="user", relative_time="0s", text="yo what are you doing"),
-                StoredTurn(turn_id="t2", speaker_id="u2", role="user", relative_time="5s", text=turn_text),
+                StoredTurn(
+                    turn_id="t1",
+                    speaker_id="u1",
+                    role="user",
+                    relative_time="0s",
+                    text="yo what are you doing",
+                ),
+                StoredTurn(
+                    turn_id="t2", speaker_id="u2", role="user", relative_time="5s", text=turn_text
+                ),
             ],
             metadata={"discovered_term": term, "is_hostile": is_hostile},
         )

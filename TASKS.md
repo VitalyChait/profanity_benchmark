@@ -6,7 +6,7 @@ Structured subtasks derived from [`plan.md`](plan.md). Status: `[ ]` pending · 
 
 ## Phase 0 — Repository Foundation `[x] COMPLETE`
 
-All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature E2E, 144+ pytest tests passing (100%).
+All subtasks done: scaffold, schemas, pipeline CLI, manifests, CI, DVC miniature E2E, 146+ pytest tests passing (100%).
 
 ---
 

@@ -33,4 +33,3 @@ def find_parquet(input_dir: Path, *names: str) -> Path:
         return parquets[0]
 
     raise FileNotFoundError(f"None of {names} found under {input_dir}")
-
