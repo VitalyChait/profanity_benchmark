@@ -193,7 +193,7 @@ ruff check src tests
 
 ## 🎨 Automated Infographics & Dashboard
 
-Every run of the `report` stage automatically produces visual analytics in [`data/processed/report/`](data/processed/report/):
+Every run of the `report` stage automatically produces visual analytics in [`reports/`](reports/):
 
 1. **Multi-Panel Overview** (`infographic_models_comparison.png`): High-res 4-panel publication comparison of AUPRC, AUROC, context delta, and precision-recall trade-offs.
 2. **Performance Heatmaps** (`figure_auprc_heatmap.png`): AUPRC and AUROC matrix across all models $\times$ conditions.

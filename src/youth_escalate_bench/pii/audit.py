@@ -41,8 +41,10 @@ def run_pii_audit(
         return {
             "status": "error",
             "error": f"File not found: {dataset_path}",
+            "dataset_path": str(dataset_path),
             "sample_size": 0,
             "total_turns": 0,
+            "flag_count": 0,
             "residual_flags": [],
         }
 

@@ -401,14 +401,14 @@ def deduplicate_scorers(
 
         # Resolve effective provider and model
         prov = scorer.provider
-        mdl = scorer.model
         if not prov:
             config = get_llm_config()
             prov = config.get("selected_provider", "auto")
+        mdl = scorer.model
         if not mdl:
             mdl = get_provider_model(prov) if prov else "default"
-
-        target_key = (str(prov).strip().lower(), str(mdl).strip().lower())
+        is_rag = isinstance(scorer, RAGPromptedLLMScorer)
+        target_key = (is_rag, str(prov).strip().lower(), str(mdl).strip().lower())
 
         if target_key in seen_targets:
             existing_name = seen_targets[target_key]

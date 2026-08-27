@@ -178,3 +178,23 @@ def test_cli_audit_models_command() -> None:
     assert res.exit_code == 0
     assert "LLM Model Duplication Pre-Flight Audit" in res.output
     assert "Active Unique LLM Evaluation Targets" in res.output
+
+
+def test_deduplicate_scorers_preserves_rag_comparison_variants() -> None:
+    """Verify deduplicate_scorers does not prune RAG comparison variants of the same model."""
+    from youth_escalate_bench.baselines.scorers import RAGPromptedLLMScorer
+
+    llm_std = PromptedLLMScorer(
+        provider="openrouter", model="meta-llama/llama-3-8b", name="llm_llama3"
+    )
+    llm_rag = RAGPromptedLLMScorer(
+        provider="openrouter", model="meta-llama/llama-3-8b", name="rag_llm_llama3"
+    )
+
+    scorers = {"llm_llama3": llm_std, "rag_llm_llama3": llm_rag}
+    deduped, removed = deduplicate_scorers(scorers)
+
+    assert len(deduped) == 2
+    assert "llm_llama3" in deduped
+    assert "rag_llm_llama3" in deduped
+    assert len(removed) == 0

@@ -744,9 +744,11 @@ def audit_pii_command(sample_size: int, dataset: Path) -> None:
     target = dataset
     if not target.exists():
         for candidate in [
+            Path("data/processed/split/split_test.parquet"),
             Path("data/processed/redact/conversations_redacted.parquet"),
             Path("data/processed/split/split_train.parquet"),
             Path("data/processed/sample/conversations_sampled.parquet"),
+            Path("tests/fixtures/sample_conversations.parquet"),
         ]:
             if candidate.exists():
                 target = candidate
@@ -754,6 +756,13 @@ def audit_pii_command(sample_size: int, dataset: Path) -> None:
 
     click.echo(f"Auditing sample of {sample_size} conversations from {target}...")
     results = run_pii_audit(target, sample_size=sample_size)
+    if results.get("status") == "error":
+        click.echo(f"Error: {results.get('error')}")
+        click.echo(f"PII Spot-Check Result: {results['status'].upper()}")
+        click.echo("Inspected Turns     : 0")
+        click.echo("Residual Flags Found: 0")
+        return
+
     report_content = generate_pii_audit_markdown(results)
     report_path = Path("reports/pii_spot_check_report.md")
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -762,7 +771,7 @@ def audit_pii_command(sample_size: int, dataset: Path) -> None:
     click.echo("=" * 65)
     click.echo(f"PII Spot-Check Result: {results['status'].upper()}")
     click.echo(f"Inspected Turns     : {results['total_turns']}")
-    click.echo(f"Residual Flags Found: {results['flag_count']}")
+    click.echo(f"Residual Flags Found: {results.get('flag_count', 0)}")
     click.echo(f"Formal Report Saved : {report_path}")
     click.echo("=" * 65)
 

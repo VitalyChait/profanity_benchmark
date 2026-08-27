@@ -66,8 +66,8 @@ This document synthesizes the status of the entire project across all documentat
 - [x] **Early Onset Detection Dynamics**: Calculated mean onset delay and detection recall @ lag 0, 1, 2.
 
 ### 📈 Visualization, Reporting & Deployment (`Phase 6`)
-- [x] **Cross-Condition Performance Matrix**: Comparative markdown tables in [`data/processed/report/evaluation_report.md`](data/processed/report/evaluation_report.md).
-- [x] **Automated Infographics Engine**: 300 DPI figures generated in `data/processed/report/`:
+- [x] **Cross-Condition Performance Matrix**: Comparative markdown tables in [`reports/evaluation_report.md`](reports/evaluation_report.md).
+- [x] **Automated Infographics Engine**: 300 DPI figures generated in `reports/`:
   - `infographic_models_comparison.png` (4-panel overview)
   - `figure_auprc_heatmap.png` (AUPRC & AUROC condition heatmaps)
   - `figure_context_trajectory.png` (Causal expansion trajectory curves)
@@ -140,7 +140,7 @@ This document synthesizes the status of the entire project across all documentat
 - [ ] **Full 12,000-Conversation Benchmark Run**:
   - Execute full production run: `python main.py --all --extended-report`.
 - [ ] **LaTeX Paper Integration**:
-  - Incorporate [`data/processed/report/table_main_results.tex`](data/processed/report/table_main_results.tex) and generated figures into paper draft.
+  - Incorporate [`reports/table_main_results.tex`](reports/table_main_results.tex) and generated figures into paper draft.
 - [ ] **Public Benchmark Release Package**:
   - Upload sanitized datasets to Hugging Face Hub (with Croissant metadata).
   - Publish evaluator container image to Docker Hub / GitHub Container Registry (GHCR).

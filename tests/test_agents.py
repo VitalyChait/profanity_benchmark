@@ -143,3 +143,12 @@ def test_cli_agent_and_snapshot_commands() -> None:
     res_pii = runner.invoke(main, ["audit-pii", "--sample-size", "5"])
     assert res_pii.exit_code == 0
     assert "PII Spot-Check Result" in res_pii.output
+
+
+def test_pii_audit_nonexistent_dataset_graceful(tmp_path: Path) -> None:
+    """Verify run_pii_audit on nonexistent file returns error dict with flag_count without raising KeyError."""
+    res = run_pii_audit(tmp_path / "non_existent_dataset.parquet")
+    assert res["status"] == "error"
+    assert "flag_count" in res
+    assert res["flag_count"] == 0
+    assert res["total_turns"] == 0
