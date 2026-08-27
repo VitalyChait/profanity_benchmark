@@ -6,6 +6,7 @@ lexicon_path: configs/profanity_lexicon.txt
 split: test
 max_samples: 20
 prioritize_hard_samples: true
+difficulty_level: standard
 conditions:
   - current_turn_only
   - prev_plus_current

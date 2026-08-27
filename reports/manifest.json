@@ -1,28 +1,28 @@
 {
   "stage": "report",
   "benchmark_version": "0.1.0",
-  "created_at": "2026-08-27T00:29:38.988872+00:00",
-  "config_sha256": "4d8c353935735ea68bd920120595cd9ca2ce41257c40ea3868f39cc9e5932a71",
+  "created_at": "2026-08-27T00:38:00.401964+00:00",
+  "config_sha256": "a94a2dc5bced320a2f94eafb223c773ca036a8a898b0070cc51790d61532e489",
   "random_seed": 42,
   "inputs": [],
   "outputs": [
     {
       "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/evaluation_report.md",
       "row_count": null,
-      "sha256": "1218947101316a7997c4c4c1e802b5984ca0d032bc9fe84d68aa40e3983847e0",
-      "bytes": 249801
+      "sha256": "3672549d7195d013759703111387cdd6ac30651cb7ada2b09730627ea5850102",
+      "bytes": 5929
     },
     {
       "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/extended_evaluation_report.md",
       "row_count": null,
-      "sha256": "1218947101316a7997c4c4c1e802b5984ca0d032bc9fe84d68aa40e3983847e0",
-      "bytes": 249801
+      "sha256": "e5e996a72f39175593c68bc42573b4b93b7c7141365dcc2a50423e2ac88f1285",
+      "bytes": 249910
     },
     {
       "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/data_report.md",
       "row_count": null,
-      "sha256": "a40fddfd1be8fdf603101d36f0798b16c64cc71276d1b30f99a4fc733de57b44",
-      "bytes": 5228
+      "sha256": "5c435dcfd11ae5a37045e3dd752c18517b4a4bdab0ba560720a9430587d3e057",
+      "bytes": 5288
     },
     {
       "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/report/llm_error_cases.yaml",
@@ -97,7 +97,7 @@
     "infographics_count": 5,
     "llm_errors_count": 403,
     "onset_metrics_present": true,
-    "extended_report_enabled": true,
+    "extended_report_enabled": false,
     "exported_reports_count": 27
   }
 }

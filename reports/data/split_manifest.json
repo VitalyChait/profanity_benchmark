@@ -1,39 +1,39 @@
 {
   "stage": "split",
-  "benchmark_version": "0.1.0",
-  "created_at": "2026-08-26T21:36:26.618304+00:00",
-  "config_sha256": "cc600a41966f6bda5abd4e93a25e80e1dddf6371ac7c065d692ade25e5c92ea2",
+  "benchmark_version": "0.1.1",
+  "created_at": "2026-08-27T18:00:13.445551+00:00",
+  "config_sha256": "991137d3c901dd264143b80b69d579a43a416eb18768dda3664cd38bcefcae66",
   "random_seed": 42,
   "inputs": [],
   "outputs": [
     {
       "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/split/split_train.parquet",
-      "row_count": 4315,
-      "sha256": "583cbd0e0f886160b11f764cf32930a44c633332c88db8b504af838b5f8bdcf8",
-      "bytes": 492229
+      "row_count": 6668,
+      "sha256": "e7f872cdfc9a65da8368bc89c9cc9c0bc1d9b8c5ad630d4dfb4f3cad27ea80e0",
+      "bytes": 520778
     },
     {
       "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/split/split_dev.parquet",
-      "row_count": 2106,
-      "sha256": "e997502e5fab08c26e2c1bff7e6834ad4955afcee92d68a61a9064f7166a17ad",
-      "bytes": 253759
+      "row_count": 3097,
+      "sha256": "bb3c3ce995f5f6879047ba1f226a9014f3f732b4cb85b96b90dc49f837ab99fc",
+      "bytes": 261907
     },
     {
       "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/split/split_test.parquet",
-      "row_count": 1993,
-      "sha256": "d713118280632651ced81a2469b23749dd75c47ec3a65c581234a42e3f464761",
-      "bytes": 263679
+      "row_count": 3253,
+      "sha256": "d05781a04540007bccda8ed935abb98a1a9e23f9c77aee43cbe71dd245226053",
+      "bytes": 264179
     },
     {
       "path": "/home/vitaly/uni/research/profanity_benchmark/data/processed/split/split_manifest.yaml",
       "row_count": null,
-      "sha256": "aaaa0de004ff441b57610867d469e1421cfd87bdb943c44833d5f3260744f5de",
-      "bytes": 108607
+      "sha256": "6e8016b7d00656d4a23afc351f7e10d1b23c0fe52900d1b32f455e696f2e8e76",
+      "bytes": 137976
     }
   ],
   "metadata": {
-    "train": 2134,
-    "dev": 1067,
-    "test": 1068
+    "train": 2502,
+    "dev": 1251,
+    "test": 1251
   }
 }

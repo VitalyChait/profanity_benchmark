@@ -326,3 +326,71 @@ def test_cli_difficulty_ranking_command(tmp_path: Path) -> None:
     assert res.exit_code == 0
     assert "Internal Evaluation Difficulty Ranking" in res.output
     assert "sample" in res.output
+
+
+def test_score_request_difficulty_algospeak_and_covert() -> None:
+    index = DifficultyIndex()
+
+    # Plain clean text has baseline 0 difficulty
+    score_clean = score_request_difficulty(index, "c0", "t0", "good game team well played")
+
+    # Algospeak delimiter / leetspeak turn has significantly higher difficulty
+    score_algospeak = score_request_difficulty(
+        index, "c1", "t1", "k.y.5 y0u u53l355 p13c3 0f g4rb4g3", difficulty_level="hard"
+    )
+    assert score_algospeak > score_clean
+    assert score_algospeak >= 0.50
+
+    # Covert non-profane hostility receives high difficulty boost
+    score_covert = score_request_difficulty(
+        index, "c2", "t2", "nobody in this discord wanted you here, just leave", difficulty_level="hard"
+    )
+    assert score_covert > score_clean
+
+    # Benign intense hype swear words (over-moderation stress test)
+    score_hype = score_request_difficulty(
+        index, "c3", "t3", "holy fucking shit you hit that cross-map snipe!", difficulty_level="hard"
+    )
+    assert score_hype > score_clean
+
+    # Extreme difficulty level scales up difficulty further
+    score_extreme = score_request_difficulty(
+        index, "c1", "t1", "k.y.5 y0u u53l355 p13c3 0f g4rb4g3", difficulty_level="extreme"
+    )
+    assert score_extreme > score_algospeak
+
+
+def test_synthetic_generator_difficulty_tiers() -> None:
+    from youth_escalate_bench.generation.generator import SyntheticDialogueGenerator
+
+    gen_hard = SyntheticDialogueGenerator(seed=42, difficulty_level="hard")
+    plans = [
+        {
+            "plan_id": f"test_{i}",
+            "template_id": "adversarial_algospeak_bypass" if i % 2 == 0 else "false_positive_hype_banter",
+            "platform_style": "gaming_chat",
+            "transition_pattern": "algospeak_obfuscation" if i % 2 == 0 else "intense_hype_false_alarm",
+            "intended_harm_type": "targeted_insult" if i % 2 == 0 else None,
+            "turns_min": 4,
+            "turns_max": 6,
+            "difficulty_level": "hard",
+        }
+        for i in range(10)
+    ]
+
+    all_turns = []
+    for p in plans:
+        conv, anns = gen_hard.generate_conversation(p)
+        assert len(conv.turns) >= 4
+        all_turns.extend([t.text for t in conv.turns])
+
+    # High diversity: many unique turns generated across plans
+    assert len(set(all_turns)) >= 15
+
+
+def test_cli_pipeline_difficulty_level_argument() -> None:
+    runner = CliRunner()
+    res = runner.invoke(main, ["pipeline", "--dry-run", "--difficulty-level", "hard"])
+    assert res.exit_code == 0
+    assert "DRY RUN" in res.output
+

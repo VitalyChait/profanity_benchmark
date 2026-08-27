@@ -460,8 +460,19 @@ def score_request_difficulty(
     conversation_id: str,
     turn_id: str,
     turn_text: str,
+    gold_actionable: bool | None = None,
+    difficulty_level: str = "standard",
 ) -> float:
-    """Calculate the difficulty score for an inference request to order evaluation priority."""
+    """Calculate the difficulty score for an inference request to order evaluation priority.
+
+    Combines:
+    1. Direct historical turn priority weight.
+    2. Vocabulary vulnerability (FP triggers & FN indicators).
+    3. Algospeak & obfuscation density (leetspeak, delimiters, euphemisms).
+    4. Pragmatic ambiguity (unsworn covert harm vs. profane benign hype).
+    """
+    import re
+
     # 1. Check exact historical turn priority
     sentence_map = getattr(index, "_cached_sentence_map", None)
     if sentence_map is None:
@@ -470,7 +481,7 @@ def score_request_difficulty(
 
     direct_score = sentence_map.get((conversation_id, turn_id), 0.0)
 
-    # 2. Check maximum word vulnerability
+    # 2. Check maximum word vulnerability from historical error ranking
     word_map = getattr(index, "_cached_word_map", None)
     if word_map is None:
         word_map = {w.word: w.vulnerability_score for w in index.words}
@@ -479,8 +490,40 @@ def score_request_difficulty(
     tokens = _tokenize_text(turn_text)
     max_word_vuln = max([word_map.get(tok, 0.0) for tok in tokens], default=0.0)
 
-    # Composite priority score: historical turn difficulty + 0.3 * max word vulnerability
-    return round(direct_score + (0.3 * max_word_vuln), 4)
+    # 3. Detect Algospeak and Orthographic Obfuscations
+    algospeak_boost = 0.0
+    text_lower = turn_text.lower()
+    # Delimiter-separated words (e.g., k.y.s, u-n-a-l-i-v-e, f*c*k)
+    if re.search(r"\b[a-zA-Z0-9](?:[\.\-\_\*][a-zA-Z0-9])+\b", turn_text):
+        algospeak_boost += 0.35
+    # Digits mixed inside words (e.g., k1ll, d1e, l053r, b1tch)
+    if re.search(r"[a-zA-Z]+[0-9]+[a-zA-Z]*|[0-9]+[a-zA-Z]+", turn_text):
+        algospeak_boost += 0.30
+    # Platform evasive euphemisms
+    if any(eup in text_lower for eup in ["unalive", "sewerslide", "game end", "waste of oxygen", "touch voltage"]):
+        algospeak_boost += 0.40
+
+    # 4. Detect Pragmatic Ambiguity
+    pragmatic_boost = 0.0
+    # Benign intense swearing (Over-moderation FP bait)
+    if any(h in text_lower for h in ["clutch", "fucking cracked", "snipe", "god tier", "holy shit that play", "sickest fucking round", "deadass thought we were dead"]):
+        pragmatic_boost += 0.30
+    # Covert non-profane hostility (Under-moderation FN bait)
+    if any(c in text_lower for c in ["nobody likes you", "nobody wants you", "wanted you", "just leave", "delete the game", "delete your account", "uninstall", "stop breathing", "log off forever", "ruining our lobby", "stop talking", "dead weight"]):
+        pragmatic_boost += 0.35
+    # Causal context-flip ambiguity
+    if any(f in text_lower for f in ["watch your back", "remember what i said", "you'll see what happens", "nice try buddy", "pay for that"]):
+        pragmatic_boost += 0.25
+
+    # 5. Difficulty Level Multiplier
+    level = (difficulty_level or "standard").lower()
+    if level in ("hard", "extreme", "adversarial"):
+        diff_factor = 1.35 if level == "hard" else 1.60
+        composite = direct_score + (0.35 * max_word_vuln) + (diff_factor * (algospeak_boost + pragmatic_boost))
+    else:
+        composite = direct_score + (0.30 * max_word_vuln) + (0.50 * (algospeak_boost + pragmatic_boost))
+
+    return round(composite, 4)
 
 
 def generate_difficulty_markdown_report(index: DifficultyIndex) -> str:

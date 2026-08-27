@@ -1,7 +1,7 @@
 # YouthEscalateBench Data Lifecycle & Corpus Report
 
 **Benchmark Version:** `0.1.1`  
-**Report Generated:** `2026-08-27 17:47:59 UTC`  
+**Report Generated:** `2026-08-27 22:21:33 UTC`  
 **Governance & Safety Status:** 🟢 All Data Stages Validated & Governance Gate Passed
 
 ---
@@ -14,9 +14,9 @@
 | **2. Ingestion** | Multi-Format Ingestion to Parquet | `103,400` Ingested Conversations | 🟢 PASSED |
 | **3. Redaction** | PII Detection & Safe Harbor Scrubbing | `66,261` PII Entities Sanitized | 🟢 PASSED |
 | **4. Threading** | DAG Topology & Temporal Ordering | `0` Causal Violations (100% Valid DAG) | 🟢 PASSED |
-| **5. Sampling** | Quota Sampling & MinHash Dedup | `49` Exact Dupes, `95807` Near-Dupes Pruned | 🟢 PASSED |
-| **6. Adjudication** | Consensus Adjudication & Gold Freeze | `1516` Gold Labels Frozen | 🟢 PASSED |
-| **7. Splitting** | Zero-Leakage Split (Train/Dev/Test) | Train: `2,134` | Dev: `1,067` | Test: `1,068` | 🟢 PASSED |
+| **5. Sampling** | Quota Sampling & MinHash Dedup | `49` Exact Dupes, `1577779` Near-Dupes Pruned | 🟢 PASSED |
+| **6. Adjudication** | Consensus Adjudication & Gold Freeze | `6120` Gold Labels Frozen | 🟢 PASSED |
+| **7. Splitting** | Zero-Leakage Split (Train/Dev/Test) | Train: `2,502` | Dev: `1,251` | Test: `1,251` | 🟢 PASSED |
 
 ---
 
@@ -87,7 +87,7 @@
 ## 6. Deduplication & Quota Sampling
 
 - **Exact Duplicate Groups Pruned:** `49`
-- **MinHash LSH Near-Duplicate Clusters Identified:** `95807` (Jaccard similarity threshold >= 0.8)
+- **MinHash LSH Near-Duplicate Clusters Identified:** `1577779` (Jaccard similarity threshold >= 0.8)
 - **Sampling Tier Allocations:**
 
 | Tier | Available Pool | Target Quota | Selected | Gap |
@@ -97,15 +97,15 @@
 | **Live** | 0 | 1,000 | **0** | 1,000 |
 | **Organic** | 103,396 | 4,000 | **4,000** | 0 |
 | **Staged** | 0 | 2,000 | **0** | 2,000 |
-| **Synthetic** | 245 | 3,000 | **245** | 2,755 |
+| **Synthetic** | 980 | 3,000 | **980** | 2,020 |
 
 ---
 
 ## 7. Consensus Adjudication & Gold Label Freeze
 
-- **Input Turn Annotations:** `1516`
-- **Gold Frozen Labels:** `1516`
-- **Freeze Timestamp:** `2026-08-26T21:36:07.873387+00:00`
+- **Input Turn Annotations:** `6120`
+- **Gold Frozen Labels:** `6120`
+- **Freeze Timestamp:** `2026-08-27T17:59:49.327858+00:00`
 - **Correction Policy:** `issue_correction_manifest_for_label_changes`
 - **Manifest Path:** [`reports/data/gold_freeze_manifest.yaml`](data/gold_freeze_manifest.yaml)
 
@@ -113,9 +113,9 @@
 
 ## 8. Zero-Leakage Data Partitioning
 
-- **Train Partition:** `2,134` conversations (50.0%)
-- **Dev Partition:** `1,067` conversations (25.0%)
-- **Test Partition:** `1,068` conversations (25.0%)
+- **Train Partition:** `2,502` conversations (50.0%)
+- **Dev Partition:** `1,251` conversations (25.0%)
+- **Test Partition:** `1,251` conversations (25.0%)
 - **Leakage Prevention:** Group-split on `conversation_id` and disjoint speaker IDs guarantees zero turn or speaker contamination across train/dev/test.
 
 ---

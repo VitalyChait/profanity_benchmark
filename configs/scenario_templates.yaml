@@ -58,3 +58,36 @@ templates:
     turns_max: 8
     language_mode: english_led_code_switch
     description: English-led code-switch with identity attack onset
+
+  - template_id: adversarial_algospeak_bypass
+    platform_style: gaming_chat
+    transition_pattern: algospeak_obfuscation
+    harm_type: targeted_insult
+    turns_min: 4
+    turns_max: 8
+    description: High-difficulty obfuscated harassment with leetspeak, euphemisms, and delimiter masking
+
+  - template_id: false_positive_hype_banter
+    platform_style: gaming_chat
+    transition_pattern: intense_hype_false_alarm
+    harm_type: null
+    turns_min: 4
+    turns_max: 8
+    description: High-difficulty over-moderation stress test featuring intense swear words in purely celebratory and affiliative gaming context
+
+  - template_id: covert_social_exclusion
+    platform_style: group_chat
+    transition_pattern: covert_exclusion
+    harm_type: exclusion_coercion
+    turns_min: 5
+    turns_max: 10
+    description: High-difficulty under-moderation stress test with targeted cyberbullying and social exclusion without dictionary swear words
+
+  - template_id: causal_context_flip_threat
+    platform_style: direct_messaging
+    transition_pattern: causal_context_flip
+    harm_type: threat_intimidation
+    turns_min: 4
+    turns_max: 8
+    description: Extreme difficulty multi-turn escalation where surface-ambiguous turns flip from benign to intimidation based on prior context
+

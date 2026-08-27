@@ -1,7 +1,7 @@
 # YouthEscalateBench Evaluation & Multi-LLM Causal Report
 
 **Benchmark Version:** `0.1.1`  
-**Evaluated Models:** `1` (LLM Judges, Ensembles & Baselines)  
+**Evaluated Models:** `0` (LLM Judges, Ensembles & Baselines)  
 **Context Conditions:** `current_turn_only` (Turn Only), `prev_plus_current` (Prev + Turn), `full_prefix` (Full Prefix)
 
 ---
@@ -18,7 +18,6 @@
 
 | Model / Scorer | Family | Isolated Turn AUPRC (AUROC) | Prev + Turn AUPRC (AUROC) | Full Prefix AUPRC (AUROC) | $\Delta$ AUPRC | N |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: |
-| **Rule Based Lexicon** | `Custom` | 0.000 (—) | 0.000 (—) | **0.000** (—) | 0.000 | 0 |
 
 ---
 
@@ -59,7 +58,7 @@
 
 ## 7. LLM Error Diagnostics Summary
 
-Identified **403 total failure cases** across all evaluated LLMs.
+Identified **0 total failure cases** across all evaluated LLMs.
 
 ---
 

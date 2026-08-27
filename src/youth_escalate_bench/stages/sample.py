@@ -128,8 +128,9 @@ def run_stage_generate(config: dict[str, Any], input_dir: Path, output_dir: Path
     import random
 
     seed = config.get("random_seed", 42)
+    diff_level = str(config.get("difficulty_level", "standard")).lower()
     random.Random(seed)
-    generator = SyntheticDialogueGenerator(seed=seed)
+    generator = SyntheticDialogueGenerator(seed=seed, difficulty_level=diff_level)
     count = config.get("plans_per_template", 2)
     plans_path = output_dir / "scenario_plans.jsonl"
 
@@ -152,6 +153,7 @@ def run_stage_generate(config: dict[str, Any], input_dir: Path, output_dir: Path
                     "description": template.get("description", ""),
                     "source_tier": SourceTier.STAGED.value,
                     "collection_status": "pending_recruitment",
+                    "difficulty_level": diff_level,
                 }
                 f.write(json.dumps(plan) + "\n")
                 written += 1

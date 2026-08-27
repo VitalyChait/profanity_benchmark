@@ -236,6 +236,13 @@ def ingest_data_command(
     help="Example selection strategy: 'auto', 'difficulty', 'random', or 'stratified'.",
 )
 @click.option(
+    "--difficulty-level",
+    "difficulty_level",
+    type=click.Choice(["standard", "hard", "extreme", "adversarial"]),
+    default="standard",
+    help="Benchmark difficulty tier: 'standard', 'hard', 'extreme', or 'adversarial'.",
+)
+@click.option(
     "--rag",
     is_flag=True,
     default=False,
@@ -262,6 +269,7 @@ def pipeline_command(
     max_samples: int | None = None,
     seed: int | None = None,
     sample_strategy: str = "auto",
+    difficulty_level: str = "standard",
     rag: bool = False,
     rag_compare: bool = False,
 ) -> None:
@@ -299,6 +307,7 @@ def pipeline_command(
         sample_strategy=sample_strategy,
         enable_rag=rag,
         rag_compare=rag_compare,
+        difficulty_level=difficulty_level,
     )
     if not success:
         raise SystemExit(1)

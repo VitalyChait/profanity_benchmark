@@ -314,6 +314,7 @@ def run_evaluate(config: dict[str, Any], input_dir: Path, output_dir: Path) -> d
         sample_strategy=config.get("sample_strategy", "auto"),
         enable_rag=enable_rag,
         rag_compare=rag_compare,
+        difficulty_level=config.get("difficulty_level", "standard"),
     )
 
     meta = write_evaluation_bundle(bundle, output_dir)

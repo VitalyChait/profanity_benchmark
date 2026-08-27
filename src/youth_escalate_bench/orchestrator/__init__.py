@@ -418,6 +418,7 @@ class PipelineRunner:
         sample_strategy: str = "auto",
         enable_rag: bool = False,
         rag_compare: bool = False,
+        difficulty_level: str = "standard",
     ) -> bool:
         """Execute selected range of pipeline steps with controllable seed and sampling strategy."""
         all_ids = [s["id"] for s in ORDERED_STEPS]
@@ -487,8 +488,12 @@ class PipelineRunner:
                 overrides["random_seed"] = seed
             if s["id"] == "stage_generate":
                 overrides["plans_per_template"] = active_plans
+                if difficulty_level:
+                    overrides["difficulty_level"] = difficulty_level
             elif s["id"] == "evaluate":
                 overrides["max_samples"] = active_max_samples
+                if difficulty_level:
+                    overrides["difficulty_level"] = difficulty_level
                 if sample_strategy != "auto":
                     overrides["sample_strategy"] = sample_strategy
                 if enable_rag:
@@ -603,6 +608,14 @@ Examples:
         help="Example selection strategy: 'auto' (difficulty prioritized if available), 'difficulty' (hard samples), 'random' (pure seeded random selection), 'stratified' (balanced harm labels).",
     )
     parser.add_argument(
+        "--difficulty-level",
+        "--difficulty",
+        choices=["standard", "hard", "extreme", "adversarial"],
+        default="standard",
+        dest="difficulty_level",
+        help="Benchmark difficulty tier: 'standard' (balanced baseline), 'hard' (high-FP hype & covert exclusion), 'extreme' (heavy algospeak obfuscation), 'adversarial' (causal context flips).",
+    )
+    parser.add_argument(
         "--rag",
         action="store_true",
         help="Enable dynamic slang and pragmatics RAG retrieval for LLM moderation.",
@@ -660,6 +673,7 @@ Examples:
         sample_strategy=args.sample_strategy,
         enable_rag=args.rag,
         rag_compare=args.rag_compare,
+        difficulty_level=args.difficulty_level,
     )
 
     sys.exit(0 if success else 1)

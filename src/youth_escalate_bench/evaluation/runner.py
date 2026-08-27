@@ -61,6 +61,7 @@ class EvaluationBundle:
     enable_rag: bool = False
     rag_compare: bool = False
     cache_stats: dict[str, Any] = field(default_factory=dict)
+    difficulty_level: str = "standard"
 
 
 def select_evaluation_pairs(
@@ -70,6 +71,7 @@ def select_evaluation_pairs(
     difficulty_index: DifficultyIndex | None = None,
     prioritize_hard_samples: bool = True,
     sample_strategy: str = "auto",
+    difficulty_level: str = "standard",
 ) -> list[tuple[InferenceRequest, bool]]:
     """Deterministically select evaluation examples using a controllable seed and strategy.
 
@@ -112,17 +114,22 @@ def select_evaluation_pairs(
         return selected
 
     # Strategy: difficulty (prioritize hardest, break ties & sub-sample using controllable seed)
-    if difficulty_index and prioritize_hard_samples:
+    if (difficulty_index and prioritize_hard_samples) or (
+        difficulty_level.lower() in ("hard", "extreme", "adversarial") and prioritize_hard_samples
+    ):
+        idx = difficulty_index or DifficultyIndex()
         # Deterministically shuffle before stable sort so that equal-difficulty ties
         # are broken according to the controllable seed
         shuffled = list(pairs)
         rng.shuffle(shuffled)
         shuffled.sort(
             key=lambda p: score_request_difficulty(
-                difficulty_index,
+                idx,
                 p[0].conversation_id,
                 p[0].current_turn_id,
                 p[0].turns[-1].text if p[0].turns else "",
+                gold_actionable=p[1],
+                difficulty_level=difficulty_level,
             ),
             reverse=True,
         )
@@ -165,6 +172,7 @@ def run_evaluation(
     sample_strategy: str = "auto",
     enable_rag: bool = False,
     rag_compare: bool = False,
+    difficulty_level: str = "standard",
 ) -> EvaluationBundle:
     from concurrent.futures import ThreadPoolExecutor
 
@@ -176,6 +184,7 @@ def run_evaluation(
         sample_strategy=sample_strategy,
         enable_rag=enable_rag,
         rag_compare=rag_compare,
+        difficulty_level=difficulty_level,
     )
 
     # Pre-collect labeled inference requests per condition with controllable seed selection
@@ -216,6 +225,7 @@ def run_evaluation(
             difficulty_index=difficulty_index,
             prioritize_hard_samples=prioritize_hard_samples,
             sample_strategy=sample_strategy,
+            difficulty_level=difficulty_level,
         )
 
         eval_logger.info(
@@ -226,6 +236,7 @@ def run_evaluation(
             seed=seed,
             sample_strategy=sample_strategy,
             prioritize_hard_samples=prioritize_hard_samples,
+            difficulty_level=difficulty_level,
         )
 
         target_requests[condition] = selected_pairs
@@ -344,6 +355,7 @@ def evaluate_from_parquet(
     sample_strategy: str = "auto",
     enable_rag: bool = False,
     rag_compare: bool = False,
+    difficulty_level: str = "standard",
 ) -> EvaluationBundle:
     conversations = read_conversations(parquet_path)
     labels = load_labels(labels_path)
@@ -359,6 +371,7 @@ def evaluate_from_parquet(
         sample_strategy=sample_strategy,
         enable_rag=enable_rag,
         rag_compare=rag_compare,
+        difficulty_level=difficulty_level,
     )
 
 

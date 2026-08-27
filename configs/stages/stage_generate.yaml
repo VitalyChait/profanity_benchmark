@@ -3,3 +3,4 @@ benchmark_version: "0.1.1"
 random_seed: 42
 templates_path: configs/scenario_templates.yaml
 plans_per_template: 2
+difficulty_level: standard
