@@ -58,6 +58,9 @@ class EvaluationBundle:
     difficulty_index: DifficultyIndex | None = None
     seed: int = 42
     sample_strategy: str = "auto"
+    enable_rag: bool = False
+    rag_compare: bool = False
+    cache_stats: dict[str, Any] = field(default_factory=dict)
 
 
 def select_evaluation_pairs(
@@ -160,13 +163,20 @@ def run_evaluation(
     difficulty_index: DifficultyIndex | None = None,
     prioritize_hard_samples: bool = True,
     sample_strategy: str = "auto",
+    enable_rag: bool = False,
+    rag_compare: bool = False,
 ) -> EvaluationBundle:
     from concurrent.futures import ThreadPoolExecutor
 
     import structlog
 
     eval_logger = structlog.get_logger()
-    bundle = EvaluationBundle(seed=seed, sample_strategy=sample_strategy)
+    bundle = EvaluationBundle(
+        seed=seed,
+        sample_strategy=sample_strategy,
+        enable_rag=enable_rag,
+        rag_compare=rag_compare,
+    )
 
     # Pre-collect labeled inference requests per condition with controllable seed selection
     target_requests: dict[ContextCondition, list[tuple[InferenceRequest, bool]]] = {}
@@ -315,6 +325,10 @@ def run_evaluation(
             conversations=conversations,
         )
 
+    from youth_escalate_bench.cache import get_default_llm_cache
+
+    bundle.cache_stats = get_default_llm_cache().stats()
+
     return bundle
 
 
@@ -328,6 +342,8 @@ def evaluate_from_parquet(
     difficulty_index: DifficultyIndex | None = None,
     prioritize_hard_samples: bool = True,
     sample_strategy: str = "auto",
+    enable_rag: bool = False,
+    rag_compare: bool = False,
 ) -> EvaluationBundle:
     conversations = read_conversations(parquet_path)
     labels = load_labels(labels_path)
@@ -341,6 +357,8 @@ def evaluate_from_parquet(
         difficulty_index=difficulty_index,
         prioritize_hard_samples=prioritize_hard_samples,
         sample_strategy=sample_strategy,
+        enable_rag=enable_rag,
+        rag_compare=rag_compare,
     )
 
 
@@ -359,6 +377,11 @@ def write_evaluation_bundle(bundle: EvaluationBundle, output_dir: Path) -> dict[
     results_path = output_dir / "evaluation_results.yaml"
     with results_path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(results_data, f)
+
+    # Export cache stats if present
+    cache_path = output_dir / "cache_stats.yaml"
+    with cache_path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(bundle.cache_stats, f)
 
     import json
 
@@ -380,11 +403,14 @@ def write_evaluation_bundle(bundle: EvaluationBundle, output_dir: Path) -> dict[
             )
 
     return {
-        "output_files": ["evaluation_results.yaml", "predictions.jsonl"],
+        "output_files": ["evaluation_results.yaml", "predictions.jsonl", "cache_stats.yaml"],
         "metadata": {
             "result_count": len(bundle.results),
             "predictions": len(bundle.predictions),
             "random_seed": bundle.seed,
             "sample_strategy": bundle.sample_strategy,
+            "enable_rag": bundle.enable_rag,
+            "rag_compare": bundle.rag_compare,
+            "cache_stats": bundle.cache_stats,
         },
     }

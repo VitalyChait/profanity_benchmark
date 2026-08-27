@@ -10,7 +10,7 @@ This document synthesizes the status of the entire project across all documentat
 +-----------------------------------------------------------------------------------+
 | Stage / Area                   | Implementation Status     | Validation Status     |
 +-----------------------------------------------------------------------------------+
-| Phase 0: System Architecture   | [x] 100% COMPLETE         | [x] 146/146 Pytest Pass|
+| Phase 0: System Architecture   | [x] 100% COMPLETE         | [x] 156/156 Pytest Pass|
 | Phase 1: Governance & Audit    | [x] 100% COMPLETE         | [x] Gate Passed (14/14)|
 | Phase 2: Pilot Pipeline        | [x] 100% Code Complete    | [ ] Live Annotators   |
 | Phase 3: Data Construction     | [x] 100% COMPLETE (79k+)  | [x] 14 Sources Ingest |
@@ -18,6 +18,7 @@ This document synthesizes the status of the entire project across all documentat
 | Phase 5: Multi-LLM Evaluation  | [x] 100% COMPLETE (12 Mod)| [x] Priority Sampling |
 | Phase 6: Reporting & Viz       | [x] 100% COMPLETE         | [x] Auto Infographics |
 | Phase 7: Agentic Discovery Loop| [x] 100% Code Complete    | [x] Autonomous Scout  |
+| Phase 8: Dynamic RAG & Caching | [x] 100% COMPLETE         | [x] Benchmarking Lift |
 | Pre-Release Compliance & Legal | [x] Documentation Ready   | [ ] IRB Sign-Off      |
 | Extended Research Tracks (2&3) | [ ] Planned Post-Bench    | [ ] Research Roadmap  |
 +-----------------------------------------------------------------------------------+
@@ -79,6 +80,12 @@ This document synthesizes the status of the entire project across all documentat
 - [x] **Unified Profanity & Slur Database (`yeb profanity-check`, `yeb lexicon-stats`)**: 2,508 terms with severity ratings (1–4) and categories from 5 trusted sources.
 - [x] **Internal Evaluation Difficulty & Misclassification Ranking (`yeb difficulty-ranking`)**: Hard-sample priority queue and word vulnerability index.
 - [x] **Autonomous Agentic Discovery Framework (`Phase 7`)**: Implemented `ScoutAgent`, `VerifierAgent`, `GeneratorAgent`, `DiscoveryLoop`, and weekly GitHub Actions cron (`.github/workflows/agentic_discovery.yml`).
+- [x] **Dynamic RAG & Multi-Tier Token Caching Engine (`Phase 8`)**:
+  - `SlangRAGRetriever`: Multi-source grounding via local verified `ProfanityDatabase` (2,508 terms) and cached `UrbanDictionaryClient` neologisms.
+  - `RAGPromptedLLMScorer`: Real-time semantic injection of colloquial slang definitions into LLM moderation judges.
+  - `DiskLLMCache`: High-performance SHA256 prompt-level response cache conserving API tokens and eliminating redundant calls.
+  - CLI options: `--rag`, `--rag-compare`, `yeb cache-stats`, and `yeb cache-clear`.
+  - Automated RAG lift benchmarking report: [`reports/rag_impact_report.md`](reports/rag_impact_report.md).
 - [x] **Publication-Ready Documentation**: Completed [`docs/benchmark_card.md`](docs/benchmark_card.md), [`docs/datasheet.md`](docs/datasheet.md), and [`docs/license_audit_worksheet.md`](docs/license_audit_worksheet.md).
 
 ---

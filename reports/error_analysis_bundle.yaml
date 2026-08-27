@@ -1827,7 +1827,7 @@ by_model:
       diagnostic_reason: Covert hostility, harassment, or targeted escalation missed
         due to absence of overt swear keywords.
   llm_openrouter_mimo_v2_5:
-    display_name: Mimo V2.5
+    display_name: Mimo V2 5
     total_errors: 1
     false_positives: 1
     false_negatives: 0

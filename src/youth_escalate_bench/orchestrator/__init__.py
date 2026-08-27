@@ -416,6 +416,8 @@ class PipelineRunner:
         max_samples: int | None = None,
         seed: int | None = None,
         sample_strategy: str = "auto",
+        enable_rag: bool = False,
+        rag_compare: bool = False,
     ) -> bool:
         """Execute selected range of pipeline steps with controllable seed and sampling strategy."""
         all_ids = [s["id"] for s in ORDERED_STEPS]
@@ -451,10 +453,15 @@ class PipelineRunner:
 
         seed_info = f", Seed: {seed}" if seed is not None else ""
         strat_info = f", Strategy: {sample_strategy}" if sample_strategy != "auto" else ""
+        rag_info = (
+            ", RAG: ON"
+            if enable_rag and not rag_compare
+            else (", RAG Compare: ON" if rag_compare else "")
+        )
 
         if dry_run:
             print(
-                f"\n[DRY RUN] Planned Execution Sequence (Mode: {mode}, Max Samples: {active_max_samples}{seed_info}{strat_info}):"
+                f"\n[DRY RUN] Planned Execution Sequence (Mode: {mode}, Max Samples: {active_max_samples}{seed_info}{strat_info}{rag_info}):"
             )
             for idx, s in enumerate(steps_to_run, 1):
                 input_dir = self.resolve_input_dir(s)
@@ -469,7 +476,7 @@ class PipelineRunner:
 
         print("=" * 80)
         print(
-            f"YouthEscalateBench — Starting Pipeline ({len(steps_to_run)} steps queued, Mode: {mode}, Max Samples: {active_max_samples}{seed_info}{strat_info})"
+            f"YouthEscalateBench — Starting Pipeline ({len(steps_to_run)} steps queued, Mode: {mode}, Max Samples: {active_max_samples}{seed_info}{strat_info}{rag_info})"
         )
         print("=" * 80)
 
@@ -484,6 +491,10 @@ class PipelineRunner:
                 overrides["max_samples"] = active_max_samples
                 if sample_strategy != "auto":
                     overrides["sample_strategy"] = sample_strategy
+                if enable_rag:
+                    overrides["enable_rag"] = True
+                if rag_compare:
+                    overrides["rag_compare"] = True
             elif s["id"] == "report" and extended_report:
                 overrides["extended_report"] = True
 
@@ -592,6 +603,16 @@ Examples:
         help="Example selection strategy: 'auto' (difficulty prioritized if available), 'difficulty' (hard samples), 'random' (pure seeded random selection), 'stratified' (balanced harm labels).",
     )
     parser.add_argument(
+        "--rag",
+        action="store_true",
+        help="Enable dynamic slang and pragmatics RAG retrieval for LLM moderation.",
+    )
+    parser.add_argument(
+        "--rag-compare",
+        action="store_true",
+        help="Benchmark standard LLM moderation against RAG-augmented LLMs side-by-side.",
+    )
+    parser.add_argument(
         "--status", action="store_true", help="Show current pipeline checkpoint status table."
     )
     parser.add_argument(
@@ -637,6 +658,8 @@ Examples:
         max_samples=args.max_samples,
         seed=args.seed,
         sample_strategy=args.sample_strategy,
+        enable_rag=args.rag,
+        rag_compare=args.rag_compare,
     )
 
     sys.exit(0 if success else 1)

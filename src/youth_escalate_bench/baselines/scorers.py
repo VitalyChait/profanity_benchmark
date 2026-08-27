@@ -268,14 +268,35 @@ class PromptedLLMScorer(ModerationScorer):
         if cache_key in self._cache:
             return self._cache[cache_key]
 
+        from youth_escalate_bench.cache import get_default_llm_cache
         from youth_escalate_bench.llm import get_available_providers, get_default_router
+
+        prompt = self.build_prompt(request)
+        disk_cache = get_default_llm_cache()
+        cached_data = disk_cache.get(
+            self.provider or "auto", self.model or "default", prompt, self.prompt_template
+        )
+        if cached_data is not None:
+            prob = float(cached_data.get("harm_probability", 0.0))
+            harm_types = cached_data.get("harm_types", [])
+            out = _score_to_output(
+                prob, harm_types=harm_types, evidence_ids=[request.current_turn_id]
+            )
+            self._cache[cache_key] = out
+            return out
 
         active_providers = get_available_providers()
         if active_providers:
             router = get_default_router()
-            prompt = self.build_prompt(request)
             try:
                 data = router.call_llm_json(prompt=prompt, provider=self.provider, model=self.model)
+                disk_cache.set(
+                    self.provider or "auto",
+                    self.model or "default",
+                    prompt,
+                    self.prompt_template,
+                    data,
+                )
                 prob = float(data.get("harm_probability", 0.0))
                 harm_types = data.get("harm_types", [])
                 out = _score_to_output(
@@ -293,6 +314,48 @@ class PromptedLLMScorer(ModerationScorer):
         out = self._fallback_scorer.predict(request)
         self._cache[cache_key] = out
         return out
+
+
+PromptedLLMJudgeScorer = PromptedLLMScorer
+
+
+class RAGPromptedLLMScorer(PromptedLLMScorer):
+    """RAG-augmented LLM moderation judge with dynamic slang and pragmatics retrieval."""
+
+    def __init__(
+        self,
+        provider: str | None = None,
+        model: str | None = None,
+        name: str | None = None,
+        prompt_template: str | None = None,
+    ) -> None:
+        super().__init__(provider=provider, model=model, name=name, prompt_template=prompt_template)
+        from youth_escalate_bench.rag import get_default_rag_retriever
+
+        self.retriever = get_default_rag_retriever()
+        if name:
+            self.name = name
+        elif model:
+            clean_mdl = model.split("/")[-1].replace(":", "_").replace("-", "_").replace(".", "_")
+            self.name = f"rag_llm_{clean_mdl}"
+        else:
+            self.name = "rag_prompted_llm_judge"
+
+    def build_prompt(self, request: InferenceRequest) -> str:
+        turns_text = "\n".join(
+            f"[{t.speaker_id}] ({t.turn_id}): {t.text}" for t in request.causal_prefix()
+        )
+        defs = self.retriever.retrieve_context_for_request(request)
+        rag_block = self.retriever.format_rag_context_block(defs)
+        rag_section = f"\n\n{rag_block}" if rag_block else ""
+        return (
+            f"{self.prompt_template}{rag_section}\n\n"
+            f"Conversation:\n{turns_text}\n\n"
+            f"Target Turn ID to moderate: {request.current_turn_id}"
+        )
+
+
+RAGPromptedLLMJudgeScorer = RAGPromptedLLMScorer
 
 
 class EnsembleScorer(ModerationScorer):
@@ -389,7 +452,11 @@ def deduplicate_scorers(
     return deduped, removed
 
 
-def build_default_scorers(lexicon_path: Path | str) -> dict[str, ModerationScorer]:
+def build_default_scorers(
+    lexicon_path: Path | str,
+    enable_rag: bool = False,
+    rag_compare: bool = False,
+) -> dict[str, ModerationScorer]:
     """Construct baseline rule-based and configured LLM moderation scorers with deduplication."""
     lexicon = load_lexicon(lexicon_path)
     lex_raw = LexiconScorer(lexicon)
@@ -397,7 +464,6 @@ def build_default_scorers(lexicon_path: Path | str) -> dict[str, ModerationScore
     char_ngram = CharNgramTfidfScorer(lexicon)
     lex_context = ContextLexiconScorer(lexicon)
     rule_safeguard = RuleBasedSafeguardScorer(lexicon)
-    prompt_llm = PromptedLLMScorer()
     ensemble = EnsembleScorer(
         scorers=[lex_raw, lex_norm, char_ngram, lex_context, rule_safeguard],
         weights=[0.15, 0.15, 0.20, 0.20, 0.30],
@@ -409,9 +475,19 @@ def build_default_scorers(lexicon_path: Path | str) -> dict[str, ModerationScore
         char_ngram,
         lex_context,
         rule_safeguard,
-        prompt_llm,
         ensemble,
     ]
+
+    prompt_llm = PromptedLLMScorer()
+    rag_llm = RAGPromptedLLMScorer()
+
+    if rag_compare:
+        scorers.append(prompt_llm)
+        scorers.append(rag_llm)
+    elif enable_rag:
+        scorers.append(rag_llm)
+    else:
+        scorers.append(prompt_llm)
 
     from youth_escalate_bench.llm import (
         get_expanded_eval_targets,
@@ -421,7 +497,6 @@ def build_default_scorers(lexicon_path: Path | str) -> dict[str, ModerationScore
 
     eval_targets = get_expanded_eval_targets()
     if eval_targets:
-        # Determine effective model target of the primary prompt_llm
         cfg = get_llm_config()
         p_eff = prompt_llm.provider or cfg.get("selected_provider", "auto")
         m_eff = prompt_llm.model or (get_provider_model(p_eff) if p_eff else "default")
@@ -429,17 +504,42 @@ def build_default_scorers(lexicon_path: Path | str) -> dict[str, ModerationScore
 
         for provider, model in eval_targets:
             target_key = (provider.lower().strip(), model.lower().strip())
-            # Skip if already represented by primary prompt_llm_judge
-            if target_key == primary_target:
-                continue
             clean_id = model.split("/")[-1].replace(":", "_").replace("-", "_").replace(".", "_")
-            scorers.append(
-                PromptedLLMScorer(
-                    provider=provider,
-                    model=model,
-                    name=f"llm_{provider}_{clean_id}",
+
+            if rag_compare:
+                if target_key != primary_target:
+                    scorers.append(
+                        PromptedLLMScorer(
+                            provider=provider,
+                            model=model,
+                            name=f"llm_{provider}_{clean_id}",
+                        )
+                    )
+                scorers.append(
+                    RAGPromptedLLMScorer(
+                        provider=provider,
+                        model=model,
+                        name=f"rag_llm_{provider}_{clean_id}",
+                    )
                 )
-            )
+            elif enable_rag:
+                scorers.append(
+                    RAGPromptedLLMScorer(
+                        provider=provider,
+                        model=model,
+                        name=f"rag_llm_{provider}_{clean_id}",
+                    )
+                )
+            else:
+                if target_key == primary_target:
+                    continue
+                scorers.append(
+                    PromptedLLMScorer(
+                        provider=provider,
+                        model=model,
+                        name=f"llm_{provider}_{clean_id}",
+                    )
+                )
 
     scorers_dict = {s.name: s for s in scorers}
     deduped_scorers, _ = deduplicate_scorers(scorers_dict)

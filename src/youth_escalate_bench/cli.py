@@ -235,6 +235,18 @@ def ingest_data_command(
     default="auto",
     help="Example selection strategy: 'auto', 'difficulty', 'random', or 'stratified'.",
 )
+@click.option(
+    "--rag",
+    is_flag=True,
+    default=False,
+    help="Enable dynamic slang and pragmatics RAG retrieval for LLM moderation.",
+)
+@click.option(
+    "--rag-compare",
+    is_flag=True,
+    default=False,
+    help="Benchmark standard LLM moderation against RAG-augmented LLMs side-by-side.",
+)
 def pipeline_command(
     run_all: bool,
     resume: bool,
@@ -250,6 +262,8 @@ def pipeline_command(
     max_samples: int | None = None,
     seed: int | None = None,
     sample_strategy: str = "auto",
+    rag: bool = False,
+    rag_compare: bool = False,
 ) -> None:
     """Execute pipeline with automated checkpoints, state recovery, and error diagnostics."""
     from youth_escalate_bench.orchestrator import PipelineRunner
@@ -283,6 +297,8 @@ def pipeline_command(
         max_samples=max_samples,
         seed=seed,
         sample_strategy=sample_strategy,
+        enable_rag=rag,
+        rag_compare=rag_compare,
     )
     if not success:
         raise SystemExit(1)
@@ -801,6 +817,41 @@ def agent_discover_command(random_limit: int, terms: str | None) -> None:
     click.echo(f"Pairs Synthesized  : {res['contrastive_pairs_count']}")
     click.echo("Audit Digest       : reports/agentic_discovery_digest.md")
     click.echo("=" * 65)
+
+
+@main.command("cache-stats")
+def cache_stats_command() -> None:
+    """Display statistics for the persistent LLM response cache and token savings."""
+    from youth_escalate_bench.cache import get_default_llm_cache
+
+    cache = get_default_llm_cache()
+    stats = cache.stats()
+    hits = stats["cache_hits"]
+    misses = stats["cache_misses"]
+    total = hits + misses
+    hit_rate = (hits / total * 100.0) if total > 0 else 0.0
+
+    click.echo("=" * 65)
+    click.echo("YouthEscalateBench — LLM Response Cache & Token Savings")
+    click.echo("=" * 65)
+    click.echo(f"Cache Location      : {cache.cache_dir}")
+    click.echo(f"Cached Entries      : {stats['cached_entries']:,}")
+    click.echo(f"Cache Hits          : {hits:,}")
+    click.echo(f"Cache Misses        : {misses:,}")
+    click.echo(f"Cache Hit Rate      : {hit_rate:.1f}%")
+    click.echo(f"Tokens Saved        : {stats['tokens_saved']:,}")
+    click.echo(f"Est. Cost Saved     : ${stats['estimated_cost_usd_saved']:.4f} USD")
+    click.echo("=" * 65)
+
+
+@main.command("cache-clear")
+def cache_clear_command() -> None:
+    """Clear the persistent LLM response cache and reset token savings stats."""
+    from youth_escalate_bench.cache import get_default_llm_cache
+
+    cache = get_default_llm_cache()
+    deleted = cache.clear()
+    click.echo(f"✓ Cleared {deleted} cached prediction entries and reset token stats.")
 
 
 if __name__ == "__main__":

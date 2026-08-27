@@ -281,8 +281,11 @@ def run_evaluate(config: dict[str, Any], input_dir: Path, output_dir: Path) -> d
         "conversations_threaded.parquet",
     )
 
+    enable_rag = bool(config.get("enable_rag", False) or config.get("rag", False))
+    rag_compare = bool(config.get("rag_compare", False))
+
     lexicon_path = Path(config.get("lexicon_path", "configs/profanity_lexicon.txt"))
-    scorers = build_default_scorers(lexicon_path)
+    scorers = build_default_scorers(lexicon_path, enable_rag=enable_rag, rag_compare=rag_compare)
 
     condition_names = config.get(
         "conditions",
@@ -309,6 +312,8 @@ def run_evaluate(config: dict[str, Any], input_dir: Path, output_dir: Path) -> d
         difficulty_index=prior_difficulty,
         prioritize_hard_samples=config.get("prioritize_hard_samples", True),
         sample_strategy=config.get("sample_strategy", "auto"),
+        enable_rag=enable_rag,
+        rag_compare=rag_compare,
     )
 
     meta = write_evaluation_bundle(bundle, output_dir)
