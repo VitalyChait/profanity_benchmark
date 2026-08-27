@@ -31,7 +31,7 @@ class ConversationRecord(BaseModel):
     platform_style: str
     language_mode: str = "english"
     turns: Annotated[list[StoredTurn], Field(min_length=1)]
-    benchmark_version: str = "0.1.1"
+    benchmark_version: str = "0.1.2"
     metadata: Annotated[dict[str, Any], Field(default_factory=dict)]
 
     @model_validator(mode="after")

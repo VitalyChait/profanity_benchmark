@@ -1,6 +1,6 @@
 # YouthEscalateBench Evaluation & Multi-LLM Causal Report
 
-**Benchmark Version:** `0.1.1`  
+**Benchmark Version:** `0.1.2`  
 **Evaluated Models:** `0` (LLM Judges, Ensembles & Baselines)  
 **Context Conditions:** `current_turn_only` (Turn Only), `prev_plus_current` (Prev + Turn), `full_prefix` (Full Prefix)
 

@@ -1,7 +1,7 @@
 # Annotation Guidelines v0.1
 
 **YouthEscalateBench** — draft for taxonomy panel review  
-**Version:** 0.1.1 | **Date:** 2026-08-05
+**Version:** 0.1.2 | **Date:** 2026-08-05
 
 ## 1. Purpose
 

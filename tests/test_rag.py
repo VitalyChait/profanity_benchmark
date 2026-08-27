@@ -56,7 +56,7 @@ def test_rag_retrieval_and_block_formatting() -> None:
     )
 
     req = InferenceRequest(
-        benchmark_version="0.1.1",
+        benchmark_version="0.1.2",
         conversation_id="conv_rag_01",
         current_turn_id="t2",
         platform_style=PlatformStyle.GAMING_CHAT,
@@ -102,7 +102,7 @@ def test_rag_llm_scorer_prompt_construction() -> None:
     )
 
     req = InferenceRequest(
-        benchmark_version="0.1.1",
+        benchmark_version="0.1.2",
         conversation_id="conv_rag_02",
         current_turn_id="t1",
         platform_style=PlatformStyle.GAMING_CHAT,

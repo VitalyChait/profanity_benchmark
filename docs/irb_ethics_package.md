@@ -1,7 +1,7 @@
 # IRB / Ethics Submission Package Draft
 
 **Project:** YouthEscalateBench — Dynamic Multi-Turn Youth-Safeguarding Benchmark  
-**Version:** 0.1.1 draft  
+**Version:** 0.1.2 draft  
 **Status:** For institutional review — not yet submitted
 
 ## 1. Study summary

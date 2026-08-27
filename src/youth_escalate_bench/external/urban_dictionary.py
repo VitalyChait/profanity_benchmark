@@ -55,7 +55,7 @@ class UrbanDictionaryClient:
         base_url: str | None = None,
         timeout: float = 12.0,
         cache_dir: Path | str | None = None,
-        user_agent: str = "YouthEscalateBench/0.1.1 (+https://github.com/VitalyChait/profanity_benchmark)",
+        user_agent: str = "YouthEscalateBench/0.1.2 (+https://github.com/VitalyChait/profanity_benchmark)",
     ) -> None:
         raw_url = base_url or os.getenv("URBAN_DICTIONARY_API_URL", DEFAULT_API_URL)
         self.base_url = raw_url.rstrip("/")

@@ -88,7 +88,7 @@
       "type": "array"
     },
     "benchmark_version": {
-      "default": "0.1.1",
+      "default": "0.1.2",
       "title": "Benchmark Version",
       "type": "string"
     },
