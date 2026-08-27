@@ -1,5 +1,5 @@
 # YouthEscalateBench Unified Profanity & Slur Lexicon
-# Total compiled entries: 2508
+# Total compiled entries: 2826
 # ----------------------------------------------------
 # Section 1: Core Benchmark Seed Words
 # ----------------------------------------------------
@@ -23,10 +23,6 @@ scum
 garbage
 trash kid
 hard-stuck
-
-# ----------------------------------------------------
-# Section 2: Ingested Trusted Sources (Google, dsojevic, LDNOOBW, HurtLex, HateCheck)
-# ----------------------------------------------------
 1man1jar
 2 girls 1 cup
 2g1c
@@ -2515,3 +2511,325 @@ zippocat
 zoophilia
 אגוטיזם
 ὕβρις
+
+# ----------------------------------------------------
+# Section 2: Ingested Trusted Sources (Google, dsojevic, LDNOOBW, HurtLex, HateCheck)
+# ----------------------------------------------------
+*damn
+*dyke
+*fuck*
+*shit*
+@$$
+ahole
+amcik
+andskota
+arschloch
+arse*
+ash0le
+ash0les
+ashole
+asholes
+ass monkey
+assh0le
+assh0lez
+assholz
+assrammer
+ayir
+azzhole
+b!+ch
+b00b*
+bassterds
+bastards
+bastardz
+basterds
+basterdz
+bi7ch
+bitch*
+boffing
+bollock*
+boosted
+bottom frag
+buttwipe
+c0cks
+c0k
+cabron
+cap
+cawks
+cazzo
+chraa
+chuj
+clowned
+clutch
+cnts
+cntz
+cock*
+cock-head
+cook him
+cooked
+copium
+corn
+cracked
+crash out
+cunt*
+cuntz
+d1e
+d4mn
+daygo
+dead weight
+deadass
+dego
+del account
+delete account
+dick*
+diff
+dike*
+dild0
+dild0s
+dilld0
+dilld0s
+dogwater
+dominatricks
+dominatrics
+dupa
+dziwka
+ego peeker
+ejackulate
+ekrem*
+ekto
+enculer
+enema
+faen
+fag*
+fag1t
+faget
+fagg1t
+fagit
+fagz
+faig
+faigs
+fanculo
+feces
+feeder
+feg
+felcher
+ficken
+fitt*
+flikker
+flipping the bird
+foreskin
+fotze
+fu(*
+fuk*
+fukah
+fuken
+fukin
+fukkah
+fukken
+fukking
+futkretzn
+g00k
+game end
+gapped
+griefing
+gtfo
+guiena
+gyatt
+h00r
+h0ar
+h0r
+h0re
+h4x0r
+hardstuck
+hells
+helvete
+hoer*
+hoor
+hoore
+huevon
+hui
+injun
+inting
+japs
+jisim
+jiss
+k1ll
+kanker*
+klootzak
+kms
+knobs
+knobz
+knulle
+kuk
+kuksuger
+kunts
+kuntz
+kurac
+kurwa
+kusi*
+kyrpa*
+le dollar bean
+lezzian
+lipshits
+lipshitz
+loozer
+mald
+mamhoon
+mascara
+masokist
+massterbait
+masstrbait
+masstrbate
+masterbaiter
+masterbates
+masturbat*
+merd*
+mibun
+monkleigh
+motha fucker
+motha fuker
+motha fukkah
+motha fukker
+mother fukah
+mother fuker
+mother fukkah
+mother fukker
+mouliewop
+muie
+mulkku
+muschi
+mutha fucker
+mutha fukah
+mutha fuker
+mutha fukkah
+mutha fukker
+n1gr
+nastt
+nazis
+nepesaurio
+nigger*
+nigger;
+nigur;
+niiger;
+niigr;
+no cap
+opps
+orafis
+orgasim;
+orgasum
+oriface
+orifice
+orifiss
+orospu
+packi
+packie
+packy
+pakie
+paky
+panini
+paska*
+pdf file
+peeenus
+peeenusss
+peenus
+peinus
+pen1s
+penas
+penis-breath
+penus
+penuus
+perse
+phuc
+phuker
+phukker
+picka
+pierdol*
+pillu*
+pimmel
+piss*
+pizda
+polac
+polack
+polak
+poontsee
+pos
+pr0n
+pr1c
+pr1ck
+pr1k
+preteen
+pula
+pule
+pussee
+puta
+puuke
+puuker
+qahbeh
+queef*
+qweir
+ratio
+rautenberg
+recktum
+rizz
+scank
+schaffer
+scheiss*
+schlampe
+schmuck
+seethe
+seggs
+sewerslide
+sh!t*
+sh1ter
+sh1ts
+sh1tter
+sh1tz
+sharmuta
+sharmute
+shipal
+shitz
+shyt
+shyte
+shytty
+shyty
+sigma
+skanck
+skankee
+skankey
+skanks
+skanky
+skibidi
+skribz
+skurwysyn
+slag
+slutty
+slutz
+sphencter
+spierdalaj
+stfu
+stoopid
+suka
+take a permanent sleep
+testicle*
+throwing
+titt*
+touch grass
+touch voltage
+trash ass
+uninstall
+va1jina
+vag1na
+vagiina
+vaj1na
+vajina
+vittu
+vullva
+w0p
+wank*
+waste of oxygen
+wetback*
+wh00r
+wichser
+wop*
+yed
+yt people
+zabourah

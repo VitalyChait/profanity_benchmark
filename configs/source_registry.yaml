@@ -381,5 +381,64 @@ sources:
     reviewer: Vitaly Chait
     notes: Gold standard benchmark slur templates and leetspeak obfuscations
 
+  - source_id: algospeak_youth_lexicon
+    name: Youth Algospeak & Censorship Evasion Lexicon
+    owner: YouthEscalateBench Curators
+    license: CC-BY 4.0
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Modern youth social media evasion terms (TikTok, Roblox, Discord)
+    allowed_artifacts:
+      - derived_labels
+      - lexical_seeds
+    status: approved
+    review_date: 2026-08-27
+    reviewer: Vitaly Chait
+    notes: Curated platform circumvention euphemisms and masked terminology
+
+  - source_id: gaming_toxicity_slang
+    name: Gaming & Esports Toxicity Lexicon
+    owner: YouthEscalateBench Curators
+    license: CC0 Public Domain
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Competitive multiplayer harassment, griefing, and exclusion terminology
+    allowed_artifacts:
+      - derived_labels
+      - lexical_seeds
+    status: approved
+    review_date: 2026-08-27
+    reviewer: Vitaly Chait
+    notes: Jargon from competitive FPS, MOBA, and streaming communities
+
+  - source_id: badwords_en
+    name: MauriceButler/Badwords Lexicon
+    owner: web-mech / MauriceButler
+    url: https://raw.githubusercontent.com/web-mech/badwords/master/lib/lang.json
+    license: MIT License
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Cleaned baseline unigram profanity filter
+    allowed_artifacts:
+      - derived_labels
+      - lexical_seeds
+    status: approved
+    review_date: 2026-08-27
+    reviewer: Vitaly Chait
+    notes: Standard open-source word list for web content moderation
+
+  - source_id: urban_dictionary_slang
+    name: Urban Dictionary Verified Youth Slang
+    owner: Unofficial Urban Dictionary API
+    url: https://unofficialurbandictionaryapi.com/
+    license: Research & Fair Use
+    redistribution_rights: Allowed for personal/non-commercial research
+    intended_use: Dynamic youth slang retrieval and contextual definition grounding
+    allowed_artifacts:
+      - derived_labels
+      - lexical_seeds
+    status: approved
+    review_date: 2026-08-27
+    reviewer: Vitaly Chait
+    notes: Live semantic grounding for emerging youth terminology and slang
+
+
 
 

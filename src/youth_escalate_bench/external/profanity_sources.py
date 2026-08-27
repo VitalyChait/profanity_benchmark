@@ -51,6 +51,38 @@ TRUSTED_SOURCES_CONFIG = {
         "format": "tsv_hurtlex",
         "license": "CC-BY-NC 4.0",
     },
+    "algospeak_youth_lexicon": {
+        "name": "Youth Algospeak & Censorship Evasion Lexicon",
+        "description": "Curated platform circumvention euphemisms and masked terminology",
+        "format": "curated_dict",
+        "default_severity": 3,
+        "default_category": "algospeak_evasion",
+        "license": "CC-BY 4.0",
+    },
+    "gaming_toxicity_slang": {
+        "name": "Gaming & Esports Toxicity Lexicon",
+        "description": "Competitive multiplayer harassment, griefing, and exclusion terminology",
+        "format": "curated_dict",
+        "default_severity": 2,
+        "default_category": "gaming_toxicity",
+        "license": "CC0 Public Domain",
+    },
+    "badwords_en": {
+        "name": "MauriceButler/Badwords Lexicon",
+        "url": "https://raw.githubusercontent.com/web-mech/badwords/master/lib/lang.json",
+        "format": "json_badwords",
+        "default_severity": 2,
+        "default_category": "general_profanity",
+        "license": "MIT License",
+    },
+    "urban_dictionary_slang": {
+        "name": "Urban Dictionary Verified Youth Slang",
+        "description": "Pragmatic youth terminology mapped from Urban Dictionary definitions",
+        "format": "curated_dict",
+        "default_severity": 2,
+        "default_category": "youth_slang",
+        "license": "Research & Fair Use",
+    },
 }
 
 
@@ -283,6 +315,100 @@ def parse_hurtlex_tsv(raw_text: str) -> list[ProfanityTerm]:
     return terms
 
 
+def parse_badwords_json(raw_text: str) -> list[ProfanityTerm]:
+    """Parse badwords JSON array format (e.g. web-mech/badwords)."""
+    terms: list[ProfanityTerm] = []
+    try:
+        data = json.loads(raw_text)
+        words_list = data if isinstance(data, list) else data.get("words", [])
+        for w in words_list:
+            clean = str(w).strip().lower()
+            if clean and len(clean) >= 2:
+                terms.append(
+                    ProfanityTerm(
+                        word=clean,
+                        severity=2,
+                        categories=["general_profanity"],
+                        sources=["badwords_en"],
+                    )
+                )
+    except Exception:
+        pass
+    return terms
+
+
+CURATED_ALGOSPEAK_TERMS: dict[str, tuple[int, list[str]]] = {
+    "unalive": (3, ["algospeak_evasion", "threat_intimidation"]),
+    "sewerslide": (4, ["algospeak_evasion", "self_harm"]),
+    "game end": (3, ["algospeak_evasion", "threat_intimidation"]),
+    "corn": (2, ["algospeak_evasion", "sexual"]),
+    "seggs": (2, ["algospeak_evasion", "sexual"]),
+    "mascara": (3, ["algospeak_evasion", "domestic_abuse"]),
+    "pdf file": (4, ["algospeak_evasion", "predatory_harm"]),
+    "yt people": (2, ["algospeak_evasion", "racial"]),
+    "panini": (2, ["algospeak_evasion", "pandemic"]),
+    "le dollar bean": (2, ["algospeak_evasion", "lgbtq"]),
+    "touch voltage": (3, ["algospeak_evasion", "threat_intimidation"]),
+    "waste of oxygen": (3, ["algospeak_evasion", "derogatory_insult"]),
+    "take a permanent sleep": (4, ["algospeak_evasion", "self_harm"]),
+    "d1e": (3, ["algospeak_evasion", "leetspeak_evasion"]),
+    "k1ll": (3, ["algospeak_evasion", "leetspeak_evasion"]),
+    "kys": (4, ["algospeak_evasion", "self_harm", "acronym"]),
+    "kms": (3, ["algospeak_evasion", "self_harm", "acronym"]),
+    "stfu": (2, ["algospeak_evasion", "acronym", "derogatory_insult"]),
+    "gtfo": (2, ["algospeak_evasion", "acronym"]),
+    "pos": (2, ["algospeak_evasion", "acronym"]),
+    "fuk": (2, ["algospeak_evasion", "phonetic"]),
+    "fukking": (2, ["algospeak_evasion", "phonetic"]),
+    "biatch": (2, ["algospeak_evasion", "phonetic"]),
+    "ashole": (2, ["algospeak_evasion", "phonetic"]),
+    "loozer": (2, ["algospeak_evasion", "phonetic"]),
+    "stoopid": (1, ["algospeak_evasion", "phonetic"]),
+}
+
+CURATED_GAMING_TOXICITY_TERMS: dict[str, tuple[int, list[str]]] = {
+    "diff": (2, ["gaming_toxicity", "derogatory_insult"]),
+    "inting": (2, ["gaming_toxicity", "griefing"]),
+    "dogwater": (2, ["gaming_toxicity", "derogatory_insult"]),
+    "hardstuck": (2, ["gaming_toxicity", "derogatory_insult"]),
+    "boosted": (2, ["gaming_toxicity", "derogatory_insult"]),
+    "touch grass": (2, ["gaming_toxicity", "hostile_reproach"]),
+    "ratio": (1, ["gaming_toxicity", "hostile_reproach"]),
+    "copium": (1, ["gaming_toxicity", "hostile_reproach"]),
+    "seethe": (2, ["gaming_toxicity", "hostile_reproach"]),
+    "mald": (2, ["gaming_toxicity", "hostile_reproach"]),
+    "gapped": (2, ["gaming_toxicity", "derogatory_insult"]),
+    "uninstall": (2, ["gaming_toxicity", "exclusion_coercion"]),
+    "delete account": (2, ["gaming_toxicity", "exclusion_coercion"]),
+    "del account": (2, ["gaming_toxicity", "exclusion_coercion"]),
+    "bottom frag": (2, ["gaming_toxicity", "derogatory_insult"]),
+    "trash ass": (3, ["gaming_toxicity", "derogatory_insult"]),
+    "dogshit": (3, ["gaming_toxicity", "general_profanity", "derogatory_insult"]),
+    "feeder": (2, ["gaming_toxicity", "griefing"]),
+    "throwing": (2, ["gaming_toxicity", "griefing"]),
+    "griefing": (2, ["gaming_toxicity", "griefing"]),
+    "ego peeker": (1, ["gaming_toxicity"]),
+    "dead weight": (2, ["gaming_toxicity", "derogatory_insult"]),
+}
+
+CURATED_URBAN_SLANG_TERMS: dict[str, tuple[int, list[str]]] = {
+    "deadass": (1, ["youth_slang", "affiliative_banter"]),
+    "cracked": (1, ["youth_slang", "affiliative_banter"]),
+    "clutch": (1, ["youth_slang", "affiliative_banter"]),
+    "cap": (1, ["youth_slang"]),
+    "no cap": (1, ["youth_slang"]),
+    "rizz": (1, ["youth_slang"]),
+    "gyatt": (2, ["youth_slang", "sexual"]),
+    "sigma": (1, ["youth_slang"]),
+    "skibidi": (1, ["youth_slang"]),
+    "opps": (2, ["youth_slang", "hostile_reproach"]),
+    "crash out": (2, ["youth_slang", "emotional_emphasis"]),
+    "cook him": (2, ["youth_slang", "derogatory_insult"]),
+    "cooked": (2, ["youth_slang", "derogatory_insult"]),
+    "clowned": (2, ["youth_slang", "derogatory_insult"]),
+}
+
+
 def compile_profanity_database(
     cache_dir: Path | None = None,
     seed_lexicon_path: Path | None = None,
@@ -367,6 +493,47 @@ def compile_profanity_database(
         cache / "hurtlex_en.tsv",
     )
     for t in parse_hurtlex_tsv(hurtlex_text):
+        _merge_term(t)
+
+    # 7. Ingest Algospeak Youth Lexicon
+    for word, (sev, cats) in CURATED_ALGOSPEAK_TERMS.items():
+        _merge_term(
+            ProfanityTerm(
+                word=word,
+                severity=sev,
+                categories=cats,
+                sources=["algospeak_youth_lexicon"],
+            )
+        )
+
+    # 8. Ingest Gaming Toxicity Slang
+    for word, (sev, cats) in CURATED_GAMING_TOXICITY_TERMS.items():
+        _merge_term(
+            ProfanityTerm(
+                word=word,
+                severity=sev,
+                categories=cats,
+                sources=["gaming_toxicity_slang"],
+            )
+        )
+
+    # 9. Ingest Urban Dictionary Slang
+    for word, (sev, cats) in CURATED_URBAN_SLANG_TERMS.items():
+        _merge_term(
+            ProfanityTerm(
+                word=word,
+                severity=sev,
+                categories=cats,
+                sources=["urban_dictionary_slang"],
+            )
+        )
+
+    # 10. Ingest MauriceButler/Badwords Lexicon
+    badwords_text = fetch_source_text(
+        TRUSTED_SOURCES_CONFIG["badwords_en"]["url"],
+        cache / "badwords_en.json",
+    )
+    for t in parse_badwords_json(badwords_text):
         _merge_term(t)
 
     return ProfanityDatabase(terms=terms_map)

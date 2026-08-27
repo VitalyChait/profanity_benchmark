@@ -6,8 +6,12 @@ from click.testing import CliRunner
 
 from youth_escalate_bench.cli import main
 from youth_escalate_bench.external.profanity_sources import (
+    CURATED_ALGOSPEAK_TERMS,
+    CURATED_GAMING_TOXICITY_TERMS,
+    CURATED_URBAN_SLANG_TERMS,
     ProfanityDatabase,
     ProfanityTerm,
+    parse_badwords_json,
     parse_dsojevic_json,
     parse_google_list,
     parse_hatecheck_placeholders,
@@ -77,6 +81,28 @@ EN3\tn\tqas\tno\tneutralword\tinclusive
     assert terms[0].severity == 3
     assert terms[1].word == "racist_slur"
     assert terms[1].severity == 4
+
+
+def test_parse_badwords_json() -> None:
+    raw = """["badword1", "badword2"]"""
+    terms = parse_badwords_json(raw)
+    assert len(terms) == 2
+    assert terms[0].word == "badword1"
+    assert terms[0].sources == ["badwords_en"]
+
+
+def test_curated_profanity_sources_structure() -> None:
+    assert len(CURATED_ALGOSPEAK_TERMS) >= 20
+    assert "unalive" in CURATED_ALGOSPEAK_TERMS
+    assert CURATED_ALGOSPEAK_TERMS["unalive"][0] == 3
+
+    assert len(CURATED_GAMING_TOXICITY_TERMS) >= 15
+    assert "dogwater" in CURATED_GAMING_TOXICITY_TERMS
+    assert "uninstall" in CURATED_GAMING_TOXICITY_TERMS
+
+    assert len(CURATED_URBAN_SLANG_TERMS) >= 10
+    assert "deadass" in CURATED_URBAN_SLANG_TERMS
+
 
 
 def test_profanity_database_operations(tmp_path: Path) -> None:
