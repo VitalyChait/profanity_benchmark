@@ -2,6 +2,9 @@
 
 import json
 import mimetypes
+import statistics
+import time
+from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -15,6 +18,7 @@ from youth_escalate_bench.evaluator.dashboard import (
     generate_predict_page_html,
     generate_service_dashboard_html,
 )
+from youth_escalate_bench.reporting.infographics import _get_display_name
 from youth_escalate_bench.schemas.inference import InferenceRequest, ModelOutput
 
 
@@ -50,6 +54,7 @@ class PredictHandler(BaseHTTPRequestHandler):
                 html_content = generate_predict_page_html(
                     host=self.server_host,
                     port=self.server_port,
+                    reports_dir=self.reports_dir,
                 )
                 self._send_bytes(200, html_content.encode("utf-8"), "text/html; charset=utf-8")
                 return
@@ -184,6 +189,178 @@ class PredictHandler(BaseHTTPRequestHandler):
 
         self.send_error(404, f"Resource not found: {path}")
 
+    _scorers_cache: dict[str, ModerationScorer] | None = None
+
+    @classmethod
+    def get_all_scorers(cls, lexicon_path: Path) -> dict[str, ModerationScorer]:
+        if cls._scorers_cache is None:
+            cand_paths = [
+                lexicon_path,
+                Path("data/processed/youth_profanity_lexicon.json"),
+                Path("configs/profanity_lexicon.txt"),
+                Path("configs/youth_slang_lexicon.yaml"),
+            ]
+            valid_path = lexicon_path
+            for p in cand_paths:
+                if p.exists():
+                    valid_path = p
+                    break
+            cls._scorers_cache = build_default_scorers(valid_path)
+        return cls._scorers_cache
+
+    def _resolve_scorers(self, req_model: Any, req_models: Any) -> list[tuple[str, ModerationScorer]]:
+        all_scorers = self.get_all_scorers(self.lexicon_path)
+
+        # Injected scorer override if neither model nor models was requested
+        if self.scorer is not None and not req_model and not req_models:
+            return [(getattr(self.scorer, "name", "custom_scorer"), self.scorer)]
+
+        is_all = False
+        targets: list[str] = []
+
+        if req_models is not None:
+            if isinstance(req_models, str):
+                if req_models.strip().lower() in ("all", "select_all", "select all", "*"):
+                    is_all = True
+                else:
+                    targets = [m.strip() for m in req_models.split(",") if m.strip()]
+            elif isinstance(req_models, list):
+                if any(str(m).strip().lower() in ("all", "select_all", "select all", "*") for m in req_models):
+                    is_all = True
+                else:
+                    targets = [str(m).strip() for m in req_models if str(m).strip()]
+        elif req_model is not None:
+            s_model = str(req_model).strip()
+            if s_model.lower() in ("all", "select_all", "select all", "*"):
+                is_all = True
+            else:
+                targets = [s_model]
+        else:
+            targets = ["lexicon_raw"]
+
+        if is_all:
+            return list(all_scorers.items())
+
+        resolved: list[tuple[str, ModerationScorer]] = []
+        for t in targets:
+            if t in all_scorers:
+                resolved.append((t, all_scorers[t]))
+            else:
+                found = False
+                for k, v in all_scorers.items():
+                    if t.lower() == k.lower() or t.lower() == _get_display_name(k).lower():
+                        resolved.append((k, v))
+                        found = True
+                        break
+                if not found and "lexicon_raw" in all_scorers and ("lexicon_raw", all_scorers["lexicon_raw"]) not in resolved:
+                    resolved.append(("lexicon_raw", all_scorers["lexicon_raw"]))
+
+        return resolved or list(all_scorers.items())[:1]
+
+    @staticmethod
+    def _predict_single_scorer(name: str, scorer: ModerationScorer, request: InferenceRequest) -> dict[str, Any]:
+        t0 = time.perf_counter()
+        try:
+            output = scorer.predict(request)
+            dur_ms = (time.perf_counter() - t0) * 1000.0
+            harm_p = float(output.harm_probability)
+            sev_probs = output.severity_probabilities or {}
+            dom_sev = max(sev_probs, key=sev_probs.get) if sev_probs else "safe"
+            provider = getattr(scorer, "provider", "Local Baseline") or "Local Baseline"
+
+            return {
+                "model_id": name,
+                "model_name": _get_display_name(name),
+                "provider": provider,
+                "harm_probability": round(harm_p, 4),
+                "actionable": bool(harm_p >= 0.5),
+                "dominant_severity": dom_sev,
+                "severity_probabilities": {k: round(v, 4) for k, v in sev_probs.items()},
+                "harm_types": {k: round(v, 4) for k, v in (output.harm_types or {}).items()},
+                "abstain": bool(output.abstain),
+                "latency_ms": round(dur_ms, 2),
+                "status": "success" if not output.abstain else "abstained",
+                "error": None,
+            }
+        except Exception as e:
+            dur_ms = (time.perf_counter() - t0) * 1000.0
+            return {
+                "model_id": name,
+                "model_name": _get_display_name(name),
+                "provider": getattr(scorer, "provider", "Local Baseline") or "Local Baseline",
+                "harm_probability": 0.0,
+                "actionable": False,
+                "dominant_severity": "unknown",
+                "severity_probabilities": {},
+                "harm_types": {},
+                "abstain": True,
+                "latency_ms": round(dur_ms, 2),
+                "status": "error",
+                "error": str(e),
+            }
+
+    @staticmethod
+    def _compute_multi_model_aggregation(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+        valid_items = [r for r in results.values() if r["status"] == "success" and not r["abstain"]]
+        if not valid_items:
+            valid_items = list(results.values())
+
+        probs = [r["harm_probability"] for r in valid_items]
+        flagged_models = [r["model_name"] for r in valid_items if r["actionable"]]
+        cleared_models = [r["model_name"] for r in valid_items if not r["actionable"]]
+
+        n_total = max(len(valid_items), 1)
+        n_flagged = len(flagged_models)
+        n_cleared = len(cleared_models)
+
+        mean_p = statistics.mean(probs) if probs else 0.0
+        median_p = statistics.median(probs) if probs else 0.0
+        std_p = statistics.stdev(probs) if len(probs) > 1 else 0.0
+        min_p = min(probs) if probs else 0.0
+        max_p = max(probs) if probs else 0.0
+
+        consensus_actionable = bool(n_flagged >= (n_total / 2.0))
+        majority_count = max(n_flagged, n_cleared)
+        agreement_rate = majority_count / float(n_total)
+
+        sev_sums: dict[str, float] = {}
+        for r in valid_items:
+            for s_key, s_val in r.get("severity_probabilities", {}).items():
+                sev_sums[s_key] = sev_sums.get(s_key, 0.0) + s_val
+        dominant_severity = max(sev_sums, key=sev_sums.get) if sev_sums else "safe"
+
+        divergence_level = "Low (High Consensus)" if agreement_rate >= 0.75 else "High (Divergent Context)"
+
+        if agreement_rate == 1.0:
+            if consensus_actionable:
+                synthesis = f"Unanimous consensus: All {n_total} models agreed this turn represents actionable harmful language (mean harm: {mean_p:.2f})."
+            else:
+                synthesis = f"Unanimous consensus: All {n_total} models cleared this turn as non-actionable benign conversation (mean harm: {mean_p:.2f})."
+        elif consensus_actionable:
+            synthesis = f"Consensus flagged: {n_flagged} of {n_total} models ({agreement_rate*100:.0f}%) classified this turn as actionable {dominant_severity}. Dissenting models scored it below 0.50 threshold."
+        else:
+            synthesis = f"Consensus cleared: {n_cleared} of {n_total} models ({agreement_rate*100:.0f}%) determined this turn is non-actionable banter. Elevated sensitivity triggers on flagging models were outweighed by contextual clearing."
+
+        return {
+            "consensus_actionable": consensus_actionable,
+            "verdict_label": "ACTIONABLE VIOLATION" if consensus_actionable else "BENIGN CONVERSATION",
+            "agreement_rate": round(agreement_rate, 4),
+            "agreement_percentage": round(agreement_rate * 100, 1),
+            "mean_harm_probability": round(mean_p, 4),
+            "median_harm_probability": round(median_p, 4),
+            "std_harm_probability": round(std_p, 4),
+            "min_harm_probability": round(min_p, 4),
+            "max_harm_probability": round(max_p, 4),
+            "dominant_severity": dominant_severity,
+            "models_evaluated_count": len(results),
+            "actionable_count": n_flagged,
+            "cleared_count": n_cleared,
+            "flagged_by": flagged_models,
+            "cleared_by": cleared_models,
+            "divergence_level": divergence_level,
+            "synthesis": synthesis,
+        }
+
     def do_HEAD(self) -> None:
         """Handle HEAD requests for health checks and asset validation."""
         self.do_GET()
@@ -197,24 +374,78 @@ class PredictHandler(BaseHTTPRequestHandler):
         body = self.rfile.read(length)
         try:
             data = json.loads(body)
+            if not isinstance(data, dict):
+                data = {}
+
+            req_model = data.get("model")
+            req_models = data.get("models")
+
+            # Determine multi-model mode
+            is_multi = False
+            if req_models is not None:
+                if isinstance(req_models, list) and len(req_models) > 1:
+                    is_multi = True
+                elif isinstance(req_models, str) and ("," in req_models or req_models.strip().lower() in ("all", "select_all", "select all", "*")):
+                    is_multi = True
+                elif isinstance(req_models, list) and any(str(m).strip().lower() in ("all", "select_all", "select all", "*") for m in req_models):
+                    is_multi = True
+            elif req_model is not None and str(req_model).strip().lower() in ("all", "select_all", "select all", "*"):
+                is_multi = True
+
             # Fill convenience defaults for interactive playground or partial requests
-            if isinstance(data, dict):
-                if "benchmark_version" not in data:
-                    data["benchmark_version"] = "0.1.2"
-                if "current_turn_id" not in data and data.get("turns"):
-                    data["current_turn_id"] = data["turns"][-1].get("turn_id", "t1")
-                if "platform_style" not in data:
-                    data["platform_style"] = "gaming_chat"
-                if "language_mode" not in data:
-                    data["language_mode"] = "english"
-                if "task" not in data:
-                    data["task"] = "current_harm"
+            if "benchmark_version" not in data:
+                data["benchmark_version"] = "0.1.2"
+            if "current_turn_id" not in data and data.get("turns"):
+                data["current_turn_id"] = data["turns"][-1].get("turn_id", "t1")
+            if "platform_style" not in data:
+                data["platform_style"] = "gaming_chat"
+            if "language_mode" not in data:
+                data["language_mode"] = "english"
+            if "task" not in data:
+                data["task"] = "current_harm"
 
             request = InferenceRequest.model_validate(data)
-            scorer = self.scorer or build_default_scorers(self.lexicon_path)["lexicon_raw"]
-            output = scorer.predict(request)
-            response = output.model_dump()
-            self._send_json(200, response)
+            scorers_to_run = self._resolve_scorers(req_model, req_models)
+
+            if not is_multi and len(scorers_to_run) == 1:
+                name, scorer = scorers_to_run[0]
+                single_res = self._predict_single_scorer(name, scorer, request)
+                response = {
+                    **single_res,
+                    "benchmark_version": request.benchmark_version,
+                    "conversation_id": request.conversation_id,
+                    "current_turn_id": request.current_turn_id,
+                    "task": request.task,
+                }
+                self._send_json(200, response)
+            else:
+                # Concurrent parallel multi-model execution
+                results_by_model: dict[str, dict[str, Any]] = {}
+                workers = min(32, max(1, len(scorers_to_run)))
+                with ThreadPoolExecutor(max_workers=workers) as pool:
+                    futures = {
+                        pool.submit(self._predict_single_scorer, s_name, s_obj, request): s_name
+                        for s_name, s_obj in scorers_to_run
+                    }
+                    for fut in futures:
+                        res = fut.result()
+                        results_by_model[res["model_id"]] = res
+
+                aggregation = self._compute_multi_model_aggregation(results_by_model)
+                target_text = request.turns[-1].text if request.turns else ""
+
+                response = {
+                    "mode": "multi_model",
+                    "benchmark_version": request.benchmark_version,
+                    "conversation_id": request.conversation_id,
+                    "current_turn_id": request.current_turn_id,
+                    "task": request.task,
+                    "target_text": target_text,
+                    "models_count": len(scorers_to_run),
+                    "aggregate": aggregation,
+                    "models": results_by_model,
+                }
+                self._send_json(200, response)
         except Exception as e:
             abstain = ModelOutput.create_abstention_output()
             self._send_json(422, {"error": str(e), "output": abstain.model_dump()})

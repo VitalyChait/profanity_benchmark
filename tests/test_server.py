@@ -47,6 +47,9 @@ def test_generate_service_dashboard_html() -> None:
     assert "setModelFilter" in html
     assert "setDashboardPreset" in html
     assert "testTurnInPlayground" in html
+    assert "dash-model-grid" in html
+    assert "dash-visual-verdict" in html
+    assert "renderPredictResponse" in html
 
 
 def test_server_health_check(live_server: tuple[str, int]) -> None:
@@ -92,6 +95,9 @@ def test_server_predict_get_html(live_server: tuple[str, int]) -> None:
     assert "Moderation API Sandbox (/predict)" in body
     assert "Live Response Payload" in body
     assert "Execute POST /predict Request" in body
+    assert "pred-model-grid" in body
+    assert "Select All" in body
+    assert "renderPredictResponse" in body
     conn.close()
 
 
@@ -234,3 +240,126 @@ def test_server_predict_post_invalid(live_server: tuple[str, int]) -> None:
     assert "output" in data
 
     conn.close()
+
+
+def test_server_predict_single_model(live_server: tuple[str, int]) -> None:
+    host, port = live_server
+    conn = HTTPConnection(host, port, timeout=5)
+
+    req_body = {
+        "request_id": "test_req_single",
+        "conversation_id": "test_conv_single",
+        "model": "lexicon_normalized",
+        "turns": [
+            {
+                "turn_id": "t1",
+                "speaker_id": "user1",
+                "role": "user",
+                "relative_time": "0s",
+                "text": "you are trash and useless",
+            }
+        ],
+    }
+    payload = json.dumps(req_body).encode("utf-8")
+    headers = {"Content-Type": "application/json", "Content-Length": str(len(payload))}
+
+    conn.request("POST", "/predict", body=payload, headers=headers)
+    res = conn.getresponse()
+    assert res.status == 200
+    data = json.loads(res.read().decode("utf-8"))
+    assert data["model_id"] == "lexicon_normalized"
+    assert "harm_probability" in data
+    assert "actionable" in data
+    assert "latency_ms" in data
+    conn.close()
+
+
+def test_server_predict_multi_model(live_server: tuple[str, int]) -> None:
+    host, port = live_server
+    conn = HTTPConnection(host, port, timeout=5)
+
+    req_body = {
+        "request_id": "test_req_multi",
+        "conversation_id": "test_conv_multi",
+        "models": ["lexicon_raw", "lexicon_normalized", "char_ngram_tfidf"],
+        "turns": [
+            {
+                "turn_id": "t1",
+                "speaker_id": "user1",
+                "role": "user",
+                "relative_time": "0s",
+                "text": "you are trash uninstall right now",
+            }
+        ],
+    }
+    payload = json.dumps(req_body).encode("utf-8")
+    headers = {"Content-Type": "application/json", "Content-Length": str(len(payload))}
+
+    conn.request("POST", "/predict", body=payload, headers=headers)
+    res = conn.getresponse()
+    assert res.status == 200
+    data = json.loads(res.read().decode("utf-8"))
+    assert data["mode"] == "multi_model"
+    assert data["models_count"] == 3
+    assert "aggregate" in data
+    agg = data["aggregate"]
+    assert "consensus_actionable" in agg
+    assert "agreement_rate" in agg
+    assert "mean_harm_probability" in agg
+    assert "synthesis" in agg
+    assert "models" in data
+    assert len(data["models"]) == 3
+    assert "lexicon_raw" in data["models"]
+    assert "lexicon_normalized" in data["models"]
+    assert "char_ngram_tfidf" in data["models"]
+    conn.close()
+
+
+def test_server_predict_multi_model_all_baselines(live_server: tuple[str, int]) -> None:
+    host, port = live_server
+    conn = HTTPConnection(host, port, timeout=10)
+
+    req_body = {
+        "request_id": "test_req_all_baselines",
+        "conversation_id": "test_conv_all_baselines",
+        "models": [
+            "lexicon_raw",
+            "lexicon_normalized",
+            "char_ngram_tfidf",
+            "lexicon_full_context",
+            "rule_based_safeguard",
+            "ensemble_moderator",
+        ],
+        "turns": [
+            {
+                "turn_id": "t1",
+                "speaker_id": "user1",
+                "role": "user",
+                "relative_time": "0s",
+                "text": "you are trash and useless uninstall right now",
+            }
+        ],
+    }
+    payload = json.dumps(req_body).encode("utf-8")
+    headers = {"Content-Type": "application/json", "Content-Length": str(len(payload))}
+
+    conn.request("POST", "/predict", body=payload, headers=headers)
+    res = conn.getresponse()
+    assert res.status == 200
+    data = json.loads(res.read().decode("utf-8"))
+    assert data["mode"] == "multi_model"
+    assert data["models_count"] == 6
+    assert "aggregate" in data
+    assert "consensus_actionable" in data["aggregate"]
+    assert "agreement_percentage" in data["aggregate"]
+    assert len(data["models"]) == 6
+    conn.close()
+
+
+def test_server_resolve_scorers_all() -> None:
+    handler = PredictHandler.__new__(PredictHandler)
+    handler.lexicon_path = Path("data/processed/youth_profanity_lexicon.json")
+    handler.scorer = None
+    scorers = handler._resolve_scorers(None, "all")
+    assert len(scorers) >= 30
+    assert any(s[0] == "lexicon_raw" for s in scorers)

@@ -234,6 +234,73 @@ def build_evaluated_models_catalog(
     }
 
 
+def generate_model_selector_component(models: list[dict[str, Any]], prefix: str = "pred") -> str:
+    """Generate model selection checklist toolbar with Select All and category filters."""
+    total_models = len(models)
+    total_baselines = sum(1 for m in models if m.get("provider") == "Local Baseline")
+    total_llms = total_models - total_baselines
+
+    checkbox_items = ""
+    for m in models:
+        m_id = m.get("id", "")
+        m_name = m.get("name", m_id)
+        prov = m.get("provider", "Local Baseline")
+        tier = m.get("tier", "")
+
+        prov_lower = prov.lower()
+        if "local" in prov_lower:
+            badge_cls = "badge-cyan"
+            status_tag = "Offline (1ms)"
+        elif "openrouter" in prov_lower:
+            badge_cls = "badge-indigo"
+            status_tag = "Free Tier" if "free" in tier.lower() else "API Ready"
+        elif "requesty" in prov_lower:
+            badge_cls = "badge-purple"
+            status_tag = "Free Tier" if "free" in tier.lower() else "API Ready"
+        elif "mistral" in prov_lower:
+            badge_cls = "badge-amber"
+            status_tag = "API Ready"
+        else:
+            badge_cls = "badge-emerald"
+            status_tag = "Active"
+
+        checked_attr = "checked" if m_id == "lexicon_raw" else ""
+
+        checkbox_items += f"""
+        <label class="model-check-item {prefix}-check-item" data-id="{m_id}" data-provider="{prov_lower}" data-name="{m_name.lower()}" style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.45rem 0.65rem; border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer; transition: all 0.15s ease; user-select: none;">
+            <input type="checkbox" name="{prefix}-selected-models" value="{m_id}" class="{prefix}-checkbox" {checked_attr} onchange="updatePredictModelSelection('{prefix}')" style="margin-top: 0.2rem; accent-color: var(--accent-cyan); cursor: pointer;">
+            <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+                <span style="font-size: 0.8rem; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{m_name}">{m_name}</span>
+                <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 0.15rem; flex-wrap: wrap;">
+                    <span class="badge {badge_cls}" style="font-size: 0.65rem; padding: 0.05rem 0.35rem;">{prov}</span>
+                    <span style="font-size: 0.68rem; color: var(--text-muted);">{status_tag}</span>
+                </div>
+            </div>
+        </label>
+        """
+
+    return f"""
+    <div class="form-group" style="margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+            <label class="form-label" style="margin-bottom: 0;">Select Evaluation Model(s):</label>
+            <span id="{prefix}-selected-count" class="badge badge-cyan" style="font-family: var(--font-mono); font-size: 0.78rem;">Selected: 1 Model (Raw Lexicon Match)</span>
+        </div>
+
+        <div style="display: flex; gap: 0.4rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="btn-sm btn-cyan" onclick="selectPredictModels('{prefix}', 'all')">🔘 Select All ({total_models})</button>
+            <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'baselines')">⚡ Local Baselines ({total_baselines})</button>
+            <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'llms')">🤖 Frontier LLMs ({total_llms})</button>
+            <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'none')">🧹 Clear</button>
+            <input type="text" class="search-input" id="{prefix}-model-filter" placeholder="Filter models..." onkeyup="filterModelCheckboxes('{prefix}')" style="max-width: 170px; padding: 0.25rem 0.6rem; font-size: 0.78rem; margin-left: auto;">
+        </div>
+
+        <div id="{prefix}-model-grid" style="max-height: 200px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.4rem; padding: 0.6rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-card); border-radius: 10px;">
+            {checkbox_items}
+        </div>
+    </div>
+    """
+
+
 def generate_service_dashboard_html(
     reports_dir: Path | None = None,
     host: str = "127.0.0.1",
@@ -263,6 +330,7 @@ def generate_service_dashboard_html(
     accessible_models_count = catalog["accessible_count"]
     free_tier_count = catalog["free_tier_count"]
     session_info = catalog["session"]
+    dash_model_selector = generate_model_selector_component(catalog["models"], prefix="dash")
 
     models_table_rows = ""
     for idx, m in enumerate(catalog["models"], 1):
@@ -1509,6 +1577,7 @@ def generate_service_dashboard_html(
                                 <button class="filter-btn" type="button" onclick="setDashboardPreset('algospeak')">⚠️ Algospeak Harm</button>
                             </div>
                         </div>
+                        {dash_model_selector}
                         <div class="form-group">
                             <label class="form-label" for="test-prefix">Previous Context Turns (JSON or newline lines):</label>
                             <textarea class="form-textarea" id="test-prefix" placeholder="u1: yo what did you just do&#10;u2: stop feeding or we lose"></textarea>
@@ -1522,7 +1591,8 @@ def generate_service_dashboard_html(
                         </button>
                     </div>
                     <div>
-                        <label class="form-label">Live Response Payload:</label>
+                        <label class="form-label">Live Response Payload & Analysis:</label>
+                        <div id="dash-visual-verdict" style="display: none; margin-bottom: 1rem;"></div>
                         <div class="predict-output" id="predict-result-box">// Click 'Send Prediction Request' to inspect live server output...</div>
                     </div>
                 </div>
@@ -1719,8 +1789,12 @@ def generate_service_dashboard_html(
             runLivePredict();
         }}
 
-        function openModelPredict(modelName) {{
+        function openModelPredict(modelId) {{
             switchTab('tab-playground');
+            document.querySelectorAll('.dash-checkbox').forEach(cb => {{
+                cb.checked = (cb.value === modelId);
+            }});
+            updatePredictModelSelection('dash');
             const targetInput = document.getElementById('test-turn');
             if (targetInput) {{
                 targetInput.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
@@ -1728,85 +1802,322 @@ def generate_service_dashboard_html(
             }}
         }}
 
-        function setDashboardPreset(type) {{
-            const presets = {{
-                hype: {{
-                    prefix: "u1: he is diffusing the bomb!\\nu2: stick it stick it",
-                    target: "holy fucking shit you hit that cross-map snipe! you are an absolute god at this game bro"
-                }},
-                bullying: {{
-                    prefix: "u1: my bad missed the flash\\nu2: play safe",
-                    target: "you are absolute garbage uninstall right now delete the game"
-                }},
-                exclusion: {{
-                    prefix: "u1: can i join next match?\\nu2: we need a full 5-stack",
-                    target: "nobody in this discord wanted you here, just leave and don't come back"
-                }},
-                algospeak: {{
-                    prefix: "u1: stop griefing our lobby",
-                    target: "go u-n-a-l-i-v-e yourself in real life, waste of oxygen"
+        function selectPredictModels(prefix, mode) {{
+            const boxes = document.querySelectorAll('.' + prefix + '-checkbox');
+            boxes.forEach(b => {{
+                const item = b.closest('.' + prefix + '-check-item');
+                const prov = item ? item.getAttribute('data-provider') : '';
+                if (mode === 'all') {{
+                    b.checked = true;
+                }} else if (mode === 'none') {{
+                    b.checked = false;
+                }} else if (mode === 'baselines') {{
+                    b.checked = prov.includes('local');
+                }} else if (mode === 'llms') {{
+                    b.checked = !prov.includes('local');
                 }}
-            }};
-            const p = presets[type];
-            if (!p) return;
-            document.getElementById('test-prefix').value = p.prefix;
-            document.getElementById('test-turn').value = p.target;
-            runLivePredict();
+            }});
+            updatePredictModelSelection(prefix);
         }}
 
-        function setErrorFilter(type, btn) {{
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-
-            const rows = document.querySelectorAll('#errors-table tbody tr');
-            rows.forEach(r => {{
-                if (type === 'all' || r.getAttribute('data-type').includes(type)) {{
-                    r.style.display = '';
-                }} else {{
-                    r.style.display = 'none';
-                }}
+        function filterModelCheckboxes(prefix) {{
+            const query = (document.getElementById(prefix + '-model-filter')?.value || '').toLowerCase();
+            const items = document.querySelectorAll('.' + prefix + '-check-item');
+            items.forEach(it => {{
+                const text = it.innerText.toLowerCase();
+                it.style.display = !query || text.includes(query) ? 'flex' : 'none';
             }});
         }}
 
-        function filterErrorTable() {{
-            const query = document.getElementById('error-search').value.toLowerCase();
-            const rows = document.querySelectorAll('#errors-table tbody tr');
-            rows.forEach(r => {{
-                const text = r.innerText.toLowerCase();
-                r.style.display = text.includes(query) ? '' : 'none';
-            }});
+        function updatePredictModelSelection(prefix) {{
+            const checked = Array.from(document.querySelectorAll('.' + prefix + '-checkbox:checked'));
+            const allBoxes = document.querySelectorAll('.' + prefix + '-checkbox');
+            const badge = document.getElementById(prefix + '-selected-count');
+            if (!badge) return;
+            if (checked.length === 0) {{
+                badge.textContent = 'No Models Selected';
+                badge.className = 'badge badge-rose';
+            }} else if (checked.length === 1) {{
+                const item = checked[0].closest('.' + prefix + '-check-item');
+                const name = item ? item.querySelector('span').innerText : checked[0].value;
+                badge.textContent = 'Selected: 1 Model (' + name + ')';
+                badge.className = 'badge badge-cyan';
+            }} else if (checked.length === allBoxes.length) {{
+                badge.textContent = 'Selected: All ' + checked.length + ' Models (Consensus Ensemble)';
+                badge.className = 'badge badge-emerald';
+            }} else {{
+                badge.textContent = 'Selected: ' + checked.length + ' Models (Multi-Model Ensemble)';
+                badge.className = 'badge badge-indigo';
+            }}
+        }}
+
+        function renderPredictResponse(data, elapsedMs, resultBox, verdictDiv) {{
+            if (resultBox) {{
+                resultBox.textContent = JSON.stringify(data, null, 2);
+            }}
+            if (!verdictDiv) return;
+            verdictDiv.style.display = 'block';
+
+            if (data.mode === 'multi_model' && data.aggregate) {{
+                const agg = data.aggregate;
+                const isActionable = agg.consensus_actionable;
+                const bannerBg = isActionable 
+                    ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.22), rgba(225, 29, 72, 0.1))' 
+                    : 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.08))';
+                const bannerBorder = isActionable ? 'rgba(244, 63, 94, 0.45)' : 'rgba(16, 185, 129, 0.4)';
+                const titleColor = isActionable ? '#fb7185' : '#34d399';
+                const badgeCls = isActionable ? 'badge-rose' : 'badge-emerald';
+
+                const modelsList = Object.values(data.models || {{}});
+                modelsList.sort((a, b) => (b.harm_probability || 0) - (a.harm_probability || 0));
+
+                let modelRows = '';
+                modelsList.forEach(m => {{
+                    const mAct = m.actionable;
+                    const mBadge = mAct 
+                        ? '<span class="badge badge-rose">🚨 FLAGGED</span>' 
+                        : '<span class="badge badge-emerald">🟢 CLEARED</span>';
+                    const mProbPct = Math.round((m.harm_probability || 0) * 100);
+                    const mProbColor = mAct ? '#f43f5e' : '#38bdf8';
+
+                    modelRows += `
+                        <tr>
+                            <td style="font-weight: 600; color: #fff;">
+                                <div>${{m.model_name}}</div>
+                                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
+                            </td>
+                            <td><span class="badge badge-indigo">${{m.provider}}</span></td>
+                            <td class="cell-mono" style="text-align: right;">
+                                <div style="font-weight: 700; color: ${{mProbColor}}; font-size: 0.88rem;">${{(m.harm_probability || 0).toFixed(4)}}</div>
+                                <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 3px;">
+                                    <div style="height: 100%; width: ${{Math.max(4, mProbPct)}}%; background: ${{mProbColor}};"></div>
+                                </div>
+                            </td>
+                            <td>${{mBadge}}</td>
+                            <td><span class="badge badge-amber">${{m.dominant_severity || 'safe'}}</span></td>
+                            <td class="cell-mono" style="text-align: right; color: var(--text-muted); font-size: 0.75rem;">${{m.latency_ms || 0}}ms</td>
+                        </tr>
+                    `;
+                }});
+
+                const flaggedChips = (agg.flagged_by || []).map(f => `<span class="badge badge-rose" style="margin: 0.15rem;">🚨 ${{f}}</span>`).join('') || '<span style="color: var(--text-muted); font-size: 0.8rem;">None (0 models)</span>';
+                const clearedChips = (agg.cleared_by || []).map(c => `<span class="badge badge-emerald" style="margin: 0.15rem;">🟢 ${{c}}</span>`).join('') || '<span style="color: var(--text-muted); font-size: 0.8rem;">None (0 models)</span>';
+
+                verdictDiv.innerHTML = `
+                    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                        <div style="background: ${{bannerBg}}; border: 1px solid ${{bannerBorder}}; padding: 0.9rem 1.2rem; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <div>
+                                <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: ${{titleColor}}; letter-spacing: 0.05em;">Consensus Ensemble Verdict (${{agg.models_evaluated_count}} Models)</div>
+                                <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 0.2rem;">${{agg.verdict_label}} (${{agg.agreement_percentage}}% Consensus)</div>
+                            </div>
+                            <span class="badge ${{badgeCls}}" style="font-size: 0.82rem; padding: 0.35rem 0.75rem;">${{agg.divergence_level}}</span>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.1rem;">
+                            <div style="background: rgba(0,0,0,0.35); padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Mean Harm Prob</div>
+                                <div style="font-size: 1.15rem; font-weight: 700; color: #fff; font-family: var(--font-mono);">${{agg.mean_harm_probability.toFixed(3)}} <span style="font-size: 0.72rem; color: var(--text-muted);">±${{agg.std_harm_probability.toFixed(2)}}</span></div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.35); padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Agreement Rate</div>
+                                <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent-cyan); font-family: var(--font-mono);">${{agg.agreement_percentage}}%</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.35); padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Consensus Severity</div>
+                                <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent-amber);">${{agg.dominant_severity.toUpperCase()}}</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.35); padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Models Ratio</div>
+                                <div style="font-size: 1.15rem; font-weight: 700; color: #fff; font-family: var(--font-mono);"><span style="color: var(--accent-rose);">${{agg.actionable_count}} Flagged</span> / <span style="color: var(--accent-emerald);">${{agg.cleared_count}} Cleared</span></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 1.1rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.25rem;">
+                                <span style="color: var(--accent-rose); font-weight: 600;">Actionable Harm (${{agg.actionable_count}})</span>
+                                <span style="color: var(--accent-emerald); font-weight: 600;">Benign Banter (${{agg.cleared_count}})</span>
+                            </div>
+                            <div style="height: 8px; border-radius: 4px; background: rgba(255,255,255,0.06); display: flex; overflow: hidden;">
+                                <div style="height: 100%; width: ${{(agg.actionable_count/agg.models_evaluated_count)*100}}%; background: linear-gradient(90deg, #f43f5e, #fb7185);"></div>
+                                <div style="height: 100%; width: ${{(agg.cleared_count/agg.models_evaluated_count)*100}}%; background: linear-gradient(90deg, #059669, #34d399);"></div>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; background: rgba(0,0,0,0.25); padding: 0.85rem 1rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan); margin-bottom: 1rem;">
+                            <strong style="color: #fff;">Consensus Synthesis:</strong> ${{agg.synthesis}}
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.8rem;">
+                            <div style="background: rgba(0,0,0,0.2); padding: 0.6rem 0.8rem; border-radius: 6px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase;">Flagged Actionable by:</div>
+                                <div style="display: flex; flex-wrap: wrap;">${{flaggedChips}}</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.2); padding: 0.6rem 0.8rem; border-radius: 6px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase;">Cleared Benign by:</div>
+                                <div style="display: flex; flex-wrap: wrap;">${{clearedChips}}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;"><span>📊</span> Separate Model Predictions (${{modelsList.length}} Models)</h3>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">Parallel Execution Completed in ${{elapsedMs}}ms</span>
+                        </div>
+                        <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Evaluated Model</th>
+                                        <th>Provider</th>
+                                        <th style="text-align: right;">Harm Probability</th>
+                                        <th>Decision</th>
+                                        <th>Dominant Severity</th>
+                                        <th style="text-align: right;">Latency</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${{modelRows}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }} else {{
+                const harmProb = data.harm_probability !== undefined ? data.harm_probability : 0.0;
+                const actionable = data.actionable !== undefined ? data.actionable : (harmProb >= 0.5);
+                const modelName = data.model_name || data.model_id || 'Raw Lexicon Match';
+                const provider = data.provider || 'Local Baseline';
+                const sevProbs = data.severity_probabilities || {{}};
+                let domSev = data.dominant_severity || 'safe';
+                if (!domSev && Object.keys(sevProbs).length) {{
+                    domSev = Object.keys(sevProbs).reduce((a, b) => sevProbs[a] > sevProbs[b] ? a : b);
+                }}
+                const badgeCls = actionable ? 'badge-rose' : 'badge-emerald';
+                const verdictTitle = actionable ? '🚨 ACTIONABLE VIOLATION' : '🟢 NON-ACTIONABLE / SAFE';
+
+                let sevBars = '';
+                for (const [k, v] of Object.entries(sevProbs)) {{
+                    const pct = Math.round(v * 100);
+                    sevBars += `
+                        <div style="margin-bottom: 0.4rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.15rem;">
+                                <span>${{k}}</span>
+                                <span class="cell-mono">${{(v).toFixed(3)}}</span>
+                            </div>
+                            <div style="height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                                <div style="height: 100%; width: ${{Math.max(2, pct)}}%; background: var(--accent-cyan);"></div>
+                            </div>
+                        </div>
+                    `;
+                }}
+
+                verdictDiv.innerHTML = `
+                    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <div>
+                                <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted);">Predicting Model</div>
+                                <div style="font-size: 1.15rem; font-weight: 700; color: #fff;">${{modelName}}</div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted);">${{provider}} • ${{data.latency_ms || 0}}ms</div>
+                            </div>
+                            <span class="badge ${{badgeCls}}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">${{verdictTitle}}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Harm Probability</div>
+                                <div style="font-size: 1.4rem; font-weight: 800; color: ${{actionable ? '#f43f5e' : '#34d399'}}; font-family: var(--font-mono);">${{harmProb.toFixed(4)}}</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Dominant Severity</div>
+                                <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-amber); font-family: var(--font-mono);">${{domSev.toUpperCase()}}</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.25); padding: 0.75rem 1rem; border-radius: 8px;">
+                            <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 600;">Severity Distribution</div>
+                            ${{sevBars}}
+                        </div>
+                    </div>
+                `;
+            }}
         }}
 
         async function runLivePredict() {{
             const turnText = document.getElementById('test-turn').value.trim();
+            const prefixRaw = document.getElementById('test-prefix').value.trim();
             const box = document.getElementById('predict-result-box');
-            box.textContent = "Sending POST /predict...";
+            const verdictDiv = document.getElementById('dash-visual-verdict');
+            const btn = document.getElementById('btn-run-predict');
+
+            if (btn) btn.disabled = true;
+            box.textContent = "Executing prediction inference across selected model(s)...";
+
+            const turns = [];
+            let turnIndex = 1;
+            if (prefixRaw) {{
+                const lines = prefixRaw.split('\\n');
+                for (const line of lines) {{
+                    const l = line.trim();
+                    if (!l) continue;
+                    let speaker = "u1";
+                    let text = l;
+                    if (l.includes(":")) {{
+                        const parts = l.split(":");
+                        speaker = parts[0].trim();
+                        text = parts.slice(1).join(":").trim();
+                    }}
+                    turns.push({{
+                        "turn_id": "t" + turnIndex,
+                        "speaker_id": speaker,
+                        "role": "user",
+                        "relative_time": (turnIndex * 5) + "s",
+                        "text": text
+                    }});
+                    turnIndex++;
+                }}
+            }}
+
+            const currentTurnId = "t" + turnIndex;
+            turns.push({{
+                "turn_id": currentTurnId,
+                "speaker_id": "u_target",
+                "role": "user",
+                "relative_time": (turnIndex * 5) + "s",
+                "text": turnText || "hello"
+            }});
 
             const payload = {{
-                "request_id": "dash_req_" + Date.now(),
-                "conversation_id": "dash_test_conv",
-                "condition": "current_turn_only",
-                "turns": [
-                    {{
-                        "turn_id": "t1",
-                        "speaker_id": "user_tester",
-                        "role": "user",
-                        "relative_time": "0s",
-                        "text": turnText
-                    }}
-                ]
+                "benchmark_version": "0.1.2",
+                "conversation_id": "dash_req_" + Date.now(),
+                "current_turn_id": currentTurnId,
+                "platform_style": "gaming_chat",
+                "language_mode": "english",
+                "task": "current_harm",
+                "turns": turns
             }};
 
+            // Check selected models
+            const selectedBoxes = Array.from(document.querySelectorAll('.dash-checkbox:checked'));
+            const selected = selectedBoxes.map(b => b.value);
+            if (selected.length === 1) {{
+                payload.model = selected[0];
+            }} else if (selected.length > 1) {{
+                payload.models = selected;
+            }}
+
             try {{
+                const startTime = performance.now();
                 const res = await fetch('/predict', {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
                     body: JSON.stringify(payload)
                 }});
+                const elapsed = Math.round(performance.now() - startTime);
                 const jsonRes = await res.json();
-                box.textContent = JSON.stringify(jsonRes, null, 2);
+                renderPredictResponse(jsonRes, elapsed, box, verdictDiv);
             }} catch (err) {{
                 box.textContent = "Error executing /predict: " + err.message;
+            }} finally {{
+                if (btn) btn.disabled = false;
             }}
         }}
     </script>
@@ -1819,8 +2130,13 @@ def generate_service_dashboard_html(
 def generate_predict_page_html(
     host: str = "127.0.0.1",
     port: int = 8080,
+    reports_dir: Path | None = None,
 ) -> str:
     """Generate dedicated interactive HTML playground for the /predict endpoint."""
+    rep_dir = reports_dir or Path("reports")
+    catalog = build_evaluated_models_catalog(rep_dir)
+    pred_model_selector = generate_model_selector_component(catalog["models"], prefix="pred")
+
     html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1837,9 +2153,16 @@ def generate_predict_page_html(
             --bg-card: #1f2937;
             --bg-card-hover: #263345;
             --border-subtle: #374151;
+            --border-card: rgba(255, 255, 255, 0.08);
             --border-accent: #4f46e5;
             --primary: #6366f1;
             --primary-hover: #4f46e5;
+            --accent-cyan: #38bdf8;
+            --accent-indigo: #818cf8;
+            --accent-purple: #c084fc;
+            --accent-amber: #fbbf24;
+            --accent-rose: #f43f5e;
+            --accent-emerald: #10b981;
             --emerald: #10b981;
             --emerald-bg: rgba(16, 185, 129, 0.15);
             --rose: #f43f5e;
@@ -2043,6 +2366,42 @@ def generate_predict_page_html(
             white-space: pre-wrap;
             word-break: break-word;
         }}
+        .badge {{
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.55rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }}
+        .badge-cyan {{ background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); color: #38bdf8; }}
+        .badge-indigo {{ background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: #818cf8; }}
+        .badge-purple {{ background: rgba(168, 85, 247, 0.15); border: 1px solid rgba(168, 85, 247, 0.35); color: #c084fc; }}
+        .badge-amber {{ background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; }}
+        .badge-emerald {{ background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; }}
+        .badge-rose {{ background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.35); color: #fb7185; }}
+
+        .btn-sm {{ padding: 0.3rem 0.65rem; font-size: 0.78rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; border: 1px solid transparent; }}
+        .btn-cyan {{ background: #0284c7; color: #ffffff; border-color: #0284c7; }}
+        .btn-cyan:hover {{ background: #0369a1; }}
+        .btn-outline {{ background: rgba(255, 255, 255, 0.05); color: #cbd5e1; border-color: #334155; }}
+        .btn-outline:hover {{ background: rgba(255, 255, 255, 0.1); color: #ffffff; }}
+
+        .search-input {{
+            background: #0f172a;
+            border: 1px solid var(--border-subtle);
+            border-radius: 6px;
+            color: #ffffff;
+            outline: none;
+        }}
+        .search-input:focus {{ border-color: var(--primary); }}
+
+        .table-responsive {{ width: 100%; overflow-x: auto; }}
+        table {{ width: 100%; border-collapse: collapse; font-size: 0.82rem; }}
+        th {{ text-align: left; padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); font-weight: 600; text-transform: uppercase; font-size: 0.7rem; }}
+        td {{ padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }}
+        .cell-mono {{ font-family: var(--font-mono); }}
+
         .outcome-badge {{
             display: inline-flex;
             align-items: center;
@@ -2136,6 +2495,7 @@ def generate_predict_page_html(
                 <div class="panel-header">
                     <h2 class="panel-title"><span>📝</span> Test Conversation Input</h2>
                 </div>
+                {pred_model_selector}
                 <div class="form-group">
                     <label class="form-label" for="context-turns">Context Turns (Optional Prefix History):</label>
                     <textarea class="form-textarea" id="context-turns" placeholder="u1: nice push team&#10;u2: they are rotating B"></textarea>
@@ -2241,6 +2601,245 @@ print(response.json())</div>
             submitPredict();
         }}
 
+        function selectPredictModels(prefix, mode) {{
+            const boxes = document.querySelectorAll('.' + prefix + '-checkbox');
+            boxes.forEach(b => {{
+                const item = b.closest('.' + prefix + '-check-item');
+                const prov = item ? item.getAttribute('data-provider') : '';
+                if (mode === 'all') {{
+                    b.checked = true;
+                }} else if (mode === 'none') {{
+                    b.checked = false;
+                }} else if (mode === 'baselines') {{
+                    b.checked = prov.includes('local');
+                }} else if (mode === 'llms') {{
+                    b.checked = !prov.includes('local');
+                }}
+            }});
+            updatePredictModelSelection(prefix);
+        }}
+
+        function filterModelCheckboxes(prefix) {{
+            const query = (document.getElementById(prefix + '-model-filter')?.value || '').toLowerCase();
+            const items = document.querySelectorAll('.' + prefix + '-check-item');
+            items.forEach(it => {{
+                const text = it.innerText.toLowerCase();
+                it.style.display = !query || text.includes(query) ? 'flex' : 'none';
+            }});
+        }}
+
+        function updatePredictModelSelection(prefix) {{
+            const checked = Array.from(document.querySelectorAll('.' + prefix + '-checkbox:checked'));
+            const allBoxes = document.querySelectorAll('.' + prefix + '-checkbox');
+            const badge = document.getElementById(prefix + '-selected-count');
+            if (!badge) return;
+            if (checked.length === 0) {{
+                badge.textContent = 'No Models Selected';
+                badge.className = 'badge badge-rose';
+            }} else if (checked.length === 1) {{
+                const item = checked[0].closest('.' + prefix + '-check-item');
+                const name = item ? item.querySelector('span').innerText : checked[0].value;
+                badge.textContent = 'Selected: 1 Model (' + name + ')';
+                badge.className = 'badge badge-cyan';
+            }} else if (checked.length === allBoxes.length) {{
+                badge.textContent = 'Selected: All ' + checked.length + ' Models (Consensus Ensemble)';
+                badge.className = 'badge badge-emerald';
+            }} else {{
+                badge.textContent = 'Selected: ' + checked.length + ' Models (Multi-Model Ensemble)';
+                badge.className = 'badge badge-indigo';
+            }}
+        }}
+
+        function renderPredictResponse(data, elapsedMs, resultBox, verdictDiv) {{
+            if (resultBox) {{
+                resultBox.textContent = JSON.stringify(data, null, 2);
+            }}
+            if (!verdictDiv) return;
+            verdictDiv.style.display = 'block';
+
+            if (data.mode === 'multi_model' && data.aggregate) {{
+                const agg = data.aggregate;
+                const isActionable = agg.consensus_actionable;
+                const bannerBg = isActionable 
+                    ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.22), rgba(225, 29, 72, 0.1))' 
+                    : 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.08))';
+                const bannerBorder = isActionable ? 'rgba(244, 63, 94, 0.45)' : 'rgba(16, 185, 129, 0.4)';
+                const titleColor = isActionable ? '#fb7185' : '#34d399';
+                const badgeCls = isActionable ? 'badge-rose' : 'badge-emerald';
+
+                const modelsList = Object.values(data.models || {{}});
+                modelsList.sort((a, b) => (b.harm_probability || 0) - (a.harm_probability || 0));
+
+                let modelRows = '';
+                modelsList.forEach(m => {{
+                    const mAct = m.actionable;
+                    const mBadge = mAct 
+                        ? '<span class="badge badge-rose">🚨 FLAGGED</span>' 
+                        : '<span class="badge badge-emerald">🟢 CLEARED</span>';
+                    const mProbPct = Math.round((m.harm_probability || 0) * 100);
+                    const mProbColor = mAct ? '#f43f5e' : '#38bdf8';
+
+                    modelRows += `
+                        <tr>
+                            <td style="font-weight: 600; color: #fff;">
+                                <div>${{m.model_name}}</div>
+                                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
+                            </td>
+                            <td><span class="badge badge-indigo">${{m.provider}}</span></td>
+                            <td class="cell-mono" style="text-align: right;">
+                                <div style="font-weight: 700; color: ${{mProbColor}}; font-size: 0.88rem;">${{(m.harm_probability || 0).toFixed(4)}}</div>
+                                <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 3px;">
+                                    <div style="height: 100%; width: ${{Math.max(4, mProbPct)}}%; background: ${{mProbColor}};"></div>
+                                </div>
+                            </td>
+                            <td>${{mBadge}}</td>
+                            <td><span class="badge badge-amber">${{m.dominant_severity || 'safe'}}</span></td>
+                            <td class="cell-mono" style="text-align: right; color: var(--text-muted); font-size: 0.75rem;">${{m.latency_ms || 0}}ms</td>
+                        </tr>
+                    `;
+                }});
+
+                const flaggedChips = (agg.flagged_by || []).map(f => `<span class="badge badge-rose" style="margin: 0.15rem;">🚨 ${{f}}</span>`).join('') || '<span style="color: var(--text-muted); font-size: 0.8rem;">None (0 models)</span>';
+                const clearedChips = (agg.cleared_by || []).map(c => `<span class="badge badge-emerald" style="margin: 0.15rem;">🟢 ${{c}}</span>`).join('') || '<span style="color: var(--text-muted); font-size: 0.8rem;">None (0 models)</span>';
+
+                verdictDiv.innerHTML = `
+                    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                        <div style="background: ${{bannerBg}}; border: 1px solid ${{bannerBorder}}; padding: 0.9rem 1.2rem; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <div>
+                                <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: ${{titleColor}}; letter-spacing: 0.05em;">Consensus Ensemble Verdict (${{agg.models_evaluated_count}} Models)</div>
+                                <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 0.2rem;">${{agg.verdict_label}} (${{agg.agreement_percentage}}% Consensus)</div>
+                            </div>
+                            <span class="badge ${{badgeCls}}" style="font-size: 0.82rem; padding: 0.35rem 0.75rem;">${{agg.divergence_level}}</span>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.1rem;">
+                            <div style="background: rgba(0,0,0,0.35); padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Mean Harm Prob</div>
+                                <div style="font-size: 1.15rem; font-weight: 700; color: #fff; font-family: var(--font-mono);">${{agg.mean_harm_probability.toFixed(3)}} <span style="font-size: 0.72rem; color: var(--text-muted);">±${{agg.std_harm_probability.toFixed(2)}}</span></div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.35); padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Agreement Rate</div>
+                                <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent-cyan); font-family: var(--font-mono);">${{agg.agreement_percentage}}%</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.35); padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Consensus Severity</div>
+                                <div style="font-size: 1.15rem; font-weight: 700; color: var(--accent-amber);">${{agg.dominant_severity.toUpperCase()}}</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.35); padding: 0.75rem 0.9rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Models Ratio</div>
+                                <div style="font-size: 1.15rem; font-weight: 700; color: #fff; font-family: var(--font-mono);"><span style="color: var(--accent-rose);">${{agg.actionable_count}} Flagged</span> / <span style="color: var(--accent-emerald);">${{agg.cleared_count}} Cleared</span></div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 1.1rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.25rem;">
+                                <span style="color: var(--accent-rose); font-weight: 600;">Actionable Harm (${{agg.actionable_count}})</span>
+                                <span style="color: var(--accent-emerald); font-weight: 600;">Benign Banter (${{agg.cleared_count}})</span>
+                            </div>
+                            <div style="height: 8px; border-radius: 4px; background: rgba(255,255,255,0.06); display: flex; overflow: hidden;">
+                                <div style="height: 100%; width: ${{(agg.actionable_count/agg.models_evaluated_count)*100}}%; background: linear-gradient(90deg, #f43f5e, #fb7185);"></div>
+                                <div style="height: 100%; width: ${{(agg.cleared_count/agg.models_evaluated_count)*100}}%; background: linear-gradient(90deg, #059669, #34d399);"></div>
+                            </div>
+                        </div>
+
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; background: rgba(0,0,0,0.25); padding: 0.85rem 1rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan); margin-bottom: 1rem;">
+                            <strong style="color: #fff;">Consensus Synthesis:</strong> ${{agg.synthesis}}
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.8rem;">
+                            <div style="background: rgba(0,0,0,0.2); padding: 0.6rem 0.8rem; border-radius: 6px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase;">Flagged Actionable by:</div>
+                                <div style="display: flex; flex-wrap: wrap;">${{flaggedChips}}</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.2); padding: 0.6rem 0.8rem; border-radius: 6px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.35rem; font-weight: 600; text-transform: uppercase;">Cleared Benign by:</div>
+                                <div style="display: flex; flex-wrap: wrap;">${{clearedChips}}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;"><span>📊</span> Separate Model Predictions (${{modelsList.length}} Models)</h3>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">Parallel Execution Completed in ${{elapsedMs}}ms</span>
+                        </div>
+                        <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Evaluated Model</th>
+                                        <th>Provider</th>
+                                        <th style="text-align: right;">Harm Probability</th>
+                                        <th>Decision</th>
+                                        <th>Dominant Severity</th>
+                                        <th style="text-align: right;">Latency</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${{modelRows}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }} else {{
+                const harmProb = data.harm_probability !== undefined ? data.harm_probability : 0.0;
+                const actionable = data.actionable !== undefined ? data.actionable : (harmProb >= 0.5);
+                const modelName = data.model_name || data.model_id || 'Raw Lexicon Match';
+                const provider = data.provider || 'Local Baseline';
+                const sevProbs = data.severity_probabilities || {{}};
+                let domSev = data.dominant_severity || 'safe';
+                if (!domSev && Object.keys(sevProbs).length) {{
+                    domSev = Object.keys(sevProbs).reduce((a, b) => sevProbs[a] > sevProbs[b] ? a : b);
+                }}
+                const badgeCls = actionable ? 'badge-rose' : 'badge-emerald';
+                const verdictTitle = actionable ? '🚨 ACTIONABLE VIOLATION' : '🟢 NON-ACTIONABLE / SAFE';
+
+                let sevBars = '';
+                for (const [k, v] of Object.entries(sevProbs)) {{
+                    const pct = Math.round(v * 100);
+                    sevBars += `
+                        <div style="margin-bottom: 0.4rem;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.15rem;">
+                                <span>${{k}}</span>
+                                <span class="cell-mono">${{(v).toFixed(3)}}</span>
+                            </div>
+                            <div style="height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                                <div style="height: 100%; width: ${{Math.max(2, pct)}}%; background: var(--accent-cyan);"></div>
+                            </div>
+                        </div>
+                    `;
+                }}
+
+                verdictDiv.innerHTML = `
+                    <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                            <div>
+                                <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted);">Predicting Model</div>
+                                <div style="font-size: 1.15rem; font-weight: 700; color: #fff;">${{modelName}}</div>
+                                <div style="font-size: 0.72rem; color: var(--text-muted);">${{provider}} • ${{data.latency_ms || 0}}ms</div>
+                            </div>
+                            <span class="badge ${{badgeCls}}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">${{verdictTitle}}</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                            <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Harm Probability</div>
+                                <div style="font-size: 1.4rem; font-weight: 800; color: ${{actionable ? '#f43f5e' : '#34d399'}}; font-family: var(--font-mono);">${{harmProb.toFixed(4)}}</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px;">
+                                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Dominant Severity</div>
+                                <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-amber); font-family: var(--font-mono);">${{domSev.toUpperCase()}}</div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(0,0,0,0.25); padding: 0.75rem 1rem; border-radius: 8px;">
+                            <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 600;">Severity Distribution</div>
+                            ${{sevBars}}
+                        </div>
+                    </div>
+                `;
+            }}
+        }}
+
         async function submitPredict() {{
             const targetText = document.getElementById('target-turn').value.trim();
             const contextRaw = document.getElementById('context-turns').value.trim();
@@ -2301,6 +2900,14 @@ print(response.json())</div>
                 "turns": turns
             }};
 
+            // Selected models
+            const selected = Array.from(document.querySelectorAll('.pred-checkbox:checked')).map(b => b.value);
+            if (selected.length === 1) {{
+                payload.model = selected[0];
+            }} else if (selected.length > 1) {{
+                payload.models = selected;
+            }}
+
             try {{
                 const startTime = performance.now();
                 const res = await fetch('/predict', {{
@@ -2312,25 +2919,7 @@ print(response.json())</div>
                 const data = await res.json();
 
                 statusSpan.textContent = `HTTP ${{res.status}} (${{elapsed}}ms)`;
-                resultBox.textContent = JSON.stringify(data, null, 2);
-
-                verdictDiv.style.display = 'block';
-                const harmProb = data.harm_probability !== undefined ? data.harm_probability : 0.0;
-                const actionable = harmProb >= 0.5;
-
-                if (actionable) {{
-                    verdictDiv.innerHTML = `<div class="outcome-badge badge-actionable">
-                        <span>⚠️</span> Actionable Harm Detected (Probability: ${{harmProb.toFixed(3)}})
-                    </div>`;
-                }} else if (harmProb >= 0.2) {{
-                    verdictDiv.innerHTML = `<div class="outcome-badge badge-monitor">
-                        <span>👁️</span> Borderline / Monitor (Probability: ${{harmProb.toFixed(3)}})
-                    </div>`;
-                }} else {{
-                    verdictDiv.innerHTML = `<div class="outcome-badge badge-benign">
-                        <span>✅</span> Benign Content (Probability: ${{harmProb.toFixed(3)}})
-                    </div>`;
-                }}
+                renderPredictResponse(data, elapsed, resultBox, verdictDiv);
             }} catch (err) {{
                 statusSpan.textContent = "Error";
                 resultBox.textContent = "Error executing request: " + err.message;
