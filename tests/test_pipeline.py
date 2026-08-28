@@ -71,6 +71,7 @@ def test_report_stage_runs(tmp_path: Path):
     }
     with (eval_dir / "evaluation_results.yaml").open("w", encoding="utf-8") as f:
         yaml.safe_dump(mock_eval, f)
+    (eval_dir / "predictions.jsonl").write_text("", encoding="utf-8")
 
     report_out = tmp_path / "report"
     runner = get_runner("report")

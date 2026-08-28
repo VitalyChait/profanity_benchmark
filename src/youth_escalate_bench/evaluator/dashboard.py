@@ -235,49 +235,72 @@ def build_evaluated_models_catalog(
 
 
 def generate_model_selector_component(models: list[dict[str, Any]], prefix: str = "pred") -> str:
-    """Generate model selection checklist toolbar with Select All and category filters."""
-    total_models = len(models)
-    total_baselines = sum(1 for m in models if m.get("provider") == "Local Baseline")
-    total_llms = total_models - total_baselines
+    """Generate 3-column model selection checklist toolbar with Select All, Local Baselines, Frontier LLMs, and Custom columns."""
+    baselines: list[dict[str, Any]] = []
+    frontier_llms: list[dict[str, Any]] = []
+    custom_models: list[dict[str, Any]] = []
 
-    checkbox_items = ""
     for m in models:
-        m_id = m.get("id", "")
-        m_name = m.get("name", m_id)
-        prov = m.get("provider", "Local Baseline")
-        tier = m.get("tier", "")
-
-        prov_lower = prov.lower()
-        if "local" in prov_lower:
-            badge_cls = "badge-cyan"
-            status_tag = "Offline (1ms)"
-        elif "openrouter" in prov_lower:
-            badge_cls = "badge-indigo"
-            status_tag = "Free Tier" if "free" in tier.lower() else "API Ready"
-        elif "requesty" in prov_lower:
-            badge_cls = "badge-purple"
-            status_tag = "Free Tier" if "free" in tier.lower() else "API Ready"
-        elif "mistral" in prov_lower:
-            badge_cls = "badge-amber"
-            status_tag = "API Ready"
+        prov_lower = str(m.get("provider", "")).lower()
+        m_id_lower = str(m.get("id", "")).lower()
+        if "local" in prov_lower or "baseline" in prov_lower:
+            baselines.append(m)
+        elif "requesty" in prov_lower or "custom" in prov_lower or "requesty" in m_id_lower:
+            custom_models.append(m)
         else:
-            badge_cls = "badge-emerald"
-            status_tag = "Active"
+            frontier_llms.append(m)
 
-        checked_attr = "checked" if m_id == "lexicon_raw" else ""
+    total_models = len(models)
+    total_baselines = len(baselines)
+    total_llms = len(frontier_llms)
+    total_custom = len(custom_models)
 
-        checkbox_items += f"""
-        <label class="model-check-item {prefix}-check-item" data-id="{m_id}" data-provider="{prov_lower}" data-name="{m_name.lower()}" style="display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.45rem 0.65rem; border-radius: 8px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); cursor: pointer; transition: all 0.15s ease; user-select: none;">
-            <input type="checkbox" name="{prefix}-selected-models" value="{m_id}" class="{prefix}-checkbox" {checked_attr} onchange="updatePredictModelSelection('{prefix}')" style="margin-top: 0.2rem; accent-color: var(--accent-cyan); cursor: pointer;">
-            <div style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
-                <span style="font-size: 0.8rem; font-weight: 600; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{m_name}">{m_name}</span>
-                <div style="display: flex; gap: 0.35rem; align-items: center; margin-top: 0.15rem; flex-wrap: wrap;">
-                    <span class="badge {badge_cls}" style="font-size: 0.65rem; padding: 0.05rem 0.35rem;">{prov}</span>
-                    <span style="font-size: 0.68rem; color: var(--text-muted);">{status_tag}</span>
+    def _render_items(item_list: list[dict[str, Any]], category: str) -> str:
+        res = ""
+        for m in item_list:
+            m_id = m.get("id", "")
+            m_name = m.get("name", m_id)
+            prov = m.get("provider", "Local Baseline")
+            tier = m.get("tier", "")
+            prov_lower = prov.lower()
+
+            if "local" in prov_lower:
+                badge_cls = "badge-cyan"
+                status_tag = "⚡ 1ms"
+            elif "requesty" in prov_lower or category == "custom":
+                badge_cls = "badge-purple"
+                status_tag = "🛠️ Custom"
+            elif "openrouter" in prov_lower:
+                badge_cls = "badge-indigo"
+                status_tag = "Free Tier" if "free" in tier.lower() else "API Ready"
+            elif "mistral" in prov_lower:
+                badge_cls = "badge-amber"
+                status_tag = "API Ready"
+            else:
+                badge_cls = "badge-emerald"
+                status_tag = "Active"
+
+            is_checked = m_id == "lexicon_raw"
+            checked_attr = "checked" if is_checked else ""
+            selected_cls = "is-selected" if is_checked else ""
+
+            res += f"""
+            <label class="model-check-item {prefix}-check-item {selected_cls}" data-id="{m_id}" data-category="{category}" data-provider="{prov_lower}" data-name="{m_name.lower()}">
+                <input type="checkbox" name="{prefix}-selected-models" value="{m_id}" class="{prefix}-checkbox" {checked_attr} onchange="updatePredictModelSelection('{prefix}')">
+                <div class="model-info">
+                    <span class="model-name" title="{m_name}">{m_name}</span>
+                    <div class="model-meta">
+                        <span class="badge {badge_cls}">{prov}</span>
+                        <span class="model-status">{status_tag}</span>
+                    </div>
                 </div>
-            </div>
-        </label>
-        """
+            </label>
+            """
+        return res
+
+    baseline_items = _render_items(baselines, "baselines")
+    frontier_items = _render_items(frontier_llms, "frontier")
+    custom_items = _render_items(custom_models, "custom")
 
     return f"""
     <div class="form-group" style="margin-bottom: 1.25rem;">
@@ -290,12 +313,54 @@ def generate_model_selector_component(models: list[dict[str, Any]], prefix: str 
             <button type="button" class="btn-sm btn-cyan" onclick="selectPredictModels('{prefix}', 'all')">🔘 Select All ({total_models})</button>
             <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'baselines')">⚡ Local Baselines ({total_baselines})</button>
             <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'llms')">🤖 Frontier LLMs ({total_llms})</button>
+            <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'custom')">🛠️ Custom ({total_custom})</button>
             <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'none')">🧹 Clear</button>
             <input type="text" class="search-input" id="{prefix}-model-filter" placeholder="Filter models..." onkeyup="filterModelCheckboxes('{prefix}')" style="max-width: 170px; padding: 0.25rem 0.6rem; font-size: 0.78rem; margin-left: auto;">
         </div>
 
-        <div id="{prefix}-model-grid" style="max-height: 200px; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0.4rem; padding: 0.6rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-card); border-radius: 10px;">
-            {checkbox_items}
+        <div class="model-columns-container" id="{prefix}-model-grid">
+            <!-- Column 1: Local Baselines -->
+            <div class="model-column">
+                <div class="model-column-header">
+                    <div style="font-size: 0.78rem; font-weight: 700; color: var(--accent-cyan); display: flex; align-items: center; gap: 0.35rem;">
+                        <span>⚡</span> Local Baselines <span class="badge badge-cyan" style="font-size: 0.65rem; padding: 0.05rem 0.35rem;">{total_baselines}</span>
+                    </div>
+                    <button type="button" class="btn-col-select" style="color: var(--accent-cyan);" onclick="selectPredictModels('{prefix}', 'baselines')">Select Only</button>
+                </div>
+                <div class="model-column-scroll">
+                    {baseline_items}
+                </div>
+            </div>
+
+            <!-- Column 2: Frontier LLMs -->
+            <div class="model-column">
+                <div class="model-column-header">
+                    <div style="font-size: 0.78rem; font-weight: 700; color: var(--accent-indigo); display: flex; align-items: center; gap: 0.35rem;">
+                        <span>🤖</span> Frontier LLMs <span class="badge badge-indigo" style="font-size: 0.65rem; padding: 0.05rem 0.35rem;">{total_llms}</span>
+                    </div>
+                    <button type="button" class="btn-col-select" style="color: var(--accent-indigo);" onclick="selectPredictModels('{prefix}', 'llms')">Select Only</button>
+                </div>
+                <div class="model-column-scroll">
+                    {frontier_items}
+                </div>
+            </div>
+
+            <!-- Column 3: Custom Models -->
+            <div class="model-column">
+                <div class="model-column-header">
+                    <div style="font-size: 0.78rem; font-weight: 700; color: var(--accent-purple); display: flex; align-items: center; gap: 0.35rem;">
+                        <span>🛠️</span> Custom Models <span class="badge badge-purple" style="font-size: 0.65rem; padding: 0.05rem 0.35rem;">{total_custom}</span>
+                    </div>
+                    <button type="button" class="btn-col-select" style="color: var(--accent-purple);" onclick="selectPredictModels('{prefix}', 'custom')">Select Only</button>
+                </div>
+                <div class="model-column-scroll" id="{prefix}-custom-list">
+                    {custom_items}
+                </div>
+                <div style="margin-top: 0.5rem; padding-top: 0.4rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; gap: 0.3rem;">
+                    <input type="text" id="{prefix}-custom-input" placeholder="Add custom model ID..." style="flex: 1; min-width: 0; background: rgba(0,0,0,0.3); border: 1px solid var(--border-card); border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.72rem; color: #fff; outline: none;">
+                    <button type="button" onclick="addCustomPredictModel('{prefix}')" style="background: var(--accent-purple); border: none; color: #fff; font-size: 0.7rem; font-weight: 600; padding: 0.25rem 0.55rem; border-radius: 6px; cursor: pointer; white-space: nowrap;">+ Add</button>
+                </div>
+            </div>
         </div>
     </div>
     """
@@ -1085,6 +1150,124 @@ def generate_service_dashboard_html(
             word-break: break-word;
         }}
 
+        /* Model Selection 3-Column Layout & Meaningful Padding Area Box Color */
+        .model-columns-container {{
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }}
+        @media (max-width: 960px) {{
+            .model-columns-container {{
+                grid-template-columns: 1fr;
+            }}
+        }}
+        .model-column {{
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            box-sizing: border-box;
+        }}
+        .model-column-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.45rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 0.45rem;
+        }}
+        .model-column-scroll {{
+            max-height: 220px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            padding-right: 0.2rem;
+        }}
+        .btn-col-select {{
+            background: none;
+            border: none;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            transition: opacity 0.15s ease;
+        }}
+        .btn-col-select:hover {{
+            opacity: 0.8;
+        }}
+        .model-check-item {{
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.65rem 0.85rem;
+            border-radius: 9px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            user-select: none;
+            box-sizing: border-box;
+            width: 100%;
+            position: relative;
+        }}
+        .model-check-item:hover {{
+            background: rgba(30, 41, 59, 0.85);
+            border-color: rgba(255, 255, 255, 0.18);
+        }}
+        .model-check-item input[type="checkbox"] {{
+            margin: 0;
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-cyan);
+            cursor: pointer;
+            flex-shrink: 0;
+        }}
+        .model-info {{
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+        }}
+        .model-name {{
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.3;
+        }}
+        .model-meta {{
+            display: flex;
+            gap: 0.35rem;
+            align-items: center;
+            margin-top: 0.2rem;
+            flex-wrap: wrap;
+        }}
+        .model-status {{
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }}
+        /* Selected Box Styling with meaningful padding area color */
+        .model-check-item.is-selected,
+        .model-check-item:has(input:checked) {{
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(99, 102, 241, 0.16)) !important;
+            border: 1px solid rgba(56, 189, 248, 0.65) !important;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.2), inset 0 0 0 1px rgba(56, 189, 248, 0.25) !important;
+        }}
+        .model-check-item.is-selected .model-name,
+        .model-check-item:has(input:checked) .model-name {{
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }}
+
         /* Filter Controls */
         .filter-bar {{
             display: flex;
@@ -1837,15 +2020,29 @@ def generate_service_dashboard_html(
             const boxes = document.querySelectorAll('.' + prefix + '-checkbox');
             boxes.forEach(b => {{
                 const item = b.closest('.' + prefix + '-check-item');
-                const prov = item ? item.getAttribute('data-provider') : '';
+                const prov = item ? (item.getAttribute('data-provider') || '') : '';
+                const cat = item ? (item.getAttribute('data-category') || '') : '';
+                const isCustom = cat === 'custom' || prov.includes('requesty');
+                const isBaseline = prov.includes('local');
+
                 if (mode === 'all') {{
                     b.checked = true;
                 }} else if (mode === 'none') {{
                     b.checked = false;
                 }} else if (mode === 'baselines') {{
-                    b.checked = prov.includes('local');
+                    b.checked = isBaseline;
                 }} else if (mode === 'llms') {{
-                    b.checked = !prov.includes('local');
+                    b.checked = !isBaseline && !isCustom;
+                }} else if (mode === 'custom') {{
+                    b.checked = isCustom;
+                }}
+
+                if (item) {{
+                    if (b.checked) {{
+                        item.classList.add('is-selected');
+                    }} else {{
+                        item.classList.remove('is-selected');
+                    }}
                 }}
             }});
             updatePredictModelSelection(prefix);
@@ -1861,16 +2058,25 @@ def generate_service_dashboard_html(
         }}
 
         function updatePredictModelSelection(prefix) {{
-            const checked = Array.from(document.querySelectorAll('.' + prefix + '-checkbox:checked'));
             const allBoxes = document.querySelectorAll('.' + prefix + '-checkbox');
+            const checked = [];
+            allBoxes.forEach(b => {{
+                const item = b.closest('.' + prefix + '-check-item');
+                if (b.checked) {{
+                    checked.push(b);
+                    if (item) item.classList.add('is-selected');
+                }} else {{
+                    if (item) item.classList.remove('is-selected');
+                }}
+            }});
             const badge = document.getElementById(prefix + '-selected-count');
             if (!badge) return;
             if (checked.length === 0) {{
-                badge.textContent = 'No Models Selected';
+                badge.textContent = 'No Models Selected (0)';
                 badge.className = 'badge badge-rose';
             }} else if (checked.length === 1) {{
                 const item = checked[0].closest('.' + prefix + '-check-item');
-                const name = item ? item.querySelector('span').innerText : checked[0].value;
+                const name = item ? (item.querySelector('.model-name')?.innerText || checked[0].value) : checked[0].value;
                 badge.textContent = 'Selected: 1 Model (' + name + ')';
                 badge.className = 'badge badge-cyan';
             }} else if (checked.length === allBoxes.length) {{
@@ -1880,6 +2086,46 @@ def generate_service_dashboard_html(
                 badge.textContent = 'Selected: ' + checked.length + ' Models (Multi-Model Ensemble)';
                 badge.className = 'badge badge-indigo';
             }}
+        }}
+
+        function addCustomPredictModel(prefix) {{
+            const input = document.getElementById(prefix + '-custom-input');
+            if (!input) return;
+            const modelId = input.value.trim();
+            if (!modelId) return;
+
+            const list = document.getElementById(prefix + '-custom-list');
+            if (!list) return;
+
+            const existing = document.querySelector('.' + prefix + '-checkbox[value="' + modelId + '"]');
+            if (existing) {{
+                existing.checked = true;
+                const item = existing.closest('.' + prefix + '-check-item');
+                if (item) item.classList.add('is-selected');
+                updatePredictModelSelection(prefix);
+                input.value = '';
+                return;
+            }}
+
+            const label = document.createElement('label');
+            label.className = 'model-check-item ' + prefix + '-check-item is-selected';
+            label.setAttribute('data-id', modelId);
+            label.setAttribute('data-category', 'custom');
+            label.setAttribute('data-provider', 'custom');
+            label.setAttribute('data-name', modelId.toLowerCase());
+            label.innerHTML = `
+                <input type="checkbox" name="${{prefix}}-selected-models" value="${{modelId}}" class="${{prefix}}-checkbox" checked onchange="updatePredictModelSelection('${{prefix}}')">
+                <div class="model-info">
+                    <span class="model-name" title="${{modelId}}">${{modelId}}</span>
+                    <div class="model-meta">
+                        <span class="badge badge-purple">Custom API</span>
+                        <span class="model-status">🛠️ User Specified</span>
+                    </div>
+                </div>
+            `;
+            list.prepend(label);
+            input.value = '';
+            updatePredictModelSelection(prefix);
         }}
 
         function renderPredictResponse(data, elapsedMs, resultBox, verdictDiv) {{
@@ -1910,6 +2156,13 @@ def generate_service_dashboard_html(
                         : '<span class="badge badge-emerald">🟢 CLEARED</span>';
                     const mProbPct = Math.round((m.harm_probability || 0) * 100);
                     const mProbColor = mAct ? '#f43f5e' : '#38bdf8';
+                    const provLower = (m.provider || '').toLowerCase();
+                    const isCustom = provLower.includes('requesty') || provLower.includes('custom');
+                    const customBadge = isCustom 
+                        ? '<span class="badge badge-purple">🛠️ Custom</span>' 
+                        : (provLower.includes('local') 
+                            ? '<span class="badge badge-cyan">⚡ Baseline</span>' 
+                            : '<span class="badge badge-indigo">🤖 Frontier</span>');
 
                     modelRows += `
                         <tr>
@@ -1918,6 +2171,7 @@ def generate_service_dashboard_html(
                                 <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
                             </td>
                             <td><span class="badge badge-indigo">${{m.provider}}</span></td>
+                            <td>${{customBadge}}</td>
                             <td class="cell-mono" style="text-align: right;">
                                 <div style="font-weight: 700; color: ${{mProbColor}}; font-size: 0.88rem;">${{(m.harm_probability || 0).toFixed(4)}}</div>
                                 <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 3px;">
@@ -2001,6 +2255,7 @@ def generate_service_dashboard_html(
                                     <tr>
                                         <th>Evaluated Model</th>
                                         <th>Provider</th>
+                                        <th>Custom</th>
                                         <th style="text-align: right;">Harm Probability</th>
                                         <th>Decision</th>
                                         <th>Dominant Severity</th>
@@ -2211,6 +2466,14 @@ def generate_service_dashboard_html(
 
                     let tableRows = '';
                     allModels.forEach(m => {{
+                        const provLower = (m.provider || '').toLowerCase();
+                        const isCustom = provLower.includes('requesty') || provLower.includes('custom');
+                        const customBadge = isCustom 
+                            ? '<span class="badge badge-purple">🛠️ Custom</span>' 
+                            : (provLower.includes('local') 
+                                ? '<span class="badge badge-cyan">⚡ Baseline</span>' 
+                                : '<span class="badge badge-indigo">🤖 Frontier</span>');
+
                         if (m.status === 'done') {{
                             const mAct = m.actionable;
                             const mBadge = mAct 
@@ -2227,6 +2490,7 @@ def generate_service_dashboard_html(
                                         <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
                                     </td>
                                     <td><span class="badge badge-indigo">${{m.provider}}</span></td>
+                                    <td>${{customBadge}}</td>
                                     <td class="cell-mono" style="text-align: right;">
                                         <div style="font-weight: 700; color: ${{mProbColor}}; font-size: 0.88rem;">${{(m.harm_probability || 0).toFixed(4)}}</div>
                                         <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 3px;">
@@ -2249,6 +2513,7 @@ def generate_service_dashboard_html(
                                         <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
                                     </td>
                                     <td><span class="badge badge-outline">${{m.provider}}</span></td>
+                                    <td>${{customBadge}}</td>
                                     <td class="cell-mono" style="text-align: right; color: var(--text-muted); font-size: 0.75rem;">
                                         Calculating...
                                     </td>
@@ -2278,6 +2543,7 @@ def generate_service_dashboard_html(
                                         <tr>
                                             <th>Evaluated Model</th>
                                             <th>Provider</th>
+                                            <th>Custom</th>
                                             <th style="text-align: right;">Harm Probability</th>
                                             <th>Decision</th>
                                             <th>Dominant Severity</th>
@@ -2786,6 +3052,125 @@ def generate_predict_page_html(
             white-space: pre-wrap;
             word-break: break-word;
         }}
+
+        /* Model Selection 3-Column Layout & Meaningful Padding Area Box Color */
+        .model-columns-container {{
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }}
+        @media (max-width: 960px) {{
+            .model-columns-container {{
+                grid-template-columns: 1fr;
+            }}
+        }}
+        .model-column {{
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            box-sizing: border-box;
+        }}
+        .model-column-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 0.45rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            margin-bottom: 0.45rem;
+        }}
+        .model-column-scroll {{
+            max-height: 220px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            padding-right: 0.2rem;
+        }}
+        .btn-col-select {{
+            background: none;
+            border: none;
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            transition: opacity 0.15s ease;
+        }}
+        .btn-col-select:hover {{
+            opacity: 0.8;
+        }}
+        .model-check-item {{
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            padding: 0.65rem 0.85rem;
+            border-radius: 9px;
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            user-select: none;
+            box-sizing: border-box;
+            width: 100%;
+            position: relative;
+        }}
+        .model-check-item:hover {{
+            background: rgba(30, 41, 59, 0.85);
+            border-color: rgba(255, 255, 255, 0.18);
+        }}
+        .model-check-item input[type="checkbox"] {{
+            margin: 0;
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary);
+            cursor: pointer;
+            flex-shrink: 0;
+        }}
+        .model-info {{
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+        }}
+        .model-name {{
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.3;
+        }}
+        .model-meta {{
+            display: flex;
+            gap: 0.35rem;
+            align-items: center;
+            margin-top: 0.2rem;
+            flex-wrap: wrap;
+        }}
+        .model-status {{
+            font-size: 0.68rem;
+            color: var(--text-muted);
+        }}
+        /* Selected Box Styling with meaningful padding area color */
+        .model-check-item.is-selected,
+        .model-check-item:has(input:checked) {{
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(99, 102, 241, 0.16)) !important;
+            border: 1px solid rgba(56, 189, 248, 0.65) !important;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.2), inset 0 0 0 1px rgba(56, 189, 248, 0.25) !important;
+        }}
+        .model-check-item.is-selected .model-name,
+        .model-check-item:has(input:checked) .model-name {{
+            color: #ffffff !important;
+            font-weight: 700 !important;
+        }}
+
         .badge {{
             display: inline-flex;
             align-items: center;
@@ -3025,15 +3410,29 @@ print(response.json())</div>
             const boxes = document.querySelectorAll('.' + prefix + '-checkbox');
             boxes.forEach(b => {{
                 const item = b.closest('.' + prefix + '-check-item');
-                const prov = item ? item.getAttribute('data-provider') : '';
+                const prov = item ? (item.getAttribute('data-provider') || '') : '';
+                const cat = item ? (item.getAttribute('data-category') || '') : '';
+                const isCustom = cat === 'custom' || prov.includes('requesty');
+                const isBaseline = prov.includes('local');
+
                 if (mode === 'all') {{
                     b.checked = true;
                 }} else if (mode === 'none') {{
                     b.checked = false;
                 }} else if (mode === 'baselines') {{
-                    b.checked = prov.includes('local');
+                    b.checked = isBaseline;
                 }} else if (mode === 'llms') {{
-                    b.checked = !prov.includes('local');
+                    b.checked = !isBaseline && !isCustom;
+                }} else if (mode === 'custom') {{
+                    b.checked = isCustom;
+                }}
+
+                if (item) {{
+                    if (b.checked) {{
+                        item.classList.add('is-selected');
+                    }} else {{
+                        item.classList.remove('is-selected');
+                    }}
                 }}
             }});
             updatePredictModelSelection(prefix);
@@ -3049,16 +3448,25 @@ print(response.json())</div>
         }}
 
         function updatePredictModelSelection(prefix) {{
-            const checked = Array.from(document.querySelectorAll('.' + prefix + '-checkbox:checked'));
             const allBoxes = document.querySelectorAll('.' + prefix + '-checkbox');
+            const checked = [];
+            allBoxes.forEach(b => {{
+                const item = b.closest('.' + prefix + '-check-item');
+                if (b.checked) {{
+                    checked.push(b);
+                    if (item) item.classList.add('is-selected');
+                }} else {{
+                    if (item) item.classList.remove('is-selected');
+                }}
+            }});
             const badge = document.getElementById(prefix + '-selected-count');
             if (!badge) return;
             if (checked.length === 0) {{
-                badge.textContent = 'No Models Selected';
+                badge.textContent = 'No Models Selected (0)';
                 badge.className = 'badge badge-rose';
             }} else if (checked.length === 1) {{
                 const item = checked[0].closest('.' + prefix + '-check-item');
-                const name = item ? item.querySelector('span').innerText : checked[0].value;
+                const name = item ? (item.querySelector('.model-name')?.innerText || checked[0].value) : checked[0].value;
                 badge.textContent = 'Selected: 1 Model (' + name + ')';
                 badge.className = 'badge badge-cyan';
             }} else if (checked.length === allBoxes.length) {{
@@ -3068,6 +3476,46 @@ print(response.json())</div>
                 badge.textContent = 'Selected: ' + checked.length + ' Models (Multi-Model Ensemble)';
                 badge.className = 'badge badge-indigo';
             }}
+        }}
+
+        function addCustomPredictModel(prefix) {{
+            const input = document.getElementById(prefix + '-custom-input');
+            if (!input) return;
+            const modelId = input.value.trim();
+            if (!modelId) return;
+
+            const list = document.getElementById(prefix + '-custom-list');
+            if (!list) return;
+
+            const existing = document.querySelector('.' + prefix + '-checkbox[value="' + modelId + '"]');
+            if (existing) {{
+                existing.checked = true;
+                const item = existing.closest('.' + prefix + '-check-item');
+                if (item) item.classList.add('is-selected');
+                updatePredictModelSelection(prefix);
+                input.value = '';
+                return;
+            }}
+
+            const label = document.createElement('label');
+            label.className = 'model-check-item ' + prefix + '-check-item is-selected';
+            label.setAttribute('data-id', modelId);
+            label.setAttribute('data-category', 'custom');
+            label.setAttribute('data-provider', 'custom');
+            label.setAttribute('data-name', modelId.toLowerCase());
+            label.innerHTML = `
+                <input type="checkbox" name="${{prefix}}-selected-models" value="${{modelId}}" class="${{prefix}}-checkbox" checked onchange="updatePredictModelSelection('${{prefix}}')">
+                <div class="model-info">
+                    <span class="model-name" title="${{modelId}}">${{modelId}}</span>
+                    <div class="model-meta">
+                        <span class="badge badge-purple">Custom API</span>
+                        <span class="model-status">🛠️ User Specified</span>
+                    </div>
+                </div>
+            `;
+            list.prepend(label);
+            input.value = '';
+            updatePredictModelSelection(prefix);
         }}
 
         function renderPredictResponse(data, elapsedMs, resultBox, verdictDiv) {{
@@ -3098,6 +3546,13 @@ print(response.json())</div>
                         : '<span class="badge badge-emerald">🟢 CLEARED</span>';
                     const mProbPct = Math.round((m.harm_probability || 0) * 100);
                     const mProbColor = mAct ? '#f43f5e' : '#38bdf8';
+                    const provLower = (m.provider || '').toLowerCase();
+                    const isCustom = provLower.includes('requesty') || provLower.includes('custom');
+                    const customBadge = isCustom 
+                        ? '<span class="badge badge-purple">🛠️ Custom</span>' 
+                        : (provLower.includes('local') 
+                            ? '<span class="badge badge-cyan">⚡ Baseline</span>' 
+                            : '<span class="badge badge-indigo">🤖 Frontier</span>');
 
                     modelRows += `
                         <tr>
@@ -3106,6 +3561,7 @@ print(response.json())</div>
                                 <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
                             </td>
                             <td><span class="badge badge-indigo">${{m.provider}}</span></td>
+                            <td>${{customBadge}}</td>
                             <td class="cell-mono" style="text-align: right;">
                                 <div style="font-weight: 700; color: ${{mProbColor}}; font-size: 0.88rem;">${{(m.harm_probability || 0).toFixed(4)}}</div>
                                 <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 3px;">
@@ -3189,6 +3645,7 @@ print(response.json())</div>
                                     <tr>
                                         <th>Evaluated Model</th>
                                         <th>Provider</th>
+                                        <th>Custom</th>
                                         <th style="text-align: right;">Harm Probability</th>
                                         <th>Decision</th>
                                         <th>Dominant Severity</th>
@@ -3399,6 +3856,14 @@ print(response.json())</div>
 
                     let tableRows = '';
                     allModels.forEach(m => {{
+                        const provLower = (m.provider || '').toLowerCase();
+                        const isCustom = provLower.includes('requesty') || provLower.includes('custom');
+                        const customBadge = isCustom 
+                            ? '<span class="badge badge-purple">🛠️ Custom</span>' 
+                            : (provLower.includes('local') 
+                                ? '<span class="badge badge-cyan">⚡ Baseline</span>' 
+                                : '<span class="badge badge-indigo">🤖 Frontier</span>');
+
                         if (m.status === 'done') {{
                             const mAct = m.actionable;
                             const mBadge = mAct 
@@ -3415,6 +3880,7 @@ print(response.json())</div>
                                         <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
                                     </td>
                                     <td><span class="badge badge-indigo">${{m.provider}}</span></td>
+                                    <td>${{customBadge}}</td>
                                     <td class="cell-mono" style="text-align: right;">
                                         <div style="font-weight: 700; color: ${{mProbColor}}; font-size: 0.88rem;">${{(m.harm_probability || 0).toFixed(4)}}</div>
                                         <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 3px;">
@@ -3437,6 +3903,7 @@ print(response.json())</div>
                                         <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
                                     </td>
                                     <td><span class="badge badge-outline">${{m.provider}}</span></td>
+                                    <td>${{customBadge}}</td>
                                     <td class="cell-mono" style="text-align: right; color: var(--text-muted); font-size: 0.75rem;">
                                         Calculating...
                                     </td>
@@ -3466,6 +3933,7 @@ print(response.json())</div>
                                         <tr>
                                             <th>Evaluated Model</th>
                                             <th>Provider</th>
+                                            <th>Custom</th>
                                             <th style="text-align: right;">Harm Probability</th>
                                             <th>Decision</th>
                                             <th>Dominant Severity</th>

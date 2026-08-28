@@ -119,6 +119,8 @@ def _extract_llm_error_cases(
                             "history": list(history),
                         }
                         history.append((t.speaker_id, t.text))
+                if turn_lookup:
+                    break
             except Exception:
                 pass
 
@@ -154,6 +156,7 @@ def _extract_llm_error_cases(
     ]
     model_errors: dict[str, list[dict[str, Any]]] = {}
 
+    max_cases = int(config.get("max_error_cases_per_model", 50))
     for p_file in preds_candidates:
         if p_file.exists():
             try:
@@ -161,6 +164,8 @@ def _extract_llm_error_cases(
                     for line in f:
                         pred = json.loads(line)
                         scorer = pred.get("scorer", "")
+                        if len(model_errors.get(scorer, [])) >= max_cases:
+                            continue
                         display_name, family = _get_display_name(scorer)
                         if (
                             "LLM" not in family

@@ -49,6 +49,11 @@ def test_generate_service_dashboard_html() -> None:
     assert "setDashboardPreset" in html
     assert "testTurnInPlayground" in html
     assert "dash-model-grid" in html
+    assert "Local Baselines" in html
+    assert "Frontier LLMs" in html
+    assert "Custom Models" in html
+    assert "<th>Custom</th>" in html
+    assert "addCustomPredictModel" in html
     assert "dash-visual-verdict" in html
     assert "renderPredictResponse" in html
 
@@ -98,6 +103,11 @@ def test_server_predict_get_html(live_server: tuple[str, int]) -> None:
     assert "Execute POST /predict Request" in body
     assert "pred-model-grid" in body
     assert "Select All" in body
+    assert "Local Baselines" in body
+    assert "Frontier LLMs" in body
+    assert "Custom Models" in body
+    assert "<th>Custom</th>" in body
+    assert "addCustomPredictModel" in body
     assert "renderPredictResponse" in body
     conn.close()
 
