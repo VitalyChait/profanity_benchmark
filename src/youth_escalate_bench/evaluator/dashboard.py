@@ -294,7 +294,61 @@ def generate_service_dashboard_html(
         """
 
     total_errors = errors_data.get("summary", {}).get("total_error_instances", 22)
-    hardest_turns_count = len(difficulty_data.get("sentences", []))
+    raw_diff_sentences = difficulty_data.get("sentences", [])
+
+    # Group and aggregate distinct unique linguistic utterances across conversations
+    grouped_diff: dict[str, dict[str, Any]] = {}
+    for s in raw_diff_sentences:
+        txt = s.get("turn_text", "").strip()
+        if not txt:
+            continue
+        key = txt.lower()
+        if key not in grouped_diff:
+            grouped_diff[key] = {
+                "turn_text": txt,
+                "gold_actionable": s.get("gold_actionable", False),
+                "gold_severity": s.get("gold_severity", "unknown"),
+                "platform_style": s.get("platform_style", "unknown"),
+                "occurrences": 0,
+                "total_evaluations": 0,
+                "total_errors": 0,
+                "error_rates": [],
+                "priority_weights": [],
+                "primary_error_type": s.get("primary_error_type", "None"),
+                "sample_conversations": [],
+            }
+        g = grouped_diff[key]
+        g["occurrences"] += 1
+        g["total_evaluations"] += s.get("total_evaluations", 0)
+        g["total_errors"] += s.get("total_errors", 0)
+        g["error_rates"].append(s.get("error_rate", 0.0))
+        g["priority_weights"].append(s.get("priority_weight", 0.0))
+        if len(g["sample_conversations"]) < 3:
+            cid = s.get("conversation_id", "")
+            tid = s.get("turn_id", "")
+            g["sample_conversations"].append(f"{cid}:{tid}")
+
+    distinct_difficulty_sentences: list[dict[str, Any]] = []
+    for g in grouped_diff.values():
+        avg_err = sum(g["error_rates"]) / len(g["error_rates"]) if g["error_rates"] else 0.0
+        max_prio = max(g["priority_weights"]) if g["priority_weights"] else 0.0
+        distinct_difficulty_sentences.append(
+            {
+                "turn_text": g["turn_text"],
+                "occurrences": g["occurrences"],
+                "gold_actionable": g["gold_actionable"],
+                "gold_severity": g["gold_severity"],
+                "platform_style": g["platform_style"],
+                "total_evaluations": g["total_evaluations"],
+                "total_errors": g["total_errors"],
+                "error_rate": avg_err,
+                "priority_weight": max_prio,
+                "primary_error_type": g["primary_error_type"],
+                "sample_conversations": ", ".join(g["sample_conversations"]),
+            }
+        )
+    distinct_difficulty_sentences.sort(key=lambda x: (x["priority_weight"], x["total_errors"]), reverse=True)
+    hardest_turns_count = len(distinct_difficulty_sentences)
     top_fp_triggers = (
         ", ".join(difficulty_data.get("metadata", {}).get("top_fp_triggers", [])[:4])
         or "unreal, trickshot, swear"
@@ -324,8 +378,25 @@ def generate_service_dashboard_html(
                 }
             )
 
-    # Prepare difficulty sentences list
-    difficulty_sentences = difficulty_data.get("sentences", [])[:15]
+    # Prepare difficulty sentences list (using distinct linguistic utterances)
+    difficulty_sentences = distinct_difficulty_sentences[:20]
+
+    # Pre-render error cases rows
+    error_cases_rows = ""
+    for row in all_error_cases:
+        is_fp = "False Positive" in row["error_type"]
+        badge_cls = "badge-amber" if is_fp else "badge-rose"
+        label_short = "FP (Over-mod)" if is_fp else "FN (Missed)"
+        error_cases_rows += f"""
+                            <tr data-type="{row['error_type']}">
+                                <td class="cell-mono"><strong>{row['model']}</strong></td>
+                                <td style="max-width: 320px; font-weight: 500;">"{row['turn_text']}"</td>
+                                <td><span class="badge {badge_cls}">{label_short}</span></td>
+                                <td><span class="badge badge-indigo">{row['gold_severity']}</span></td>
+                                <td class="cell-mono" style="font-weight: 700;">{row['prob']:.2f}</td>
+                                <td style="color: var(--text-secondary); font-size: 0.8rem;">{row['reason']}</td>
+                            </tr>
+        """
 
     # Render HTML
     html = f"""<!DOCTYPE html>
@@ -776,10 +847,10 @@ def generate_service_dashboard_html(
                 <div class="kpi-num" style="color: var(--accent-rose);">{total_errors}</div>
                 <div class="kpi-desc">Turn-by-Turn Failure Diagnostics</div>
             </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Hardest Evaluated Turns</div>
-                <div class="kpi-num" style="color: var(--accent-amber);">{hardest_turns_count or 6}</div>
-                <div class="kpi-desc">Ranked by Misclassification Rate</div>
+            <div class="kpi-card" onclick="switchTab('tab-difficulty')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view distinct difficult turn patterns and error vulnerabilities">
+                <div class="kpi-label">Hardest Evaluated Turns ↗</div>
+                <div class="kpi-num" style="color: var(--accent-amber);">{hardest_turns_count}</div>
+                <div class="kpi-desc">Distinct Linguistic Patterns (from 1,000 Turns)</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Unified Profanity Terms</div>
@@ -800,7 +871,7 @@ def generate_service_dashboard_html(
                 <span>🔍</span> Failure Case Diagnostics ({total_errors})
             </button>
             <button class="tab-btn" onclick="switchTab('tab-difficulty')" id="btn-tab-difficulty">
-                <span>🎯</span> Hard-Sample Ranking
+                <span>🎯</span> Hard-Sample Ranking ({hardest_turns_count})
             </button>
             <button class="tab-btn" onclick="switchTab('tab-playground')" id="btn-tab-playground">
                 <span>⚡</span> Live Predict Playground
@@ -945,24 +1016,7 @@ def generate_service_dashboard_html(
                             </tr>
                         </thead>
                         <tbody>
-"""
-
-    for row in all_error_cases:
-        is_fp = "False Positive" in row["error_type"]
-        badge_cls = "badge-amber" if is_fp else "badge-rose"
-        label_short = "FP (Over-mod)" if is_fp else "FN (Missed)"
-        html += f"""
-                            <tr data-type="{row["error_type"]}">
-                                <td class="cell-mono"><strong>{row["model"]}</strong></td>
-                                <td style="max-width: 320px; font-weight: 500;">"{row["turn_text"]}"</td>
-                                <td><span class="badge {badge_cls}">{label_short}</span></td>
-                                <td><span class="badge badge-indigo">{row["gold_severity"]}</span></td>
-                                <td class="cell-mono" style="font-weight: 700;">{row["prob"]:.2f}</td>
-                                <td style="color: var(--text-secondary); font-size: 0.8rem;">{row["reason"]}</td>
-                            </tr>
-"""
-
-    html += """
+                            {error_cases_rows}
                         </tbody>
                     </table>
                 </div>
@@ -973,21 +1027,28 @@ def generate_service_dashboard_html(
         <section class="tab-content" id="tab-difficulty">
             <div class="panel-card">
                 <div class="panel-header">
-                    <h2 class="panel-title"><span>🎯</span> Internal Evaluation Difficulty Ranking & Vulnerability Index</h2>
-                    <span class="badge badge-amber">Active Priority Sampling</span>
+                    <div>
+                        <h2 class="panel-title"><span>🎯</span> Internal Evaluation Difficulty Ranking & Vulnerability Index</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+                            Distinct conversational turns sorted descending by error likelihood across all {models_count} evaluated models. Prioritized during hard-sample re-evaluation passes.
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                        <span class="badge badge-amber">{hardest_turns_count} Distinct Hard Patterns</span>
+                        <span class="badge badge-indigo">Aggregated across 1,000 Turns</span>
+                    </div>
                 </div>
-                <p style="color: var(--text-secondary); margin-bottom: 1.25rem; font-size: 0.88rem;">
-                    Conversations and turns sorted descending by failure rate across the model panel. Evaluated first during hard-sample sampling passes.
-                </p>
+
                 <div class="table-responsive" style="margin-bottom: 2rem;">
                     <table>
                         <thead>
                             <tr>
                                 <th>Rank</th>
-                                <th>Turn Text</th>
+                                <th>Turn Utterance</th>
+                                <th>Dataset Frequency</th>
                                 <th>Primary Failure Mode</th>
-                                <th>Error Rate</th>
-                                <th>Priority Weight</th>
+                                <th style="text-align: right;">Avg Error Rate</th>
+                                <th style="text-align: right;">Priority Weight</th>
                                 <th>Platform Style</th>
                             </tr>
                         </thead>
@@ -999,14 +1060,24 @@ def generate_service_dashboard_html(
         prio = s.get("priority_weight", 1.0)
         mode = s.get("primary_error_type", "Ambiguous")
         mode_badge = "badge-rose" if "Negative" in mode else "badge-amber"
+        occs = s.get("occurrences", 1)
+        samples = s.get("sample_conversations", "")
         html += f"""
                             <tr>
                                 <td class="cell-mono">#{idx}</td>
-                                <td style="max-width: 400px; font-weight: 600;">"{s.get("turn_text", "")}"</td>
+                                <td style="max-width: 420px;">
+                                    <div style="font-weight: 600; color: var(--text-primary);">"{s.get("turn_text", "")}"</div>
+                                    <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.15rem;">
+                                        Sample IDs: {samples}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-indigo">{occs} turn{'s' if occs > 1 else ''} in benchmark</span>
+                                </td>
                                 <td><span class="badge {mode_badge}">{mode}</span></td>
-                                <td class="cell-mono" style="font-weight: 700; color: var(--accent-rose);">{err_rate * 100:.1f}%</td>
-                                <td class="cell-mono" style="color: var(--accent-cyan); font-weight: 700;">{prio:.3f}x</td>
-                                <td><span class="badge badge-indigo">{s.get("platform_style", "chat")}</span></td>
+                                <td class="cell-mono" style="font-weight: 700; color: var(--accent-rose); text-align: right;">{err_rate * 100:.1f}%</td>
+                                <td class="cell-mono" style="color: var(--accent-cyan); font-weight: 700; text-align: right;">{prio:.3f}x</td>
+                                <td><span class="badge badge-cyan">{s.get("platform_style", "chat")}</span></td>
                             </tr>
 """
 

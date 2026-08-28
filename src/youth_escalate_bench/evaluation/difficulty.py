@@ -526,15 +526,78 @@ def score_request_difficulty(
     return round(composite, 4)
 
 
+def group_distinct_sentence_rankings(
+    sentences: list[SentenceRanking],
+) -> list[dict[str, Any]]:
+    """Group and aggregate sentence rankings by distinct unique turn text.
+
+    Consolidates identical utterance templates occurring across multiple conversation
+    threads into a single representative ranking with aggregated occurrences, average
+    error rates, and peak priority weights.
+    """
+    grouped: dict[str, dict[str, Any]] = {}
+    for s in sentences:
+        txt = s.turn_text.strip()
+        if not txt:
+            continue
+        key = txt.lower()
+        if key not in grouped:
+            grouped[key] = {
+                "turn_text": txt,
+                "gold_actionable": s.gold_actionable,
+                "gold_severity": s.gold_severity,
+                "platform_style": s.platform_style,
+                "occurrences": 0,
+                "total_evaluations": 0,
+                "total_errors": 0,
+                "error_rates": [],
+                "priority_weights": [],
+                "primary_error_type": s.primary_error_type,
+                "sample_conversations": [],
+            }
+        g = grouped[key]
+        g["occurrences"] += 1
+        g["total_evaluations"] += s.total_evaluations
+        g["total_errors"] += s.total_errors
+        g["error_rates"].append(s.error_rate)
+        g["priority_weights"].append(s.priority_weight)
+        if len(g["sample_conversations"]) < 3:
+            g["sample_conversations"].append(f"{s.conversation_id}:{s.turn_id}")
+
+    distinct: list[dict[str, Any]] = []
+    for g in grouped.values():
+        avg_err = sum(g["error_rates"]) / len(g["error_rates"]) if g["error_rates"] else 0.0
+        max_prio = max(g["priority_weights"]) if g["priority_weights"] else 0.0
+        distinct.append(
+            {
+                "turn_text": g["turn_text"],
+                "occurrences": g["occurrences"],
+                "gold_actionable": g["gold_actionable"],
+                "gold_severity": g["gold_severity"],
+                "platform_style": g["platform_style"],
+                "total_evaluations": g["total_evaluations"],
+                "total_errors": g["total_errors"],
+                "error_rate": avg_err,
+                "priority_weight": max_prio,
+                "primary_error_type": g["primary_error_type"],
+                "sample_conversations": ", ".join(g["sample_conversations"]),
+            }
+        )
+    distinct.sort(key=lambda x: (x["priority_weight"], x["total_errors"]), reverse=True)
+    return distinct
+
+
 def generate_difficulty_markdown_report(index: DifficultyIndex) -> str:
     """Generate Markdown report summarizing difficult sentences and vulnerable words."""
     meta = index.metadata
+    distinct_sentences = group_distinct_sentence_rankings(index.sentences)
     lines = [
         "# Internal Evaluation Difficulty & Misclassification Ranking",
         "",
         f"**Report Generated:** `{meta.get('generated_at', 'N/A')}`  ",
         f"**Evaluated Turns Analyzed:** `{meta.get('total_evaluated_turns', 0)}`  ",
         f"**High-Error Turns Identified:** `{meta.get('total_misclassified_turns', 0)}`  ",
+        f"**Distinct Linguistic Patterns:** `{len(distinct_sentences)}`  ",
         "",
         "> [!TIP]",
         "> **Active Priority Sampling:** Turns with the highest difficulty weights and vocabulary vulnerability",
@@ -542,19 +605,19 @@ def generate_difficulty_markdown_report(index: DifficultyIndex) -> str:
         "",
         "---",
         "",
-        "## 1. Top Misclassified Sentences / Turns",
+        "## 1. Top Misclassified Sentences / Turns (Distinct Linguistic Patterns)",
         "",
-        "| Rank | Priority | Error Rate | Primary Failure | Gold Label | Turn Text |",
-        "| :---: | :---: | :---: | :--- | :---: | :--- |",
+        "| Rank | Priority | Occurrences | Error Rate | Primary Failure | Gold Label | Turn Text |",
+        "| :---: | :---: | :---: | :---: | :--- | :---: | :--- |",
     ]
 
-    for rank, s in enumerate(index.sentences[:25], 1):
-        clean_text = s.turn_text.replace("\n", " ").strip()
+    for rank, s in enumerate(distinct_sentences[:25], 1):
+        clean_text = s["turn_text"].replace("\n", " ").strip()
         if len(clean_text) > 80:
             clean_text = clean_text[:77] + "..."
-        gold_str = "Actionable (Harm)" if s.gold_actionable else "Benign (Safe)"
+        gold_str = "Actionable (Harm)" if s["gold_actionable"] else "Benign (Safe)"
         lines.append(
-            f'| **{rank}** | `{s.priority_weight:.2f}` | `{s.error_rate * 100:.0f}%` ({s.total_errors}/{s.total_evaluations}) | {s.primary_error_type} | {gold_str} | "{clean_text}" |'
+            f'| **{rank}** | `{s["priority_weight"]:.2f}` | `{s["occurrences"]}x` | `{s["error_rate"] * 100:.0f}%` ({s["total_errors"]}/{s["total_evaluations"]}) | {s["primary_error_type"]} | {gold_str} | "{clean_text}" |'
         )
 
     lines.extend(

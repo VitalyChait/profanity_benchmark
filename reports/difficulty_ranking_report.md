@@ -3,6 +3,7 @@
 **Report Generated:** `2026-08-27 20:49:00 UTC`  
 **Evaluated Turns Analyzed:** `1000`  
 **High-Error Turns Identified:** `973`  
+**Distinct Linguistic Patterns:** `16`  
 
 > [!TIP]
 > **Active Priority Sampling:** Turns with the highest difficulty weights and vocabulary vulnerability
@@ -10,35 +11,26 @@
 
 ---
 
-## 1. Top Misclassified Sentences / Turns
+## 1. Top Misclassified Sentences / Turns (Distinct Linguistic Patterns)
 
-| Rank | Priority | Error Rate | Primary Failure | Gold Label | Turn Text |
-| :---: | :---: | :---: | :--- | :---: | :--- |
-| **1** | `0.96` | `86%` (98/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **2** | `0.96` | `87%` (99/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **3** | `0.96` | `84%` (96/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **4** | `0.96` | `85%` (97/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **5** | `0.95` | `83%` (95/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **6** | `0.95` | `85%` (97/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **7** | `0.94` | `84%` (96/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **8** | `0.94` | `84%` (96/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **9** | `0.94` | `84%` (96/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **10** | `0.94` | `84%` (96/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **11** | `0.94` | `84%` (96/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **12** | `0.94` | `83%` (95/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **13** | `0.94` | `83%` (95/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **14** | `0.94` | `83%` (95/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **15** | `0.93` | `82%` (94/114) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
-| **16** | `0.30` | `16%` (18/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
-| **17** | `0.28` | `14%` (16/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
-| **18** | `0.28` | `14%` (16/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
-| **19** | `0.28` | `14%` (16/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
-| **20** | `0.27` | `13%` (15/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
-| **21** | `0.27` | `13%` (15/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
-| **22** | `0.27` | `13%` (15/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
-| **23** | `0.27` | `13%` (15/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
-| **24** | `0.27` | `13%` (15/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
-| **25** | `0.27` | `13%` (15/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
+| Rank | Priority | Occurrences | Error Rate | Primary Failure | Gold Label | Turn Text |
+| :---: | :---: | :---: | :---: | :--- | :---: | :--- |
+| **1** | `0.96` | `15x` | `84%` (1441/1710) | False Positive (Over-moderation) | Benign (Safe) | "bro why did you push solo without comms" |
+| **2** | `0.30` | `176x` | `13%` (2646/20064) | False Positive (Over-moderation) | Benign (Safe) | "bro you are fucking cracked at this game lmao" |
+| **3** | `0.27` | `1x` | `13%` (15/114) | False Positive (Over-moderation) | Benign (Safe) | "bro you're fucking crazy lmao that trickshot was unreal" |
+| **4** | `0.25` | `185x` | `13%` (2775/21090) | False Positive (Over-moderation) | Benign (Safe) | "deadass thought we were dead haha" |
+| **5** | `0.23` | `200x` | `13%` (3000/22800) | False Positive (Over-moderation) | Benign (Safe) | "holy shit that play was crazy" |
+| **6** | `0.17` | `91x` | `2%` (217/10374) | False Negative (Missed Harm) | Actionable (Harm) | "you are fucking garbage uninstall right now" |
+| **7** | `0.16` | `10x` | `5%` (52/1140) | False Positive (Over-moderation) | Benign (Safe) | "you're throwing the game on purpose stop feeding" |
+| **8** | `0.15` | `12x` | `4%` (52/1368) | False Positive (Over-moderation) | Benign (Safe) | "yeah all good, let's win this next one" |
+| **9** | `0.15` | `11x` | `3%` (43/1254) | False Positive (Over-moderation) | Benign (Safe) | "my bad i missed the callout, let's reset and focus" |
+| **10** | `0.14` | `77x` | `4%` (350/8778) | False Positive (Over-moderation) | Benign (Safe) | "nice clutch my dude" |
+| **11** | `0.14` | `151x` | `3%` (548/17214) | False Positive (Over-moderation) | Benign (Safe) | "yeah my bad, let's keep playing" |
+| **12** | `0.11` | `35x` | `3%` (105/3990) | False Positive (Over-moderation) | Benign (Safe) | "heading there now, don't get picked" |
+| **13** | `0.11` | `22x` | `3%` (66/2508) | False Positive (Over-moderation) | Benign (Safe) | "lmao nice snipe bro" |
+| **14** | `0.09` | `1x` | `2%` (2/114) | False Negative (Missed Harm) | Actionable (Harm) | "bro you're fucking useless trash uninstall the game" |
+| **15** | `0.07` | `1x` | `0%` (0/114) | Correct | Actionable (Harm) | "you are a piece of shit and nobody likes you" |
+| **16** | `0.06` | `12x` | `0%` (0/1368) | Correct | Actionable (Harm) | "i know what high school you go to, keep talking and see what happens" |
 
 ---
 
