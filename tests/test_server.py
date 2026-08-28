@@ -40,6 +40,13 @@ def test_generate_service_dashboard_html() -> None:
     assert "Causal Context Trajectories" in html
     assert "analytics-matrix-table" in html
     assert "lightbox-modal" in html
+    assert "tab-badge" in html
+    assert "difficulty-table" in html
+    assert "difficulty-search" in html
+    assert "setDifficultyFilter" in html
+    assert "setModelFilter" in html
+    assert "setDashboardPreset" in html
+    assert "testTurnInPlayground" in html
 
 
 def test_server_health_check(live_server: tuple[str, int]) -> None:

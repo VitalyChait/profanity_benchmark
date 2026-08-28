@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from html import escape as html_escape
 from pathlib import Path
 from typing import Any
 
@@ -299,6 +300,9 @@ def generate_service_dashboard_html(
             <td style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-secondary); text-align: right;">
                 {m['r_at_fpr1']:.3f}
             </td>
+            <td style="text-align: center;">
+                <button class="btn-sm btn-cyan" onclick="openModelPredict('{html_escape(m['name'], quote=True)}')">⚡ Test</button>
+            </td>
         </tr>
         """
 
@@ -467,13 +471,20 @@ def generate_service_dashboard_html(
         )
     distinct_difficulty_sentences.sort(key=lambda x: (x["priority_weight"], x["total_errors"]), reverse=True)
     hardest_turns_count = len(distinct_difficulty_sentences)
-    top_fp_triggers = (
-        ", ".join(difficulty_data.get("metadata", {}).get("top_fp_triggers", [])[:4])
-        or "unreal, trickshot, swear"
+
+    fp_words = difficulty_data.get("metadata", {}).get("top_fp_triggers", [])[:8] or [
+        "unreal", "trickshot", "swear", "cracked", "deadass", "holy", "shit", "lmao"
+    ]
+    fn_words = difficulty_data.get("metadata", {}).get("top_fn_indicators", [])[:8] or [
+        "garbage", "uninstall", "fucking", "trash", "useless", "kys", "feeding"
+    ]
+    fp_trigger_buttons = "".join(
+        f'<button class="btn-sm btn-outline" style="margin: 0.2rem; cursor: pointer;" onclick="filterDifficultyByWord(\'{w}\')">🔴 {w}</button>'
+        for w in fp_words
     )
-    top_fn_indicators = (
-        ", ".join(difficulty_data.get("metadata", {}).get("top_fn_indicators", [])[:4])
-        or "garbage, uninstall, fucking"
+    fn_trigger_buttons = "".join(
+        f'<button class="btn-sm btn-outline" style="margin: 0.2rem; cursor: pointer;" onclick="filterDifficultyByWord(\'{w}\')">🟠 {w}</button>'
+        for w in fn_words
     )
 
     # Prepare error cases list for interactive table
@@ -686,6 +697,21 @@ def generate_service_dashboard_html(
             background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(129, 140, 248, 0.15));
             border: 1px solid rgba(56, 189, 248, 0.35);
             box-shadow: 0 4px 16px rgba(56, 189, 248, 0.1);
+        }}
+        .tab-badge {{
+            font-size: 0.72rem;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            padding: 0.12rem 0.5rem;
+            border-radius: 9999px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }}
+        .tab-btn.active .tab-badge {{
+            background: rgba(56, 189, 248, 0.25);
+            color: var(--accent-cyan);
+            border-color: rgba(56, 189, 248, 0.5);
         }}
 
         /* Content Sections */
@@ -1046,8 +1072,8 @@ def generate_service_dashboard_html(
                 <div class="kpi-num">{models_count}</div>
                 <div class="kpi-desc">32 Frontier LLMs & 6 Baselines</div>
             </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Identified Error Cases</div>
+            <div class="kpi-card" onclick="switchTab('tab-errors')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view turn-by-turn failure case diagnostics">
+                <div class="kpi-label">Identified Error Cases ↗</div>
                 <div class="kpi-num" style="color: var(--accent-rose);">{total_errors}</div>
                 <div class="kpi-desc">Turn-by-Turn Failure Diagnostics</div>
             </div>
@@ -1056,8 +1082,8 @@ def generate_service_dashboard_html(
                 <div class="kpi-num" style="color: var(--accent-amber);">{hardest_turns_count}</div>
                 <div class="kpi-desc">Distinct Linguistic Patterns (from 1,000 Turns)</div>
             </div>
-            <div class="kpi-card">
-                <div class="kpi-label">Unified Profanity Terms</div>
+            <div class="kpi-card" onclick="switchTab('tab-data')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view datasets, corpora, and audit reports">
+                <div class="kpi-label">Unified Profanity Terms ↗</div>
                 <div class="kpi-num" style="color: var(--accent-emerald);">2,826</div>
                 <div class="kpi-desc">18 Vetted Legal Sources</div>
             </div>
@@ -1069,13 +1095,13 @@ def generate_service_dashboard_html(
                 <span>📈</span> Visual Analytics & Heatmaps
             </button>
             <button class="tab-btn" onclick="switchTab('tab-models')" id="btn-tab-models">
-                <span>🤖</span> Evaluated Models & Live Access ({models_count})
+                <span>🤖</span> Evaluated Models & Live Access <span class="tab-badge">{models_count}</span>
             </button>
             <button class="tab-btn" onclick="switchTab('tab-errors')" id="btn-tab-errors">
-                <span>🔍</span> Failure Case Diagnostics ({total_errors})
+                <span>🔍</span> Failure Case Diagnostics <span class="tab-badge">{total_errors}</span>
             </button>
             <button class="tab-btn" onclick="switchTab('tab-difficulty')" id="btn-tab-difficulty">
-                <span>🎯</span> Hard-Sample Ranking ({hardest_turns_count})
+                <span>🎯</span> Hard-Sample Ranking <span class="tab-badge">{hardest_turns_count}</span>
             </button>
             <button class="tab-btn" onclick="switchTab('tab-playground')" id="btn-tab-playground">
                 <span>⚡</span> Live Predict Playground
@@ -1263,8 +1289,12 @@ def generate_service_dashboard_html(
                         </p>
                     </div>
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                        <span class="badge badge-emerald">🟢 {accessible_models_count}/{models_count} Active & Accessible</span>
-                        <span class="badge badge-cyan">🎁 {free_tier_count} Free-Tier Models</span>
+                        <a href="/api/models" target="_blank" class="btn-sm btn-cyan" style="text-decoration: none;">
+                            <span>📊</span> /api/models REST API ↗
+                        </a>
+                        <button onclick="switchTab('tab-playground')" class="btn-sm btn-outline">
+                            <span>⚡</span> Test in Playground
+                        </button>
                     </div>
                 </div>
 
@@ -1289,27 +1319,16 @@ def generate_service_dashboard_html(
                 </div>
 
                 <!-- Search and Filter Bar -->
-                <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center;">
-                    <input type="text" class="search-input" id="model-search" placeholder="Search model name, family, or ID..." onkeyup="filterModelsTable()" style="max-width: 320px;">
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <label style="font-size: 0.8rem; color: var(--text-secondary);">Provider:</label>
-                        <select id="model-provider-filter" onchange="filterModelsTable()" style="background: #0f172a; border: 1px solid var(--border-card); color: var(--text-primary); border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.82rem;">
-                            <option value="all">All Providers</option>
-                            <option value="openrouter">OpenRouter (19)</option>
-                            <option value="requesty">Requesty.ai (12)</option>
-                            <option value="mistral">Mistral AI (1)</option>
-                            <option value="local">Local Baselines (6)</option>
-                        </select>
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+                    <div class="filter-bar" style="margin-bottom: 0;">
+                        <button class="filter-btn active" onclick="setModelFilter('all', this)">All Models ({models_count})</button>
+                        <button class="filter-btn" onclick="setModelFilter('accessible', this)">🟢 Accessible ({accessible_models_count})</button>
+                        <button class="filter-btn" onclick="setModelFilter('free', this)">🎁 Free Tier ({free_tier_count})</button>
+                        <button class="filter-btn" onclick="setModelFilter('openrouter', this)">OpenRouter (19)</button>
+                        <button class="filter-btn" onclick="setModelFilter('requesty', this)">Requesty.ai (12)</button>
+                        <button class="filter-btn" onclick="setModelFilter('local', this)">Local Baselines (6)</button>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
-                        <label style="font-size: 0.8rem; color: var(--text-secondary);">Status:</label>
-                        <select id="model-status-filter" onchange="filterModelsTable()" style="background: #0f172a; border: 1px solid var(--border-card); color: var(--text-primary); border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.82rem;">
-                            <option value="all">All Statuses</option>
-                            <option value="accessible">Accessible Now (Active Key)</option>
-                            <option value="free">Free Tier ($0 Cost)</option>
-                            <option value="local">Local Built-in</option>
-                        </select>
-                    </div>
+                    <input type="text" class="search-input" id="model-search" placeholder="Search model name, family, or ID..." onkeyup="filterModelsTable()" style="max-width: 280px;">
                 </div>
 
                 <!-- Catalog Table -->
@@ -1324,6 +1343,7 @@ def generate_service_dashboard_html(
                                 <th>Required .env Key</th>
                                 <th style="text-align: right;">Full Prefix AUPRC (Δ)</th>
                                 <th style="text-align: right;">Recall @ FPR 1%</th>
+                                <th style="text-align: center;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1376,14 +1396,29 @@ def generate_service_dashboard_html(
                             Distinct conversational turns sorted descending by error likelihood across all {models_count} evaluated models. Prioritized during hard-sample re-evaluation passes.
                         </p>
                     </div>
-                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                        <span class="badge badge-amber">{hardest_turns_count} Distinct Hard Patterns</span>
-                        <span class="badge badge-indigo">Aggregated across 1,000 Turns</span>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="/reports/difficulty_ranking_report.md" target="_blank" class="btn-sm btn-cyan" style="text-decoration: none;">
+                            <span>📄</span> Difficulty Report ↗
+                        </a>
+                        <a href="/api/difficulty" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">
+                            <span>📊</span> /api/difficulty JSON ↗
+                        </a>
                     </div>
                 </div>
 
+                <!-- Search and Filter Bar -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+                    <div class="filter-bar" style="margin-bottom: 0;">
+                        <button class="filter-btn active" onclick="setDifficultyFilter('all', this)">All Difficult Patterns ({hardest_turns_count})</button>
+                        <button class="filter-btn" onclick="setDifficultyFilter('False Positive', this)">🔴 Over-Moderation (FP)</button>
+                        <button class="filter-btn" onclick="setDifficultyFilter('False Negative', this)">🟠 Missed Harm (FN)</button>
+                        <button class="filter-btn" onclick="setDifficultyFilter('high_priority', this)">⚡ Priority > 0.20x</button>
+                    </div>
+                    <input type="text" class="search-input" id="difficulty-search" placeholder="Search turn text, platform, or keyword..." onkeyup="filterDifficultyTable()" style="max-width: 280px;">
+                </div>
+
                 <div class="table-responsive" style="margin-bottom: 2rem;">
-                    <table>
+                    <table id="difficulty-table">
                         <thead>
                             <tr>
                                 <th>Rank</th>
@@ -1393,6 +1428,7 @@ def generate_service_dashboard_html(
                                 <th style="text-align: right;">Avg Error Rate</th>
                                 <th style="text-align: right;">Priority Weight</th>
                                 <th>Platform Style</th>
+                                <th style="text-align: center;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1405,8 +1441,9 @@ def generate_service_dashboard_html(
         mode_badge = "badge-rose" if "Negative" in mode else "badge-amber"
         occs = s.get("occurrences", 1)
         samples = s.get("sample_conversations", "")
+        clean_text_attr = html_escape(s.get("turn_text", ""), quote=True)
         html += f"""
-                            <tr>
+                            <tr data-mode="{mode}" data-prio="{prio}">
                                 <td class="cell-mono">#{idx}</td>
                                 <td style="max-width: 420px;">
                                     <div style="font-weight: 600; color: var(--text-primary);">"{s.get("turn_text", "")}"</div>
@@ -1421,6 +1458,9 @@ def generate_service_dashboard_html(
                                 <td class="cell-mono" style="font-weight: 700; color: var(--accent-rose); text-align: right;">{err_rate * 100:.1f}%</td>
                                 <td class="cell-mono" style="color: var(--accent-cyan); font-weight: 700; text-align: right;">{prio:.3f}x</td>
                                 <td><span class="badge badge-cyan">{s.get("platform_style", "chat")}</span></td>
+                                <td style="text-align: center;">
+                                    <button class="btn-sm btn-cyan" onclick="testTurnInPlayground(this.dataset.text)" data-text="{clean_text_attr}">⚡ Test</button>
+                                </td>
                             </tr>
 """
 
@@ -1432,13 +1472,17 @@ def generate_service_dashboard_html(
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                     <div class="panel-card" style="margin-bottom: 0; background: rgba(15, 23, 42, 0.6);">
                         <h3 style="font-size: 1rem; color: var(--accent-amber); margin-bottom: 0.75rem;">⚠️ Top False Positive Triggers (Over-Moderation)</h3>
-                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Words triggering false bans on safe banter:</p>
-                        <p class="cell-mono" style="color: var(--accent-cyan); font-weight: 600;">{top_fp_triggers}</p>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Words triggering false bans on safe banter (click word to filter table):</p>
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                            {fp_trigger_buttons}
+                        </div>
                     </div>
                     <div class="panel-card" style="margin-bottom: 0; background: rgba(15, 23, 42, 0.6);">
                         <h3 style="font-size: 1rem; color: var(--accent-rose); margin-bottom: 0.75rem;">🚨 Top False Negative Indicators (Missed Covert Harm)</h3>
-                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.5rem;">Words frequently involved in uncaught peer harassment:</p>
-                        <p class="cell-mono" style="color: var(--accent-rose); font-weight: 600;">{top_fn_indicators}</p>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Words frequently involved in uncaught peer harassment (click word to filter table):</p>
+                        <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
+                            {fn_trigger_buttons}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1456,6 +1500,15 @@ def generate_service_dashboard_html(
                 </p>
                 <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.75rem;">
                     <div>
+                        <div style="margin-bottom: 1rem;">
+                            <label class="form-label">Quick Scenario Presets:</label>
+                            <div class="filter-bar" style="margin-bottom: 0;">
+                                <button class="filter-btn" type="button" onclick="setDashboardPreset('hype')">🎮 Benign Hype Banter</button>
+                                <button class="filter-btn" type="button" onclick="setDashboardPreset('bullying')">🚨 Gaming Toxic Bullying</button>
+                                <button class="filter-btn" type="button" onclick="setDashboardPreset('exclusion')">⛔ Social Exclusion</button>
+                                <button class="filter-btn" type="button" onclick="setDashboardPreset('algospeak')">⚠️ Algospeak Harm</button>
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label class="form-label" for="test-prefix">Previous Context Turns (JSON or newline lines):</label>
                             <textarea class="form-textarea" id="test-prefix" placeholder="u1: yo what did you just do&#10;u2: stop feeding or we lose"></textarea>
@@ -1576,11 +1629,18 @@ def generate_service_dashboard_html(
             }});
         }}
 
+        let currentModelFilter = 'all';
+        function setModelFilter(type, btn) {{
+            if (btn) {{
+                btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }}
+            currentModelFilter = type;
+            filterModelsTable();
+        }}
+
         function filterModelsTable() {{
             const query = (document.getElementById('model-search')?.value || '').toLowerCase();
-            const prov = (document.getElementById('model-provider-filter')?.value || 'all').toLowerCase();
-            const status = (document.getElementById('model-status-filter')?.value || 'all').toLowerCase();
-
             const rows = document.querySelectorAll('#models-table tbody tr');
             rows.forEach(r => {{
                 const text = r.innerText.toLowerCase();
@@ -1589,14 +1649,109 @@ def generate_service_dashboard_html(
                 const rTier = r.getAttribute('data-tier') || '';
 
                 const matchesQuery = !query || text.includes(query);
-                const matchesProv = !prov || prov === 'all' || rProv.includes(prov);
-                const matchesStatus = !status || status === 'all' 
-                    || (status === 'accessible' && rStatus === 'accessible')
-                    || (status === 'free' && rTier.includes('free'))
-                    || (status === 'local' && rProv.includes('local'));
+                let matchesFilter = true;
+                if (currentModelFilter === 'accessible') {{
+                    matchesFilter = (rStatus === 'accessible');
+                }} else if (currentModelFilter === 'free') {{
+                    matchesFilter = rTier.includes('free');
+                }} else if (currentModelFilter === 'openrouter') {{
+                    matchesFilter = rProv.includes('openrouter');
+                }} else if (currentModelFilter === 'requesty') {{
+                    matchesFilter = rProv.includes('requesty');
+                }} else if (currentModelFilter === 'local') {{
+                    matchesFilter = rProv.includes('local');
+                }}
 
-                r.style.display = (matchesQuery && matchesProv && matchesStatus) ? '' : 'none';
+                r.style.display = (matchesQuery && matchesFilter) ? '' : 'none';
             }});
+        }}
+
+        let currentDifficultyFilter = 'all';
+        function setDifficultyFilter(type, btn) {{
+            if (btn) {{
+                btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }}
+            currentDifficultyFilter = type;
+            filterDifficultyTable();
+        }}
+
+        function filterDifficultyTable() {{
+            const query = (document.getElementById('difficulty-search')?.value || '').toLowerCase();
+            const rows = document.querySelectorAll('#difficulty-table tbody tr');
+            rows.forEach(r => {{
+                const text = r.innerText.toLowerCase();
+                const mode = r.getAttribute('data-mode') || '';
+                const prio = parseFloat(r.getAttribute('data-prio') || '0');
+
+                const matchesQuery = !query || text.includes(query);
+                let matchesFilter = true;
+                if (currentDifficultyFilter === 'False Positive') {{
+                    matchesFilter = mode.includes('Positive');
+                }} else if (currentDifficultyFilter === 'False Negative') {{
+                    matchesFilter = mode.includes('Negative');
+                }} else if (currentDifficultyFilter === 'high_priority') {{
+                    matchesFilter = prio >= 0.20;
+                }}
+
+                r.style.display = (matchesQuery && matchesFilter) ? '' : 'none';
+            }});
+        }}
+
+        function filterDifficultyByWord(word) {{
+            const input = document.getElementById('difficulty-search');
+            if (input) {{
+                input.value = word;
+                filterDifficultyTable();
+                input.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+                input.focus();
+            }}
+        }}
+
+        function testTurnInPlayground(turnText) {{
+            switchTab('tab-playground');
+            const targetInput = document.getElementById('test-turn');
+            if (targetInput) {{
+                targetInput.value = turnText;
+                targetInput.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+                targetInput.focus();
+            }}
+            runLivePredict();
+        }}
+
+        function openModelPredict(modelName) {{
+            switchTab('tab-playground');
+            const targetInput = document.getElementById('test-turn');
+            if (targetInput) {{
+                targetInput.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+                targetInput.focus();
+            }}
+        }}
+
+        function setDashboardPreset(type) {{
+            const presets = {{
+                hype: {{
+                    prefix: "u1: he is diffusing the bomb!\\nu2: stick it stick it",
+                    target: "holy fucking shit you hit that cross-map snipe! you are an absolute god at this game bro"
+                }},
+                bullying: {{
+                    prefix: "u1: my bad missed the flash\\nu2: play safe",
+                    target: "you are absolute garbage uninstall right now delete the game"
+                }},
+                exclusion: {{
+                    prefix: "u1: can i join next match?\\nu2: we need a full 5-stack",
+                    target: "nobody in this discord wanted you here, just leave and don't come back"
+                }},
+                algospeak: {{
+                    prefix: "u1: stop griefing our lobby",
+                    target: "go u-n-a-l-i-v-e yourself in real life, waste of oxygen"
+                }}
+            }};
+            const p = presets[type];
+            if (!p) return;
+            document.getElementById('test-prefix').value = p.prefix;
+            document.getElementById('test-turn').value = p.target;
+            runLivePredict();
         }}
 
         function setErrorFilter(type, btn) {{
