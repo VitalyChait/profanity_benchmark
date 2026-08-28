@@ -844,3 +844,540 @@ def generate_service_dashboard_html(
 </html>
 """
     return html
+
+
+def generate_predict_page_html(
+    host: str = "127.0.0.1",
+    port: int = 8080,
+) -> str:
+    """Generate dedicated interactive HTML playground for the /predict endpoint."""
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouthEscalateBench — Moderation API Sandbox (/predict)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {{
+            --bg-base: #0a0e17;
+            --bg-surface: #111827;
+            --bg-card: #1f2937;
+            --bg-card-hover: #263345;
+            --border-subtle: #374151;
+            --border-accent: #4f46e5;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --emerald: #10b981;
+            --emerald-bg: rgba(16, 185, 129, 0.15);
+            --rose: #f43f5e;
+            --rose-bg: rgba(244, 63, 94, 0.15);
+            --amber: #f59e0b;
+            --amber-bg: rgba(245, 158, 11, 0.15);
+            --sky: #0ea5e9;
+            --text-primary: #f9fafb;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }}
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }}
+        header {{
+            background: rgba(17, 24, 39, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }}
+        .brand {{
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: inherit;
+        }}
+        .brand-icon {{
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #6366f1, #ec4899);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }}
+        .brand-title {{ font-size: 1.15rem; font-weight: 700; letter-spacing: -0.02em; }}
+        .brand-subtitle {{ font-size: 0.75rem; color: var(--text-secondary); }}
+        .header-actions {{ display: flex; align-items: center; gap: 1rem; }}
+        .service-badge {{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.85rem;
+            border-radius: 9999px;
+            background: var(--emerald-bg);
+            border: 1px solid var(--emerald);
+            color: #34d399;
+            font-size: 0.8rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
+        }}
+        .pulse-dot {{
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse 2s infinite;
+        }}
+        @keyframes pulse {{ 0%, 100% {{ opacity: 1; }} 50% {{ opacity: 0.4; }} }}
+        .btn-link {{
+            background: #1f2937;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+        }}
+        .btn-link:hover {{
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }}
+        main {{
+            flex: 1;
+            max-width: 1300px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }}
+        .intro-card {{
+            background: linear-gradient(135deg, rgba(31, 41, 55, 0.7), rgba(17, 24, 39, 0.9));
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 1.75rem;
+        }}
+        .intro-title {{ font-size: 1.6rem; font-weight: 800; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.75rem; }}
+        .intro-desc {{ color: var(--text-secondary); font-size: 0.95rem; line-height: 1.6; max-width: 900px; }}
+        .preset-container {{ display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.25rem; }}
+        .preset-btn {{
+            background: rgba(55, 65, 81, 0.6);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            padding: 0.45rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }}
+        .preset-btn:hover {{
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }}
+        .grid-layout {{
+            display: grid;
+            grid-template-columns: 1.15fr 1fr;
+            gap: 2rem;
+        }}
+        @media (max-width: 980px) {{
+            .grid-layout {{ grid-template-columns: 1fr; }}
+        }}
+        .panel-card {{
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 1.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }}
+        .panel-header {{ display: flex; justify-content: space-between; align-items: center; }}
+        .panel-title {{ font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; }}
+        .form-group {{ display: flex; flex-direction: column; gap: 0.5rem; }}
+        .form-label {{ font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }}
+        .form-input, .form-textarea, .form-select {{
+            background: #0f172a;
+            border: 1px solid var(--border-subtle);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            padding: 0.75rem 1rem;
+            font-size: 0.92rem;
+            transition: border-color 0.2s ease;
+        }}
+        .form-input:focus, .form-textarea:focus, .form-select:focus {{
+            outline: none;
+            border-color: var(--primary);
+        }}
+        .form-textarea {{ resize: vertical; min-height: 90px; font-family: var(--font-mono); font-size: 0.85rem; }}
+        .form-row {{ display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }}
+        .btn-predict {{
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none;
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 0.85rem 1.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+        }}
+        .btn-predict:hover {{
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        }}
+        .result-box {{
+            background: #0b1120;
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: 1.25rem;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: #cbd5e1;
+            overflow-x: auto;
+            max-height: 480px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }}
+        .outcome-badge {{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }}
+        .badge-actionable {{ background: var(--rose-bg); border: 1px solid var(--rose); color: #fb7185; }}
+        .badge-benign {{ background: var(--emerald-bg); border: 1px solid var(--emerald); color: #34d399; }}
+        .badge-monitor {{ background: var(--amber-bg); border: 1px solid var(--amber); color: #fbbf24; }}
+        .docs-section {{
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 1.75rem;
+        }}
+        .docs-title {{ font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }}
+        .code-block {{
+            background: #0b1120;
+            border: 1px solid var(--border-subtle);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: #38bdf8;
+            overflow-x: auto;
+            margin: 0.75rem 0;
+            position: relative;
+        }}
+        .copy-btn {{
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #cbd5e1;
+            border-radius: 6px;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }}
+        .copy-btn:hover {{ background: var(--primary); color: #fff; border-color: var(--primary); }}
+        footer {{
+            border-top: 1px solid var(--border-subtle);
+            padding: 1.5rem 2rem;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+        }}
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="brand">
+            <div class="brand-icon">🛡️</div>
+            <div>
+                <div class="brand-title">YouthEscalateBench</div>
+                <div class="brand-subtitle">Private Evaluator Service • Version 0.1.2</div>
+            </div>
+        </a>
+        <div class="header-actions">
+            <div class="service-badge">
+                <span class="pulse-dot"></span>
+                <span>http://{host}:{port}/predict</span>
+            </div>
+            <a href="/" class="btn-link">📊 Analytics Dashboard</a>
+        </div>
+    </header>
+
+    <main>
+        <div class="intro-card">
+            <h1 class="intro-title"><span>⚡</span> Moderation API Playground & Sandbox</h1>
+            <p class="intro-desc">
+                This endpoint accepts <code>HTTP POST /predict</code> requests conforming to the <code>InferenceRequest</code> specification.
+                Test your conversation turns below in real time to inspect harm probabilities, severity distributions, and causal risk onset.
+            </p>
+            <div class="preset-container">
+                <span style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; margin-right: 0.4rem;">Presets:</span>
+                <button class="preset-btn" onclick="setPreset('hype')">🔥 Benign Gaming Hype</button>
+                <button class="preset-btn" onclick="setPreset('bullying')">⚠️ Targeted Cyberbullying</button>
+                <button class="preset-btn" onclick="setPreset('exclusion')">👤 Covert Exclusion</button>
+                <button class="preset-btn" onclick="setPreset('algospeak')">🛡️ Algospeak Evasion</button>
+            </div>
+        </div>
+
+        <div class="grid-layout">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <h2 class="panel-title"><span>📝</span> Test Conversation Input</h2>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="context-turns">Context Turns (Optional Prefix History):</label>
+                    <textarea class="form-textarea" id="context-turns" placeholder="u1: nice push team&#10;u2: they are rotating B"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="target-turn">Current Turn to Evaluate (Target Text):</label>
+                    <input type="text" class="form-input" id="target-turn" value="you are absolute garbage uninstall right now">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="platform-style">Platform Style:</label>
+                        <select class="form-select" id="platform-style">
+                            <option value="gaming_chat" selected>Gaming Chat (Discord/Steam)</option>
+                            <option value="reddit_tree">Reddit Tree Discussion</option>
+                            <option value="direct_message">Direct Message</option>
+                            <option value="group_chat">Group Chat</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="task-type">Task Type:</label>
+                        <select class="form-select" id="task-type">
+                            <option value="current_harm" selected>Current Harm (Severity 0-4)</option>
+                            <option value="next_turn_forecast">Next Turn Forecast</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn-predict" id="btn-submit" onclick="submitPredict()">
+                    <span>▶</span> Execute POST /predict Request
+                </button>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-header">
+                    <h2 class="panel-title"><span>📡</span> Live Response Payload</h2>
+                    <span id="response-status" style="font-size: 0.8rem; font-family: var(--font-mono); color: var(--text-muted);">Ready</span>
+                </div>
+                <div id="visual-verdict" style="display: none;"></div>
+                <div class="result-box" id="response-json">// Click 'Execute POST /predict Request' or pick a preset above to inspect live output...</div>
+            </div>
+        </div>
+
+        <div class="docs-section">
+            <h2 class="docs-title"><span>📖</span> API Integration Quickstart</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">
+                You can invoke this exact endpoint directly via <code>curl</code>, Python, or any HTTP client:
+            </p>
+
+            <div class="form-label">cURL Command</div>
+            <div class="code-block" id="curl-code">curl -X POST http://{host}:{port}/predict \
+  -H "Content-Type: application/json" \
+  -d '{{
+    "benchmark_version": "0.1.2",
+    "conversation_id": "demo_test",
+    "current_turn_id": "t1",
+    "platform_style": "gaming_chat",
+    "language_mode": "english",
+    "task": "current_harm",
+    "turns": [
+      {{ "speaker_id": "u1", "turn_id": "t1", "text": "you are absolute garbage uninstall right now" }}
+    ]
+  }}'<button class="copy-btn" onclick="copyCurl()">Copy</button></div>
+
+            <div class="form-label" style="margin-top: 1.25rem;">Python httpx Example</div>
+            <div class="code-block">import httpx
+
+payload = {{
+    "turns": [{{"speaker_id": "u1", "turn_id": "t1", "text": "holy shit nice shot"}}]
+}}
+response = httpx.post("http://{host}:{port}/predict", json=payload)
+print(response.json())</div>
+        </div>
+    </main>
+
+    <footer>
+        YouthEscalateBench Evaluator Service • Running at <code>http://{host}:{port}/predict</code> • Version 0.1.2
+    </footer>
+
+    <script>
+        const PRESETS = {{
+            hype: {{
+                context: "u1: he is diffusing the bomb!\\nu2: stick it stick it",
+                target: "holy fucking shit you hit that cross-map snipe! you are an absolute god at this game bro"
+            }},
+            bullying: {{
+                context: "u1: my bad missed the flash\\nu2: play safe",
+                target: "you are absolute garbage uninstall right now delete the game"
+            }},
+            exclusion: {{
+                context: "u1: can i join next match?\\nu2: we need a full 5-stack",
+                target: "nobody in this discord wanted you here, just leave and don't come back"
+            }},
+            algospeak: {{
+                context: "u1: stop griefing our lobby",
+                target: "go u-n-a-l-i-v-e yourself in real life, waste of oxygen"
+            }}
+        }};
+
+        function setPreset(key) {{
+            const p = PRESETS[key];
+            if (!p) return;
+            document.getElementById('context-turns').value = p.context;
+            document.getElementById('target-turn').value = p.target;
+            submitPredict();
+        }}
+
+        async function submitPredict() {{
+            const targetText = document.getElementById('target-turn').value.trim();
+            const contextRaw = document.getElementById('context-turns').value.trim();
+            const platformStyle = document.getElementById('platform-style').value;
+            const taskType = document.getElementById('task-type').value;
+
+            const btn = document.getElementById('btn-submit');
+            const statusSpan = document.getElementById('response-status');
+            const resultBox = document.getElementById('response-json');
+            const verdictDiv = document.getElementById('visual-verdict');
+
+            btn.disabled = true;
+            statusSpan.textContent = "Executing...";
+            resultBox.textContent = "Sending POST /predict payload to server...";
+
+            const turns = [];
+            let turnIndex = 1;
+
+            if (contextRaw) {{
+                const lines = contextRaw.split('\\n');
+                for (const line of lines) {{
+                    const l = line.trim();
+                    if (!l) continue;
+                    let speaker = "u1";
+                    let text = l;
+                    if (l.includes(":")) {{
+                        const parts = l.split(":");
+                        speaker = parts[0].trim();
+                        text = parts.slice(1).join(":").trim();
+                    }}
+                    turns.push({{
+                        "turn_id": "t" + turnIndex,
+                        "speaker_id": speaker,
+                        "role": "user",
+                        "relative_time": (turnIndex * 5) + "s",
+                        "text": text
+                    }});
+                    turnIndex++;
+                }}
+            }}
+
+            const currentTurnId = "t" + turnIndex;
+            turns.push({{
+                "turn_id": currentTurnId,
+                "speaker_id": "u_target",
+                "role": "user",
+                "relative_time": (turnIndex * 5) + "s",
+                "text": targetText || "hello"
+            }});
+
+            const payload = {{
+                "benchmark_version": "0.1.2",
+                "conversation_id": "sandbox_" + Date.now(),
+                "current_turn_id": currentTurnId,
+                "platform_style": platformStyle,
+                "language_mode": "english",
+                "task": taskType,
+                "turns": turns
+            }};
+
+            try {{
+                const startTime = performance.now();
+                const res = await fetch('/predict', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify(payload)
+                }});
+                const elapsed = Math.round(performance.now() - startTime);
+                const data = await res.json();
+
+                statusSpan.textContent = `HTTP ${{res.status}} (${{elapsed}}ms)`;
+                resultBox.textContent = JSON.stringify(data, null, 2);
+
+                verdictDiv.style.display = 'block';
+                const harmProb = data.harm_probability !== undefined ? data.harm_probability : 0.0;
+                const actionable = harmProb >= 0.5;
+
+                if (actionable) {{
+                    verdictDiv.innerHTML = `<div class="outcome-badge badge-actionable">
+                        <span>⚠️</span> Actionable Harm Detected (Probability: ${{harmProb.toFixed(3)}})
+                    </div>`;
+                }} else if (harmProb >= 0.2) {{
+                    verdictDiv.innerHTML = `<div class="outcome-badge badge-monitor">
+                        <span>👁️</span> Borderline / Monitor (Probability: ${{harmProb.toFixed(3)}})
+                    </div>`;
+                }} else {{
+                    verdictDiv.innerHTML = `<div class="outcome-badge badge-benign">
+                        <span>✅</span> Benign Content (Probability: ${{harmProb.toFixed(3)}})
+                    </div>`;
+                }}
+            }} catch (err) {{
+                statusSpan.textContent = "Error";
+                resultBox.textContent = "Error executing request: " + err.message;
+                verdictDiv.style.display = 'none';
+            }} finally {{
+                btn.disabled = false;
+            }}
+        }}
+
+        function copyCurl() {{
+            const code = document.getElementById('curl-code').innerText.replace('Copy', '').trim();
+            navigator.clipboard.writeText(code);
+            alert("Copied curl command to clipboard!");
+        }}
+    </script>
+</body>
+</html>
+"""
+    return html
+

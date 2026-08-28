@@ -62,6 +62,49 @@ def test_server_dashboard_view(live_server: tuple[str, int]) -> None:
     conn.close()
 
 
+def test_server_predict_get_html(live_server: tuple[str, int]) -> None:
+    host, port = live_server
+    conn = HTTPConnection(host, port, timeout=5)
+    headers = {"Accept": "text/html,application/xhtml+xml"}
+    conn.request("GET", "/predict", headers=headers)
+    res = conn.getresponse()
+    assert res.status == 200
+    assert "text/html" in res.getheader("Content-Type", "")
+    body = res.read().decode("utf-8")
+    assert "Moderation API Sandbox (/predict)" in body
+    assert "Live Response Payload" in body
+    assert "Execute POST /predict Request" in body
+    conn.close()
+
+
+def test_server_predict_get_json(live_server: tuple[str, int]) -> None:
+    host, port = live_server
+    conn = HTTPConnection(host, port, timeout=5)
+    headers = {"Accept": "application/json"}
+    conn.request("GET", "/predict", headers=headers)
+    res = conn.getresponse()
+    assert res.status == 200
+    assert "application/json" in res.getheader("Content-Type", "")
+    data = json.loads(res.read().decode("utf-8"))
+    assert data["endpoint"] == "/predict"
+    assert data["method_supported"] == "POST"
+    assert "sample_curl" in data
+    assert "sample_payload" in data
+    conn.close()
+
+
+def test_server_predict_options(live_server: tuple[str, int]) -> None:
+    host, port = live_server
+    conn = HTTPConnection(host, port, timeout=5)
+    conn.request("OPTIONS", "/predict")
+    res = conn.getresponse()
+    assert res.status == 204
+    assert res.getheader("Access-Control-Allow-Origin") == "*"
+    assert "POST" in res.getheader("Access-Control-Allow-Methods", "")
+    conn.close()
+
+
+
 def test_server_api_endpoints(live_server: tuple[str, int]) -> None:
     host, port = live_server
     conn = HTTPConnection(host, port, timeout=5)

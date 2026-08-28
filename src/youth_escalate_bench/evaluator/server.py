@@ -10,7 +10,10 @@ from urllib.parse import urlparse
 import yaml
 
 from youth_escalate_bench.baselines.scorers import ModerationScorer, build_default_scorers
-from youth_escalate_bench.evaluator.dashboard import generate_service_dashboard_html
+from youth_escalate_bench.evaluator.dashboard import (
+    generate_predict_page_html,
+    generate_service_dashboard_html,
+)
 from youth_escalate_bench.schemas.inference import InferenceRequest, ModelOutput
 
 
@@ -21,6 +24,14 @@ class PredictHandler(BaseHTTPRequestHandler):
     server_host: str = "127.0.0.1"
     server_port: int = 8080
 
+    def do_OPTIONS(self) -> None:
+        """Handle CORS preflight requests."""
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        self.end_headers()
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
@@ -30,7 +41,57 @@ class PredictHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"status": "healthy", "service": "YouthEscalateBench Evaluator"})
             return
 
-        # 2. Main interactive analysis dashboard view
+        # 2. Dedicated /predict interactive sandbox & API descriptor
+        if path == "/predict":
+            accept = self.headers.get("Accept", "")
+            # Return interactive HTML page for browsers (which ask for text/html)
+            if "text/html" in accept or ("*/*" in accept and "application/json" not in accept):
+                html_content = generate_predict_page_html(
+                    host=self.server_host,
+                    port=self.server_port,
+                )
+                self._send_bytes(200, html_content.encode("utf-8"), "text/html; charset=utf-8")
+                return
+
+            # Programmatic API descriptor for JSON clients
+            desc = {
+                "endpoint": "/predict",
+                "method_supported": "POST",
+                "status": "ready",
+                "description": "YouthEscalateBench Moderation Inference API Endpoint",
+                "instructions": (
+                    "To run inference, submit an HTTP POST request with a JSON body conforming "
+                    "to the InferenceRequest schema. For an interactive testing console in your "
+                    f"browser, visit http://{self.server_host}:{self.server_port}/predict or "
+                    f"http://{self.server_host}:{self.server_port}/"
+                ),
+                "interactive_sandbox_url": f"http://{self.server_host}:{self.server_port}/predict",
+                "dashboard_url": f"http://{self.server_host}:{self.server_port}/",
+                "sample_curl": (
+                    f"curl -X POST http://{self.server_host}:{self.server_port}/predict "
+                    "-H 'Content-Type: application/json' "
+                    '-d \'{"turns": [{"speaker_id": "u1", "turn_id": "t1", "text": "you suck uninstall"}]}\''
+                ),
+                "sample_payload": {
+                    "benchmark_version": "0.1.2",
+                    "conversation_id": "demo_01",
+                    "current_turn_id": "t1",
+                    "platform_style": "gaming_chat",
+                    "language_mode": "english",
+                    "task": "current_harm",
+                    "turns": [
+                        {
+                            "speaker_id": "u1",
+                            "turn_id": "t1",
+                            "text": "you are absolute garbage uninstall right now",
+                        }
+                    ],
+                },
+            }
+            self._send_json(200, desc)
+            return
+
+        # 3. Main interactive analysis dashboard view
         if path in ("/", "/dashboard", "/index.html"):
             html_content = generate_service_dashboard_html(
                 reports_dir=self.reports_dir,
@@ -40,7 +101,7 @@ class PredictHandler(BaseHTTPRequestHandler):
             self._send_bytes(200, html_content.encode("utf-8"), "text/html; charset=utf-8")
             return
 
-        # 3. REST API endpoints for analysis
+        # 4. REST API endpoints for analysis
         if path == "/api/summary":
             summary_file = self.reports_dir / "report_summary.yaml"
             if not summary_file.exists():
