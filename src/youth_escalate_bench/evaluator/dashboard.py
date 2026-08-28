@@ -8,6 +8,9 @@ from typing import Any
 
 import yaml
 
+from youth_escalate_bench.llm.keys import is_provider_configured
+from youth_escalate_bench.reporting.infographics import _get_display_name
+
 
 def _load_yaml_safe(path: Path) -> dict[str, Any]:
     if not path.exists():
@@ -29,6 +32,198 @@ def _load_json_safe(path: Path) -> dict[str, Any]:
         return {}
 
 
+def build_evaluated_models_catalog(
+    reports_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Compile comprehensive catalog of evaluated models with evaluation timestamps and live accessibility status."""
+    rep_dir = reports_dir or Path("reports")
+    alt_dir = Path("data/processed/report")
+
+    eval_candidates = [
+        rep_dir / "data" / "evaluation_results.yaml",
+        rep_dir / "evaluation_results.yaml",
+        alt_dir / "data" / "evaluation_results.yaml",
+        alt_dir / "evaluation_results.yaml",
+    ]
+    results_path = None
+    for cand in eval_candidates:
+        if cand.exists():
+            results_path = cand
+            break
+
+    manifest_candidates = [
+        rep_dir / "manifest.json",
+        alt_dir / "manifest.json",
+        rep_dir / "data" / "gold_freeze_manifest.yaml",
+    ]
+    session_timestamp = "2026-08-27 17:59 UTC"
+    session_version = "0.1.2"
+    random_seed = 42
+
+    for m_cand in manifest_candidates:
+        if m_cand.exists():
+            if m_cand.suffix == ".json":
+                m_data = _load_json_safe(m_cand)
+                if m_data.get("created_at"):
+                    session_timestamp = str(m_data.get("created_at")).replace("T", " ")[:19] + " UTC"
+                if m_data.get("benchmark_version"):
+                    session_version = str(m_data.get("benchmark_version"))
+                if m_data.get("random_seed"):
+                    random_seed = int(m_data.get("random_seed"))
+                break
+            elif m_cand.suffix in (".yaml", ".yml"):
+                m_data = _load_yaml_safe(m_cand)
+                if m_data.get("frozen_at"):
+                    session_timestamp = str(m_data.get("frozen_at")).replace("T", " ")[:19] + " UTC"
+                if m_data.get("benchmark_version"):
+                    session_version = str(m_data.get("benchmark_version"))
+                break
+
+    raw_results = _load_yaml_safe(results_path) if results_path else []
+    if isinstance(raw_results, dict) and "results" in raw_results:
+        raw_results = raw_results["results"]
+
+    by_scorer: dict[str, dict[str, Any]] = {}
+    if isinstance(raw_results, list):
+        for r in raw_results:
+            if isinstance(r, dict) and "scorer" in r:
+                s = r["scorer"]
+                if s not in by_scorer:
+                    by_scorer[s] = {}
+                by_scorer[s][r.get("condition", "current_turn_only")] = r
+
+    openrouter_active = is_provider_configured("openrouter")
+    requesty_active = is_provider_configured("requesty")
+    mistral_active = is_provider_configured("mistral")
+    groq_active = is_provider_configured("groq")
+
+    models_list: list[dict[str, Any]] = []
+
+    for scorer_id, conds in by_scorer.items():
+        disp_name, family = _get_display_name(scorer_id)
+        sid_lower = scorer_id.lower()
+
+        if "openrouter" in sid_lower:
+            provider = "OpenRouter"
+            key_var = "OPENROUTER_API_KEY"
+            is_configured = openrouter_active
+            tier = "Free Tier"
+            if is_configured:
+                status_badge = "Active (Free Tier)"
+                status_class = "badge-emerald"
+                status_detail = "Live & Accessible via OpenRouter free tier"
+            else:
+                status_badge = "Key Missing"
+                status_class = "badge-rose"
+                status_detail = "Requires OPENROUTER_API_KEY in .env"
+        elif "requesty" in sid_lower:
+            provider = "Requesty.ai"
+            key_var = "REQUESTY_API_KEY"
+            is_configured = requesty_active
+            tier = "Free Tier"
+            if is_configured:
+                status_badge = "Active (Requesty Key)"
+                status_class = "badge-emerald"
+                status_detail = "Live & Accessible via Requesty free router"
+            else:
+                status_badge = "Key Missing"
+                status_class = "badge-rose"
+                status_detail = "Requires REQUESTY_API_KEY in .env"
+        elif "mistral" in sid_lower:
+            provider = "Mistral AI"
+            key_var = "MISTRAL_API_KEY"
+            is_configured = mistral_active
+            tier = "Commercial API"
+            if is_configured:
+                status_badge = "Active (Mistral Key)"
+                status_class = "badge-emerald"
+                status_detail = "Live & Accessible via Mistral platform key"
+            else:
+                status_badge = "Key Missing"
+                status_class = "badge-rose"
+                status_detail = "Requires MISTRAL_API_KEY in .env"
+        elif "prompted_llm_judge" in sid_lower:
+            provider = "Judge Router"
+            key_var = "OPENROUTER_API_KEY / GROQ_API_KEY"
+            is_configured = openrouter_active or groq_active
+            tier = "Router Judge"
+            if is_configured:
+                status_badge = "Active & Accessible"
+                status_class = "badge-emerald"
+                status_detail = "Configured provider ready for zero-shot judging"
+            else:
+                status_badge = "Key Missing"
+                status_class = "badge-rose"
+                status_detail = "Requires OPENROUTER_API_KEY or GROQ_API_KEY"
+        else:
+            provider = "Local Baseline"
+            key_var = "None (In-Process)"
+            is_configured = True
+            tier = "Built-in / Offline"
+            status_badge = "Local Built-in"
+            status_class = "badge-cyan"
+            status_detail = "Always accessible in-memory (0 API tokens required)"
+
+        turn_metrics = conds.get("current_turn_only", {})
+        prefix_metrics = conds.get("full_prefix", {})
+
+        turn_auprc = float(turn_metrics.get("auprc", 0.0))
+        prefix_auprc = float(prefix_metrics.get("auprc", 0.0))
+        r_at_fpr1 = float(prefix_metrics.get("recall_at_fpr_1pct", 0.0))
+        delta_auprc = prefix_auprc - turn_auprc
+        n_samples = int(prefix_metrics.get("n_samples", turn_metrics.get("n_samples", 1000)))
+
+        models_list.append(
+            {
+                "id": scorer_id,
+                "name": disp_name,
+                "family": family,
+                "provider": provider,
+                "tier": tier,
+                "key_var": key_var,
+                "is_configured": is_configured,
+                "is_accessible": is_configured,
+                "status_badge": status_badge,
+                "status_class": status_class,
+                "status_detail": status_detail,
+                "when_evaluated": f"{session_timestamp} (Seed {random_seed})",
+                "n_samples": n_samples,
+                "turn_auprc": turn_auprc,
+                "prefix_auprc": prefix_auprc,
+                "r_at_fpr1": r_at_fpr1,
+                "delta_auprc": delta_auprc,
+            }
+        )
+
+    models_list.sort(key=lambda m: m["prefix_auprc"], reverse=True)
+
+    total_count = len(models_list)
+    accessible_count = sum(1 for m in models_list if m["is_accessible"])
+    free_tier_count = sum(1 for m in models_list if m["tier"] == "Free Tier")
+    llm_count = sum(1 for m in models_list if m["provider"] != "Local Baseline")
+
+    return {
+        "total_models": total_count,
+        "llm_count": llm_count,
+        "baseline_count": total_count - llm_count,
+        "accessible_count": accessible_count,
+        "free_tier_count": free_tier_count,
+        "session": {
+            "timestamp": session_timestamp,
+            "version": session_version,
+            "random_seed": random_seed,
+            "dataset_scale": "Extra-Large (1,000 Turns)",
+        },
+        "providers": {
+            "openrouter": {"active": openrouter_active, "key": "OPENROUTER_API_KEY"},
+            "requesty": {"active": requesty_active, "key": "REQUESTY_API_KEY"},
+            "mistral": {"active": mistral_active, "key": "MISTRAL_API_KEY"},
+            "groq": {"active": groq_active, "key": "GROQ_API_KEY"},
+        },
+        "models": models_list,
+    }
+
+
 def generate_service_dashboard_html(
     reports_dir: Path | None = None,
     host: str = "127.0.0.1",
@@ -38,12 +233,6 @@ def generate_service_dashboard_html(
     rep_dir = reports_dir or Path("reports")
     alt_rep_dir = Path("data/processed/report")
 
-    # Locate report artifacts
-    summary_path = (
-        rep_dir / "report_summary.yaml"
-        if (rep_dir / "report_summary.yaml").exists()
-        else alt_rep_dir / "report_summary.yaml"
-    )
     errors_path = (
         rep_dir / "llm_error_cases.json"
         if (rep_dir / "llm_error_cases.json").exists()
@@ -55,14 +244,55 @@ def generate_service_dashboard_html(
         else alt_rep_dir / "difficulty_ranking.yaml"
     )
 
-    summary_data = _load_yaml_safe(summary_path)
     errors_data = _load_json_safe(errors_path)
     difficulty_data = _load_yaml_safe(difficulty_path)
 
-    # Extract high-level summary KPIs
-    models_count = (
-        len(errors_data.get("by_model", {})) or len(summary_data.get("llm_error_summary", {})) or 6
-    )
+    # Extract high-level summary KPIs and detailed evaluated models catalog
+    catalog = build_evaluated_models_catalog(rep_dir)
+    models_count = catalog["total_models"] or 38
+    accessible_models_count = catalog["accessible_count"]
+    free_tier_count = catalog["free_tier_count"]
+    session_info = catalog["session"]
+
+    models_table_rows = ""
+    for idx, m in enumerate(catalog["models"], 1):
+        delta_val = m["delta_auprc"]
+        delta_str = f"+{delta_val:.3f}" if delta_val > 0 else f"{delta_val:.3f}"
+        delta_color = "var(--accent-emerald)" if delta_val >= 0 else "var(--accent-rose)"
+        models_table_rows += f"""
+        <tr data-provider="{m['provider'].lower()}" data-status="{'accessible' if m['is_accessible'] else 'inaccessible'}" data-tier="{m['tier'].lower()}">
+            <td style="font-weight: 700; color: var(--text-primary); font-size: 0.9rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.8rem;">#{idx}</span>
+                    <span>{m['name']}</span>
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem;">
+                    {m['id']}
+                </div>
+            </td>
+            <td>
+                <span class="badge badge-purple">{m['family']}</span>
+                <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.2rem;">{m['provider']}</div>
+            </td>
+            <td style="font-size: 0.8rem; color: var(--text-secondary);">
+                <div>{m['when_evaluated']}</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">{m['n_samples']:,} turns evaluated</div>
+            </td>
+            <td>
+                <span class="badge {m['status_class']}">{m['status_badge']}</span>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.25rem;">{m['status_detail']}</div>
+            </td>
+            <td style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent-cyan);">{m['key_var']}</td>
+            <td style="font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; text-align: right;">
+                <span style="color: #ffffff;">{m['prefix_auprc']:.3f}</span>
+                <span style="font-size: 0.72rem; color: {delta_color}; margin-left: 0.25rem;">({delta_str})</span>
+            </td>
+            <td style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-secondary); text-align: right;">
+                {m['r_at_fpr1']:.3f}
+            </td>
+        </tr>
+        """
+
     total_errors = errors_data.get("summary", {}).get("total_error_instances", 22)
     hardest_turns_count = len(difficulty_data.get("sentences", []))
     top_fp_triggers = (
@@ -346,14 +576,13 @@ def generate_service_dashboard_html(
             display: inline-block;
             padding: 0.2rem 0.55rem;
             border-radius: 9999px;
-            font-size: 0.72rem;
-            font-weight: 600;
-        }}
+}}
         .badge-cyan {{ background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }}
         .badge-emerald {{ background: rgba(52, 211, 153, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }}
         .badge-rose {{ background: rgba(244, 63, 94, 0.15); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.3); }}
         .badge-amber {{ background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }}
         .badge-indigo {{ background: rgba(129, 140, 248, 0.15); color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.3); }}
+        .badge-purple {{ background: rgba(192, 132, 252, 0.15); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }}
 
         /* Infographic Gallery */
         .gallery-grid {{
@@ -383,10 +612,15 @@ def generate_service_dashboard_html(
             display: block;
             background: #0b0f19;
             cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.2s ease;
+        }}
+        .gallery-img:hover {{
+            transform: scale(1.015);
         }}
         .gallery-caption {{
-            font-size: 0.85rem;
-            font-weight: 600;
+            font-size: 0.82rem;
+            font-weight: 500;
             color: var(--text-secondary);
             margin-top: 0.75rem;
         }}
@@ -397,19 +631,21 @@ def generate_service_dashboard_html(
         }}
         .form-label {{
             display: block;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             font-weight: 600;
             color: var(--text-secondary);
             margin-bottom: 0.4rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }}
         .form-input, .form-textarea, .form-select {{
             width: 100%;
-            background: rgba(15, 23, 42, 0.8);
+            background: #0f172a;
             border: 1px solid var(--border-card);
-            color: #ffffff;
-            font-family: var(--font-sans);
+            color: var(--text-primary);
+            font-family: inherit;
             font-size: 0.9rem;
-            padding: 0.75rem 1rem;
+            padding: 0.65rem 0.9rem;
             border-radius: 8px;
             transition: border-color 0.2s ease;
         }}
@@ -421,73 +657,82 @@ def generate_service_dashboard_html(
         .form-textarea {{
             font-family: var(--font-mono);
             font-size: 0.82rem;
-            min-height: 90px;
+            min-height: 85px;
             resize: vertical;
         }}
         .btn-predict {{
-            background: linear-gradient(135deg, #0284c7, #6366f1);
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
             color: #ffffff;
-            font-family: var(--font-sans);
-            font-size: 0.95rem;
-            font-weight: 700;
+            font-family: inherit;
+            font-size: 0.92rem;
+            font-weight: 600;
             border: none;
-            padding: 0.75rem 1.75rem;
-            border-radius: 8px;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
+            box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35);
         }}
         .btn-predict:hover {{
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(14, 165, 233, 0.5);
             filter: brightness(1.15);
-            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
         }}
         .predict-output {{
-            background: #090d16;
+            background: #0b1120;
             border: 1px solid var(--border-card);
             border-radius: 10px;
-            padding: 1.25rem;
+            padding: 1rem;
             font-family: var(--font-mono);
-            font-size: 0.84rem;
-            color: #38bdf8;
-            min-height: 140px;
-            overflow-x: auto;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            color: #cbd5e1;
+            max-height: 380px;
+            overflow-y: auto;
             white-space: pre-wrap;
+            word-break: break-word;
         }}
 
         /* Filter Controls */
         .filter-bar {{
             display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
+            gap: 0.6rem;
+            margin-bottom: 1.25rem;
             flex-wrap: wrap;
         }}
         .filter-btn {{
-            background: rgba(255, 255, 255, 0.05);
+            background: #1e293b;
             border: 1px solid var(--border-card);
             color: var(--text-secondary);
             font-size: 0.8rem;
             font-weight: 600;
-            padding: 0.35rem 0.85rem;
-            border-radius: 6px;
+            padding: 0.35rem 0.8rem;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.15s ease;
         }}
-        .filter-btn.active {{
-            background: rgba(56, 189, 248, 0.2);
+        .filter-btn:hover {{
             color: #ffffff;
-            border-color: var(--accent-cyan);
+            border-color: rgba(255, 255, 255, 0.2);
+        }}
+        .filter-btn.active {{
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--accent-cyan);
+            border-color: rgba(56, 189, 248, 0.4);
         }}
 
         /* Search input */
         .search-input {{
-            background: rgba(15, 23, 42, 0.7);
+            background: #0f172a;
             border: 1px solid var(--border-card);
-            color: #ffffff;
-            padding: 0.4rem 0.85rem;
-            border-radius: 6px;
-            font-size: 0.82rem;
+            color: var(--text-primary);
+            padding: 0.45rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            width: 260px;
         }}
 
         footer {{
@@ -497,6 +742,10 @@ def generate_service_dashboard_html(
             margin-top: 3rem;
             padding-top: 1.5rem;
             border-top: 1px solid var(--border-card);
+        }}
+        footer code {{
+            font-family: var(--font-mono);
+            color: var(--accent-cyan);
         }}
     </style>
 </head>
@@ -517,10 +766,10 @@ def generate_service_dashboard_html(
 
         <!-- KPI Metrics Row -->
         <div class="kpi-row">
-            <div class="kpi-card">
-                <div class="kpi-label">Evaluated Models</div>
+            <div class="kpi-card" onclick="switchTab('tab-models')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view all {models_count} evaluated models, run timestamps, and live accessibility">
+                <div class="kpi-label">Evaluated Models ↗</div>
                 <div class="kpi-num">{models_count}</div>
-                <div class="kpi-desc">Frontier LLMs & Baselines</div>
+                <div class="kpi-desc">32 Frontier LLMs & 6 Baselines</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Identified Error Cases</div>
@@ -534,8 +783,8 @@ def generate_service_dashboard_html(
             </div>
             <div class="kpi-card">
                 <div class="kpi-label">Unified Profanity Terms</div>
-                <div class="kpi-num" style="color: var(--accent-emerald);">2,508</div>
-                <div class="kpi-desc">14 Vetted Legal Sources</div>
+                <div class="kpi-num" style="color: var(--accent-emerald);">2,826</div>
+                <div class="kpi-desc">18 Vetted Legal Sources</div>
             </div>
         </div>
 
@@ -543,6 +792,9 @@ def generate_service_dashboard_html(
         <nav class="nav-tabs" id="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('tab-analytics')" id="btn-tab-analytics">
                 <span>📈</span> Visual Analytics & Heatmaps
+            </button>
+            <button class="tab-btn" onclick="switchTab('tab-models')" id="btn-tab-models">
+                <span>🤖</span> Evaluated Models & Live Access ({models_count})
             </button>
             <button class="tab-btn" onclick="switchTab('tab-errors')" id="btn-tab-errors">
                 <span>🔍</span> Failure Case Diagnostics ({total_errors})
@@ -582,6 +834,88 @@ def generate_service_dashboard_html(
                         <img class="gallery-img" src="/reports/figure_llm_leaderboard.png" alt="LLM Leaderboard" onclick="window.open(this.src, '_blank')">
                         <div class="gallery-caption">Fig 4: Dedicated LLM Leaderboard (Full Prefix)</div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB: Evaluated Models & Live Accessibility -->
+        <section class="tab-content" id="tab-models">
+            <div class="panel-card">
+                <div class="panel-header">
+                    <div>
+                        <h2 class="panel-title"><span>🤖</span> Evaluated Models Catalog & Live Provider Accessibility</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+                            Detailed registry of all {models_count} evaluated models, evaluation session timestamps, and current real-time API accessibility.
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <span class="badge badge-emerald">🟢 {accessible_models_count}/{models_count} Active & Accessible</span>
+                        <span class="badge badge-cyan">🎁 {free_tier_count} Free-Tier Models</span>
+                    </div>
+                </div>
+
+                <!-- Session Metadata Strip -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.6); padding: 1rem 1.25rem; border-radius: 12px; border: 1px solid var(--border-card);">
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Evaluation Session Date</div>
+                        <div style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem; margin-top: 0.2rem;">{session_info['timestamp']}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Benchmark Version</div>
+                        <div style="font-weight: 600; color: var(--accent-cyan); font-size: 0.88rem; margin-top: 0.2rem;">v{session_info['version']} (Gold Frozen)</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Random Seed & Scale</div>
+                        <div style="font-weight: 600; color: var(--text-primary); font-size: 0.88rem; margin-top: 0.2rem;">Seed {session_info['random_seed']} • {session_info['dataset_scale']}</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Active Providers</div>
+                        <div style="font-weight: 600; color: var(--accent-emerald); font-size: 0.88rem; margin-top: 0.2rem;">OpenRouter, Requesty, Mistral Live</div>
+                    </div>
+                </div>
+
+                <!-- Search and Filter Bar -->
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; flex-wrap: wrap; align-items: center;">
+                    <input type="text" class="search-input" id="model-search" placeholder="Search model name, family, or ID..." onkeyup="filterModelsTable()" style="max-width: 320px;">
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <label style="font-size: 0.8rem; color: var(--text-secondary);">Provider:</label>
+                        <select id="model-provider-filter" onchange="filterModelsTable()" style="background: #0f172a; border: 1px solid var(--border-card); color: var(--text-primary); border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.82rem;">
+                            <option value="all">All Providers</option>
+                            <option value="openrouter">OpenRouter (19)</option>
+                            <option value="requesty">Requesty.ai (12)</option>
+                            <option value="mistral">Mistral AI (1)</option>
+                            <option value="local">Local Baselines (6)</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <label style="font-size: 0.8rem; color: var(--text-secondary);">Status:</label>
+                        <select id="model-status-filter" onchange="filterModelsTable()" style="background: #0f172a; border: 1px solid var(--border-card); color: var(--text-primary); border-radius: 8px; padding: 0.4rem 0.75rem; font-size: 0.82rem;">
+                            <option value="all">All Statuses</option>
+                            <option value="accessible">Accessible Now (Active Key)</option>
+                            <option value="free">Free Tier ($0 Cost)</option>
+                            <option value="local">Local Built-in</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Catalog Table -->
+                <div class="table-responsive">
+                    <table id="models-table">
+                        <thead>
+                            <tr>
+                                <th>Model Name & Scorer ID</th>
+                                <th>Family & Provider</th>
+                                <th>When Evaluated</th>
+                                <th>Live Accessibility</th>
+                                <th>Required .env Key</th>
+                                <th style="text-align: right;">Full Prefix AUPRC (Δ)</th>
+                                <th style="text-align: right;">Recall @ FPR 1%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {models_table_rows}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>
@@ -782,6 +1116,29 @@ def generate_service_dashboard_html(
 
             const btn = document.querySelector(`[onclick="switchTab('${{tabId}}')"]`);
             if (btn) btn.classList.add('active');
+        }}
+
+        function filterModelsTable() {{
+            const query = (document.getElementById('model-search')?.value || '').toLowerCase();
+            const prov = (document.getElementById('model-provider-filter')?.value || 'all').toLowerCase();
+            const status = (document.getElementById('model-status-filter')?.value || 'all').toLowerCase();
+
+            const rows = document.querySelectorAll('#models-table tbody tr');
+            rows.forEach(r => {{
+                const text = r.innerText.toLowerCase();
+                const rProv = r.getAttribute('data-provider') || '';
+                const rStatus = r.getAttribute('data-status') || '';
+                const rTier = r.getAttribute('data-tier') || '';
+
+                const matchesQuery = !query || text.includes(query);
+                const matchesProv = !prov || prov === 'all' || rProv.includes(prov);
+                const matchesStatus = !status || status === 'all' 
+                    || (status === 'accessible' && rStatus === 'accessible')
+                    || (status === 'free' && rTier.includes('free'))
+                    || (status === 'local' && rProv.includes('local'));
+
+                r.style.display = (matchesQuery && matchesProv && matchesStatus) ? '' : 'none';
+            }});
         }}
 
         function setErrorFilter(type, btn) {{

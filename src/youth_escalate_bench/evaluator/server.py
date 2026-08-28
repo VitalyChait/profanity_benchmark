@@ -11,6 +11,7 @@ import yaml
 
 from youth_escalate_bench.baselines.scorers import ModerationScorer, build_default_scorers
 from youth_escalate_bench.evaluator.dashboard import (
+    build_evaluated_models_catalog,
     generate_predict_page_html,
     generate_service_dashboard_html,
 )
@@ -143,6 +144,12 @@ class PredictHandler(BaseHTTPRequestHandler):
                     data = {}
             self._send_json(200, data)
             return
+
+        if path == "/api/models":
+            models_catalog = build_evaluated_models_catalog(self.reports_dir)
+            self._send_json(200, models_catalog)
+            return
+
 
         # 4. Static reports, figures, heatmaps, and summaries
         filename = path.lstrip("/")

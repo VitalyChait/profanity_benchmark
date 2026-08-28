@@ -131,6 +131,25 @@ def test_server_api_endpoints(live_server: tuple[str, int]) -> None:
     data_err = json.loads(res_err.read().decode("utf-8"))
     assert isinstance(data_err, dict)
 
+    # 4. /api/models
+    conn.request("GET", "/api/models")
+    res_mod = conn.getresponse()
+    assert res_mod.status == 200
+    assert "application/json" in res_mod.getheader("Content-Type", "")
+    data_mod = json.loads(res_mod.read().decode("utf-8"))
+    assert isinstance(data_mod, dict)
+    assert "total_models" in data_mod
+    assert data_mod["total_models"] >= 30
+    assert "session" in data_mod
+    assert "timestamp" in data_mod["session"]
+    assert "models" in data_mod
+    assert len(data_mod["models"]) >= 30
+    first_model = data_mod["models"][0]
+    assert "name" in first_model
+    assert "provider" in first_model
+    assert "when_evaluated" in first_model
+    assert "is_accessible" in first_model
+
     conn.close()
 
 
