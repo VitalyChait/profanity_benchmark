@@ -22,6 +22,19 @@ from youth_escalate_bench.reporting.infographics import (
 from youth_escalate_bench.stages.adjudicate import _load_annotations
 
 
+def _error_instance_count(path: Path) -> int:
+    """Return total_error_instances from an llm error dump (JSON or YAML)."""
+    try:
+        text = path.read_text(encoding="utf-8")
+        if path.suffix == ".json":
+            doc = json.loads(text) or {}
+        else:
+            doc = yaml.safe_load(text) or {}
+        return int((doc.get("summary") or {}).get("total_error_instances", 0) or 0)
+    except Exception:
+        return 0
+
+
 def _generate_latex_table(data_by_scorer: dict[str, dict[str, dict[str, Any]]]) -> str:
     """Generate publication-ready multi-column LaTeX table across context conditions."""
     scorers = list(data_by_scorer.keys())
@@ -1015,13 +1028,24 @@ def _export_reports_to_reports_dir(output_dir: Path, config: dict[str, Any]) -> 
     exported: list[str] = []
 
     # 1. Copy all generated evaluation report artifacts from output_dir to reports_dir
+    protected_error_dumps = {
+        "llm_error_cases.json",
+        "llm_error_cases.yaml",
+        "error_analysis_bundle.yaml",
+    }
     for item in output_dir.glob("*"):
         if item.is_file():
             dest = reports_dir / item.name
             try:
-                if item.resolve() != dest.resolve():
-                    shutil.copy2(item, dest)
-                    exported.append(f"reports/{item.name}")
+                if item.resolve() == dest.resolve():
+                    continue
+                if item.name in protected_error_dumps and dest.exists():
+                    new_n = _error_instance_count(item)
+                    old_n = _error_instance_count(dest)
+                    if new_n < old_n:
+                        continue
+                shutil.copy2(item, dest)
+                exported.append(f"reports/{item.name}")
             except Exception:
                 pass
 

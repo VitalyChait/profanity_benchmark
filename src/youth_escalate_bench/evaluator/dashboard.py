@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from html import escape as html_escape
 from pathlib import Path
 from typing import Any
@@ -12,25 +13,109 @@ import yaml
 from youth_escalate_bench.llm.keys import is_provider_configured
 from youth_escalate_bench.reporting.infographics import _get_display_name
 
+# Parsed-file caches keyed by (resolved path, mtime_ns)
+_FILE_CACHE: dict[tuple[str, int], dict[str, Any]] = {}
+_FILE_CACHE_LOCK = threading.Lock()
+
+# Generated HTML caches keyed by dependency fingerprint
+_HTML_CACHE: dict[str, tuple[str, str]] = {}
+_HTML_CACHE_LOCK = threading.Lock()
+
+# Cap inline failure rows so the dashboard stays responsive; full set remains on /api/errors
+MAX_INLINE_ERROR_CASES = 200
+
+
+def invalidate_dashboard_caches() -> None:
+    """Drop cached report parses and generated HTML (call after regenerating artifacts)."""
+    with _FILE_CACHE_LOCK:
+        _FILE_CACHE.clear()
+    with _HTML_CACHE_LOCK:
+        _HTML_CACHE.clear()
+
+
+def _path_mtime_ns(path: Path) -> int:
+    try:
+        return path.stat().st_mtime_ns
+    except OSError:
+        return -1
+
 
 def _load_yaml_safe(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
+    key = (str(path.resolve()), _path_mtime_ns(path))
+    with _FILE_CACHE_LOCK:
+        cached = _FILE_CACHE.get(key)
+        if cached is not None:
+            return cached
     try:
         with path.open("r", encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
+            data = yaml.safe_load(f) or {}
+        if not isinstance(data, dict):
+            # Some YAMLs are top-level lists (evaluation results); wrap for cache uniformity
+            data = {"__list__": data} if isinstance(data, list) else {}
     except Exception:
-        return {}
+        data = {}
+    with _FILE_CACHE_LOCK:
+        _FILE_CACHE[key] = data
+    return data
 
 
 def _load_json_safe(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
+    key = (str(path.resolve()), _path_mtime_ns(path))
+    with _FILE_CACHE_LOCK:
+        cached = _FILE_CACHE.get(key)
+        if cached is not None:
+            return cached
     try:
         with path.open("r", encoding="utf-8") as f:
-            return json.load(f) or {}
+            data = json.load(f) or {}
+        if not isinstance(data, dict):
+            data = {"__list__": data} if isinstance(data, list) else {}
     except Exception:
-        return {}
+        data = {}
+    with _FILE_CACHE_LOCK:
+        _FILE_CACHE[key] = data
+    return data
+
+
+def _unwrap_cached_list(data: dict[str, Any] | list[Any]) -> Any:
+    if isinstance(data, dict) and "__list__" in data and len(data) == 1:
+        return data["__list__"]
+    return data
+
+
+def _load_difficulty_data(yaml_path: Path) -> dict[str, Any]:
+    """Prefer JSON sibling (≈250× faster than YAML) and materialize it on first YAML load."""
+    json_path = yaml_path.with_suffix(".json")
+    yaml_mtime = _path_mtime_ns(yaml_path) if yaml_path.exists() else -1
+    json_mtime = _path_mtime_ns(json_path) if json_path.exists() else -1
+
+    if json_path.exists() and json_mtime >= yaml_mtime:
+        data = _load_json_safe(json_path)
+        return data if isinstance(data, dict) else {}
+
+    data = _load_yaml_safe(yaml_path)
+    data = data if isinstance(data, dict) else {}
+    if data and yaml_path.exists():
+        try:
+            json_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+        except Exception:
+            pass
+    return data
+
+
+def _dependency_fingerprint(paths: list[Path], *extra: str) -> str:
+    parts = list(extra)
+    for p in paths:
+        if p.exists():
+            st = p.stat()
+            parts.append(f"{p.resolve()}:{st.st_mtime_ns}:{st.st_size}")
+        else:
+            parts.append(f"{p}:missing")
+    return "|".join(parts)
 
 
 def build_evaluated_models_catalog(
@@ -39,6 +124,32 @@ def build_evaluated_models_catalog(
     """Compile comprehensive catalog of evaluated models with evaluation timestamps and live accessibility status."""
     rep_dir = reports_dir or Path("reports")
     alt_dir = Path("data/processed/report")
+    fingerprint = _dependency_fingerprint(
+        [
+            rep_dir / "evaluation_results.yaml",
+            rep_dir / "data" / "evaluation_results.yaml",
+            alt_dir / "evaluation_results.yaml",
+            rep_dir / "manifest.json",
+            Path(".env"),
+        ],
+        "catalog",
+    )
+    with _HTML_CACHE_LOCK:
+        hit = _HTML_CACHE.get("models_catalog")
+        if hit and hit[0] == fingerprint:
+            return json.loads(hit[1])
+
+    catalog = _build_evaluated_models_catalog_uncached(rep_dir, alt_dir)
+    with _HTML_CACHE_LOCK:
+        _HTML_CACHE["models_catalog"] = (fingerprint, json.dumps(catalog))
+    return catalog
+
+
+def _build_evaluated_models_catalog_uncached(
+    rep_dir: Path,
+    alt_dir: Path,
+) -> dict[str, Any]:
+    """Build models catalog without HTML/catalog cache."""
 
     eval_candidates = [
         rep_dir / "data" / "evaluation_results.yaml",
@@ -81,6 +192,7 @@ def build_evaluated_models_catalog(
                 break
 
     raw_results = _load_yaml_safe(results_path) if results_path else []
+    raw_results = _unwrap_cached_list(raw_results)
     if isinstance(raw_results, dict) and "results" in raw_results:
         raw_results = raw_results["results"]
 
@@ -402,7 +514,7 @@ def generate_model_selector_component(
 
             res += f"""
             <label class="model-check-item {prefix}-check-item {selected_cls}" data-id="{m_id}" data-category="{category}" data-provider="{prov_lower}" data-name="{m_name.lower()}">
-                <input type="checkbox" name="{prefix}-selected-models" value="{m_id}" class="{prefix}-checkbox" {checked_attr} onchange="updatePredictModelSelection('{prefix}')">
+                <input type="checkbox" name="{prefix}-selected-models" value="{m_id}" class="{prefix}-checkbox" {checked_attr} onchange="onPredictModelPick('{prefix}', this)">
                 <div class="model-info">
                     <span class="model-name" title="{m_name}">{m_name}</span>
                     <div class="model-meta">
@@ -498,25 +610,84 @@ def generate_service_dashboard_html(
     rep_dir = reports_dir or Path("reports")
     alt_rep_dir = Path("data/processed/report")
 
-    errors_path = (
-        rep_dir / "llm_error_cases.json"
-        if (rep_dir / "llm_error_cases.json").exists()
-        else alt_rep_dir / "llm_error_cases.json"
-    )
-    difficulty_path = (
+    cache_paths = [
+        rep_dir / "llm_error_cases.json",
+        alt_rep_dir / "llm_error_cases.json",
+        rep_dir / "difficulty_ranking.yaml",
+        rep_dir / "difficulty_ranking.json",
+        alt_rep_dir / "difficulty_ranking.yaml",
+        alt_rep_dir / "difficulty_ranking.json",
+        rep_dir / "evaluation_results.yaml",
+        rep_dir / "data" / "evaluation_results.yaml",
+        alt_rep_dir / "evaluation_results.yaml",
+        alt_rep_dir / "data" / "evaluation_results.yaml",
+        rep_dir / "manifest.json",
+        alt_rep_dir / "manifest.json",
+        Path("data/processed/evaluate/evaluation_results.yaml"),
+        Path(".env"),
+    ]
+    fingerprint = _dependency_fingerprint(cache_paths, "dashboard", host, str(port))
+    with _HTML_CACHE_LOCK:
+        hit = _HTML_CACHE.get("service_dashboard")
+        if hit and hit[0] == fingerprint:
+            return hit[1]
+
+    html = _generate_service_dashboard_html_uncached(rep_dir, alt_rep_dir, host, port)
+    with _HTML_CACHE_LOCK:
+        _HTML_CACHE["service_dashboard"] = (fingerprint, html)
+    return html
+
+
+def _generate_service_dashboard_html_uncached(
+    rep_dir: Path,
+    alt_rep_dir: Path,
+    host: str,
+    port: int,
+) -> str:
+    """Build dashboard HTML without consulting the HTML cache."""
+
+    def _pick_errors_path() -> Path:
+        candidates = [
+            rep_dir / "llm_error_cases.json",
+            alt_rep_dir / "llm_error_cases.json",
+            Path("data/processed/evaluate") / "llm_error_cases.json",
+        ]
+        existing = [p for p in candidates if p.exists()]
+        if not existing:
+            return candidates[0]
+        # Prefer larger dump without parsing every candidate fully on cold start
+        existing.sort(key=lambda p: p.stat().st_size, reverse=True)
+        best = existing[0]
+        best_data = _load_json_safe(best)
+        best_n = int((best_data.get("summary") or {}).get("total_error_instances") or 0)
+        if best_n > 0:
+            return best
+        for path in existing[1:]:
+            data = _load_json_safe(path)
+            n = int((data.get("summary") or {}).get("total_error_instances") or 0)
+            if n > best_n:
+                best = path
+                best_n = n
+        return best
+
+    errors_path = _pick_errors_path()
+    difficulty_yaml = (
         rep_dir / "difficulty_ranking.yaml"
         if (rep_dir / "difficulty_ranking.yaml").exists()
         else alt_rep_dir / "difficulty_ranking.yaml"
     )
 
     errors_data = _load_json_safe(errors_path)
-    difficulty_data = _load_yaml_safe(difficulty_path)
+    difficulty_data = _load_difficulty_data(difficulty_yaml)
 
     # Extract high-level summary KPIs and detailed evaluated models catalog
     catalog = build_evaluated_models_catalog(rep_dir)
     models_count = catalog["total_models"] or 38
     accessible_models_count = catalog["accessible_count"]
     free_tier_count = catalog["free_tier_count"]
+    openrouter_count = sum(1 for m in catalog["models"] if "openrouter" in m["provider"].lower())
+    requesty_count = sum(1 for m in catalog["models"] if "requesty" in m["provider"].lower())
+    local_baseline_count = sum(1 for m in catalog["models"] if m["provider"] == "Local Baseline")
     session_info = catalog["session"]
     dash_model_selector = generate_model_selector_component(catalog["models"], prefix="dash")
 
@@ -557,7 +728,7 @@ def generate_service_dashboard_html(
                 {m['r_at_fpr1']:.3f}
             </td>
             <td style="text-align: center;">
-                <button class="btn-sm btn-cyan" onclick="openModelPredict('{html_escape(m['name'], quote=True)}')">⚡ Test</button>
+                <button class="btn-sm btn-cyan" onclick="openModelPredict('{html_escape(m['id'], quote=True)}')">⚡ Test</button>
             </td>
         </tr>
         """
@@ -665,23 +836,46 @@ def generate_service_dashboard_html(
                 }
             )
 
+    total_error_case_count = int(
+        errors_data.get("summary", {}).get("total_error_instances") or len(all_error_cases)
+    )
+    # Keep the page light: render a capped sample; full dump stays on /api/errors
+    inline_error_cases = all_error_cases[:MAX_INLINE_ERROR_CASES]
+    error_truncation_note = ""
+    if len(all_error_cases) > MAX_INLINE_ERROR_CASES:
+        error_truncation_note = (
+            f'<div style="color: var(--text-muted); font-size: 0.8rem; margin: 0.5rem 0 0.75rem;">'
+            f'Showing {MAX_INLINE_ERROR_CASES} of {total_error_case_count} cases for responsiveness. '
+            f'Full JSON: <a href="/api/errors" target="_blank" style="color: var(--accent-cyan);">/api/errors</a>'
+            f"</div>"
+        )
+
     # Prepare difficulty sentences list (using distinct linguistic utterances)
     difficulty_sentences = distinct_difficulty_sentences[:20]
 
     # Pre-render error cases rows
     error_cases_rows = ""
-    for row in all_error_cases:
+    if not inline_error_cases:
+        error_cases_rows = """
+                            <tr>
+                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem 1rem;">
+                                    No failure cases loaded. Re-run the report stage or ensure
+                                    <code>llm_error_cases.json</code> contains a non-empty <code>by_model</code> map.
+                                </td>
+                            </tr>
+        """
+    for row in inline_error_cases:
         is_fp = "False Positive" in row["error_type"]
         badge_cls = "badge-amber" if is_fp else "badge-rose"
         label_short = "FP (Over-mod)" if is_fp else "FN (Missed)"
         error_cases_rows += f"""
                             <tr data-type="{row['error_type']}">
                                 <td class="cell-mono"><strong>{row['model']}</strong></td>
-                                <td style="max-width: 320px; font-weight: 500;">"{row['turn_text']}"</td>
+                                <td style="max-width: 320px; font-weight: 500;">"{html_escape(str(row['turn_text']))}"</td>
                                 <td><span class="badge {badge_cls}">{label_short}</span></td>
-                                <td><span class="badge badge-indigo">{row['gold_severity']}</span></td>
+                                <td><span class="badge badge-indigo">{html_escape(str(row['gold_severity']))}</span></td>
                                 <td class="cell-mono" style="font-weight: 700;">{row['prob']:.2f}</td>
-                                <td style="color: var(--text-secondary); font-size: 0.8rem;">{row['reason']}</td>
+                                <td style="color: var(--text-secondary); font-size: 0.8rem;">{html_escape(str(row['reason']))}</td>
                             </tr>
         """
 
@@ -801,6 +995,16 @@ def generate_service_dashboard_html(
             border-color: var(--border-glow);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
         }}
+        .kpi-row > .kpi-card[data-tab] {{
+            cursor: pointer;
+        }}
+        .kpi-row > .kpi-card.is-selected {{
+            border-color: rgba(56, 189, 248, 0.55);
+            box-shadow:
+                0 0 0 1px rgba(56, 189, 248, 0.28),
+                0 10px 28px rgba(56, 189, 248, 0.18);
+            background: linear-gradient(160deg, rgba(56, 189, 248, 0.12), var(--bg-card) 55%);
+        }}
         .kpi-label {{
             font-size: 0.75rem;
             text-transform: uppercase;
@@ -833,7 +1037,8 @@ def generate_service_dashboard_html(
         }}
         .tab-btn {{
             background: rgba(255, 255, 255, 0.02);
-            border: 1px solid transparent;
+            border: 1px solid var(--border-card);
+            border-bottom-color: var(--border-card);
             color: var(--text-secondary);
             font-family: var(--font-sans);
             font-size: 0.88rem;
@@ -842,7 +1047,7 @@ def generate_service_dashboard_html(
             padding: 0 1.15rem;
             border-radius: 10px;
             cursor: pointer;
-            transition: all 0.15s ease;
+            transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -855,7 +1060,8 @@ def generate_service_dashboard_html(
         .tab-btn:hover {{
             color: var(--text-primary);
             background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.12);
+            border-color: var(--border-card);
+            border-bottom-color: var(--border-card);
         }}
         .tab-btn:focus {{
             outline: none;
@@ -866,9 +1072,13 @@ def generate_service_dashboard_html(
         }}
         .tab-btn.active {{
             color: #ffffff;
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(129, 140, 248, 0.16));
-            border-color: rgba(56, 189, 248, 0.45);
-            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.12);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.28), rgba(129, 140, 248, 0.22));
+            border-color: rgba(56, 189, 248, 0.55);
+            border-bottom-color: rgba(56, 189, 248, 0.55);
+            box-shadow:
+                0 0 0 1px rgba(56, 189, 248, 0.2),
+                0 6px 18px rgba(56, 189, 248, 0.22);
+            transform: translateY(-1px);
         }}
         .tab-badge {{
             font-size: 0.72rem;
@@ -887,9 +1097,9 @@ def generate_service_dashboard_html(
             box-sizing: border-box;
         }}
         .tab-btn.active .tab-badge {{
-            background: rgba(56, 189, 248, 0.25);
-            color: var(--accent-cyan);
-            border-color: rgba(56, 189, 248, 0.5);
+            background: rgba(56, 189, 248, 0.32);
+            color: #e0f2fe;
+            border-color: rgba(125, 211, 252, 0.35);
         }}
 
         /* Content Sections */
@@ -976,6 +1186,11 @@ def generate_service_dashboard_html(
         .badge-amber {{ background: rgba(251, 191, 36, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }}
         .badge-indigo {{ background: rgba(129, 140, 248, 0.15); color: #818cf8; border: 1px solid rgba(129, 140, 248, 0.3); }}
         .badge-purple {{ background: rgba(192, 132, 252, 0.15); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }}
+        .badge-outline {{
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-card);
+        }}
 
         /* Infographic Gallery */
         .gallery-grid {{
@@ -1017,6 +1232,126 @@ def generate_service_dashboard_html(
             color: var(--text-secondary);
             margin-top: 0.75rem;
         }}
+
+        /* Governance / Data tab layout */
+        .panel-subtitle {{
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            margin-top: 0.3rem;
+            max-width: 52rem;
+            line-height: 1.45;
+        }}
+        .gov-kpi-grid {{
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 1rem;
+            margin-bottom: 0;
+            width: 100%;
+        }}
+        @media (max-width: 1100px) {{
+            .gov-kpi-grid {{ grid-template-columns: repeat(2, minmax(0, 1fr)); }}
+        }}
+        @media (max-width: 640px) {{
+            .gov-kpi-grid {{ grid-template-columns: 1fr; }}
+        }}
+        .gov-gallery {{
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            width: 100%;
+            max-width: 100%;
+        }}
+        .gov-figure {{
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid var(--border-card);
+            border-radius: 12px;
+            padding: 1rem;
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease;
+        }}
+        .gov-figure:hover {{
+            border-color: var(--border-glow);
+        }}
+        .gov-figure-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }}
+        .gov-figure-meta {{
+            min-width: 0;
+            flex: 1;
+        }}
+        .gov-figure-title {{
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #ffffff;
+            line-height: 1.35;
+        }}
+        .gov-figure-desc {{
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            line-height: 1.4;
+        }}
+        .gov-figure-actions {{
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }}
+        .gov-figure-img-wrap {{
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #0b0f19;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }}
+        .gov-figure-img {{
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            cursor: pointer;
+            vertical-align: middle;
+        }}
+        .matrix-table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            table-layout: auto;
+        }}
+        .matrix-table th,
+        .matrix-table td {{
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid var(--border-card);
+            vertical-align: middle;
+        }}
+        .matrix-table th {{
+            background: rgba(15, 23, 42, 0.95);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            text-align: left;
+            white-space: nowrap;
+        }}
+        .matrix-table tr:hover td {{
+            background-color: var(--bg-card-hover);
+        }}
+        .table-shell {{
+            width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid var(--border-card);
+        }}
         .btn-sm {{
             padding: 0.35rem 0.75rem;
             font-size: 0.78rem;
@@ -1028,6 +1363,8 @@ def generate_service_dashboard_html(
             display: inline-flex;
             align-items: center;
             gap: 0.35rem;
+            text-decoration: none;
+            box-sizing: border-box;
         }}
         .btn-cyan {{
             background: rgba(56, 189, 248, 0.15);
@@ -1038,6 +1375,89 @@ def generate_service_dashboard_html(
             background: rgba(56, 189, 248, 0.3);
             border-color: #38bdf8;
             color: #ffffff;
+        }}
+        /* Attention pulse when analytics scope-changed prompt is visible */
+        #btn-regenerate-analytics.btn-shine-spark {{
+            position: relative;
+            overflow: hidden;
+            isolation: isolate;
+            color: #ffffff;
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.55), rgba(56, 189, 248, 0.35), rgba(125, 211, 252, 0.45));
+            border-color: rgba(125, 211, 252, 0.85);
+            box-shadow:
+                0 0 0 1px rgba(56, 189, 248, 0.35),
+                0 0 18px rgba(56, 189, 248, 0.45),
+                0 0 36px rgba(14, 165, 233, 0.25);
+            animation: regen-btn-glow 1.5s ease-in-out infinite;
+        }}
+        #btn-regenerate-analytics.btn-shine-spark::before {{
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                110deg,
+                transparent 20%,
+                rgba(255, 255, 255, 0.55) 45%,
+                rgba(255, 255, 255, 0.15) 55%,
+                transparent 75%
+            );
+            transform: translateX(-130%);
+            animation: regen-btn-shine 1.7s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }}
+        #btn-regenerate-analytics.btn-shine-spark::after {{
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            background:
+                radial-gradient(circle at 12% 30%, rgba(255, 255, 255, 0.95) 0 1.5px, transparent 2.5px),
+                radial-gradient(circle at 78% 22%, rgba(255, 255, 255, 0.9) 0 1.2px, transparent 2.2px),
+                radial-gradient(circle at 88% 70%, rgba(186, 230, 253, 1) 0 1.6px, transparent 2.6px),
+                radial-gradient(circle at 24% 78%, rgba(255, 255, 255, 0.85) 0 1.1px, transparent 2px),
+                radial-gradient(circle at 52% 18%, rgba(255, 255, 255, 0.9) 0 1px, transparent 1.8px),
+                radial-gradient(circle at 62% 82%, rgba(125, 211, 252, 1) 0 1.3px, transparent 2.3px);
+            animation: regen-btn-spark 1.1s ease-in-out infinite;
+        }}
+        #btn-regenerate-analytics.btn-shine-spark > * {{
+            position: relative;
+            z-index: 3;
+        }}
+        #btn-regenerate-analytics .btn-regen-label {{
+            position: relative;
+            z-index: 3;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }}
+        @keyframes regen-btn-glow {{
+            0%, 100% {{
+                box-shadow:
+                    0 0 0 1px rgba(56, 189, 248, 0.35),
+                    0 0 14px rgba(56, 189, 248, 0.35),
+                    0 0 28px rgba(14, 165, 233, 0.18);
+                filter: brightness(1);
+            }}
+            50% {{
+                box-shadow:
+                    0 0 0 2px rgba(125, 211, 252, 0.65),
+                    0 0 22px rgba(56, 189, 248, 0.7),
+                    0 0 44px rgba(14, 165, 233, 0.4);
+                filter: brightness(1.12);
+            }}
+        }}
+        @keyframes regen-btn-shine {{
+            0% {{ transform: translateX(-130%) skewX(-12deg); opacity: 0; }}
+            25% {{ opacity: 1; }}
+            55% {{ transform: translateX(130%) skewX(-12deg); opacity: 0.85; }}
+            100% {{ transform: translateX(130%) skewX(-12deg); opacity: 0; }}
+        }}
+        @keyframes regen-btn-spark {{
+            0%, 100% {{ opacity: 0.25; transform: scale(0.92); }}
+            35% {{ opacity: 1; transform: scale(1.08); }}
+            60% {{ opacity: 0.45; transform: scale(1); }}
         }}
         .btn-outline {{
             background: rgba(255, 255, 255, 0.05);
@@ -1234,9 +1654,10 @@ def generate_service_dashboard_html(
             padding: 0.65rem 0.85rem;
             border-radius: 9px;
             background: rgba(15, 23, 42, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-card);
+            border-color: var(--border-card);
             cursor: pointer;
-            transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            transition: background 0.15s ease, box-shadow 0.15s ease;
             user-select: none;
             box-sizing: border-box;
             width: 100%;
@@ -1244,7 +1665,7 @@ def generate_service_dashboard_html(
         }}
         .model-check-item:hover {{
             background: rgba(30, 41, 59, 0.85);
-            border-color: rgba(255, 255, 255, 0.18);
+            border-color: var(--border-card);
         }}
         .model-check-item input[type="checkbox"] {{
             margin: 0;
@@ -1280,12 +1701,13 @@ def generate_service_dashboard_html(
             font-size: 0.68rem;
             color: var(--text-muted);
         }}
-        /* Selected Box Styling with meaningful padding area color */
+        /* Selected: background only — keep row border-color identical */
         .model-check-item.is-selected,
         .model-check-item:has(input:checked) {{
             background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(99, 102, 241, 0.16)) !important;
-            border: 1px solid rgba(56, 189, 248, 0.65) !important;
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.2), inset 0 0 0 1px rgba(56, 189, 248, 0.25) !important;
+            border: 1px solid var(--border-card) !important;
+            border-color: var(--border-card) !important;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.12) !important;
         }}
         .model-check-item.is-selected .model-name,
         .model-check-item:has(input:checked) .model-name {{
@@ -1374,22 +1796,22 @@ def generate_service_dashboard_html(
 
         <!-- KPI Metrics Row -->
         <div class="kpi-row">
-            <div class="kpi-card" onclick="switchTab('tab-models')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view all {models_count} evaluated models, run timestamps, and live accessibility">
+            <div class="kpi-card" data-tab="tab-models" onclick="switchTab('tab-models')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view all {models_count} evaluated models, run timestamps, and live accessibility">
                 <div class="kpi-label">Evaluated Models ↗</div>
                 <div class="kpi-num">{models_count}</div>
                 <div class="kpi-desc">32 Frontier LLMs & 6 Baselines</div>
             </div>
-            <div class="kpi-card" onclick="switchTab('tab-errors')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view turn-by-turn failure case diagnostics">
+            <div class="kpi-card" data-tab="tab-errors" onclick="switchTab('tab-errors')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view turn-by-turn failure case diagnostics">
                 <div class="kpi-label">Identified Error Cases ↗</div>
                 <div class="kpi-num" style="color: var(--accent-rose);">{total_errors}</div>
                 <div class="kpi-desc">Turn-by-Turn Failure Diagnostics</div>
             </div>
-            <div class="kpi-card" onclick="switchTab('tab-difficulty')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view distinct difficult turn patterns and error vulnerabilities">
+            <div class="kpi-card" data-tab="tab-difficulty" onclick="switchTab('tab-difficulty')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view distinct difficult turn patterns and error vulnerabilities">
                 <div class="kpi-label">Hardest Evaluated Turns ↗</div>
                 <div class="kpi-num" style="color: var(--accent-amber);">{hardest_turns_count}</div>
                 <div class="kpi-desc">Distinct Linguistic Patterns (from 1,000 Turns)</div>
             </div>
-            <div class="kpi-card" onclick="switchTab('tab-data')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view datasets, corpora, and audit reports">
+            <div class="kpi-card" data-tab="tab-data" onclick="switchTab('tab-data')" style="cursor: pointer; transition: transform 0.2s;" title="Click to view datasets, corpora, and audit reports">
                 <div class="kpi-label">Unified Profanity Terms ↗</div>
                 <div class="kpi-num" style="color: var(--accent-emerald);">2,826</div>
                 <div class="kpi-desc">18 Vetted Legal Sources</div>
@@ -1397,23 +1819,23 @@ def generate_service_dashboard_html(
         </div>
 
         <!-- Navigation Tabs -->
-        <nav class="nav-tabs" id="nav-tabs">
-            <button class="tab-btn active" onclick="switchTab('tab-analytics')" id="btn-tab-analytics">
+        <nav class="nav-tabs" id="nav-tabs" role="tablist">
+            <button type="button" class="tab-btn active" role="tab" aria-selected="true" data-tab="tab-analytics" onclick="switchTab('tab-analytics')" id="btn-tab-analytics">
                 <span>📈</span> Visual Analytics & Heatmaps <span class="tab-badge">4 Figures</span>
             </button>
-            <button class="tab-btn" onclick="switchTab('tab-models')" id="btn-tab-models">
+            <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="tab-models" onclick="switchTab('tab-models')" id="btn-tab-models">
                 <span>🤖</span> Evaluated Models & Live Access <span class="tab-badge">{models_count}</span>
             </button>
-            <button class="tab-btn" onclick="switchTab('tab-errors')" id="btn-tab-errors">
+            <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="tab-errors" onclick="switchTab('tab-errors')" id="btn-tab-errors">
                 <span>🔍</span> Failure Case Diagnostics <span class="tab-badge">{total_errors}</span>
             </button>
-            <button class="tab-btn" onclick="switchTab('tab-difficulty')" id="btn-tab-difficulty">
+            <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="tab-difficulty" onclick="switchTab('tab-difficulty')" id="btn-tab-difficulty">
                 <span>🎯</span> Hard-Sample Ranking <span class="tab-badge">{hardest_turns_count}</span>
             </button>
-            <button class="tab-btn" onclick="switchTab('tab-playground')" id="btn-tab-playground">
+            <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="tab-playground" onclick="switchTab('tab-playground')" id="btn-tab-playground">
                 <span>⚡</span> Live Predict Playground <span class="tab-badge">Sandbox</span>
             </button>
-            <button class="tab-btn" onclick="switchTab('tab-data')" id="btn-tab-data">
+            <button type="button" class="tab-btn" role="tab" aria-selected="false" data-tab="tab-data" onclick="switchTab('tab-data')" id="btn-tab-data">
                 <span>📋</span> Data & Governance Reports <span class="tab-badge">Audits</span>
             </button>
         </nav>
@@ -1426,7 +1848,7 @@ def generate_service_dashboard_html(
                     <div>
                         <h2 class="panel-title"><span>📊</span> Automated Publication Infographics & Visual Analytics</h2>
                         <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
-                            Cross-condition causal sensitivity benchmarks, 300 DPI publication-ready figures, and full context trajectory dynamics across {models_count} evaluated models.
+                            Cross-condition causal sensitivity benchmarks, publication-ready figures, and full context trajectory dynamics across {models_count} evaluated models.
                         </p>
                     </div>
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
@@ -1474,15 +1896,12 @@ def generate_service_dashboard_html(
                                 <span>🎯</span> Model Scope for Visual Analytics & Infographics
                             </h3>
                             <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0.2rem 0 0 0;">
-                                By default, all models are included. Filter or select specific models below, then click Regenerate to update all 300 DPI figures, trajectory dynamics, and performance tables.
+                                By default, all models are included. Filter or select specific models below, then click Regenerate to update all figures, trajectory dynamics, and performance tables.
                             </p>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                            <span id="analytics-selected-count" class="badge badge-emerald" style="font-size: 0.8rem; font-family: var(--font-mono); padding: 0.35rem 0.75rem;">
-                                Selected: All {models_count} Models (Full Scope)
-                            </span>
                             <button type="button" class="btn-sm btn-cyan" id="btn-regenerate-analytics" onclick="regenerateAnalyticsInfographics()" style="padding: 0.45rem 1rem; font-weight: 700; cursor: pointer;">
-                                <span>🔄</span> Regenerate Infographics
+                                <span class="btn-regen-label"><span>🔄</span> Regenerate Infographics</span>
                             </button>
                         </div>
                     </div>
@@ -1507,11 +1926,11 @@ def generate_service_dashboard_html(
                 </div>
             </div>
 
-            <!-- Publication Infographics Gallery (300 DPI) -->
+            <!-- Publication Infographics Gallery -->
             <div class="panel-card" style="margin-bottom: 1.5rem;">
                 <div class="panel-header">
                     <div>
-                        <h3 class="panel-title" style="font-size: 1.05rem;"><span>🖼️</span> Publication-Ready Benchmark Figures (300 DPI High-Resolution)</h3>
+                        <h3 class="panel-title" style="font-size: 1.05rem;"><span>🖼️</span> Publication-Ready Benchmark Figures (High-Resolution)</h3>
                         <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.2rem;">
                             Click any figure to view in full resolution or click the download button for production vector/PNG assets.
                         </p>
@@ -1655,9 +2074,9 @@ def generate_service_dashboard_html(
                         <button class="filter-btn active" onclick="setModelFilter('all', this)">All Models ({models_count})</button>
                         <button class="filter-btn" onclick="setModelFilter('accessible', this)">🟢 Accessible ({accessible_models_count})</button>
                         <button class="filter-btn" onclick="setModelFilter('free', this)">🎁 Free Tier ({free_tier_count})</button>
-                        <button class="filter-btn" onclick="setModelFilter('openrouter', this)">OpenRouter (19)</button>
-                        <button class="filter-btn" onclick="setModelFilter('requesty', this)">Requesty.ai (12)</button>
-                        <button class="filter-btn" onclick="setModelFilter('local', this)">Local Baselines (6)</button>
+                        <button class="filter-btn" onclick="setModelFilter('openrouter', this)">OpenRouter ({openrouter_count})</button>
+                        <button class="filter-btn" onclick="setModelFilter('requesty', this)">Requesty.ai ({requesty_count})</button>
+                        <button class="filter-btn" onclick="setModelFilter('local', this)">Local Baselines ({local_baseline_count})</button>
                     </div>
                     <input type="text" class="search-input" id="model-search" placeholder="Search model name, family, or ID..." onkeyup="filterModelsTable()" style="max-width: 280px;">
                 </div>
@@ -1693,10 +2112,11 @@ def generate_service_dashboard_html(
                     <input type="text" class="search-input" id="error-search" placeholder="Search turn text or model..." onkeyup="filterErrorTable()">
                 </div>
                 <div class="filter-bar">
-                    <button class="filter-btn active" onclick="setErrorFilter('all', this)">All Errors ({len(all_error_cases)})</button>
+                    <button class="filter-btn active" onclick="setErrorFilter('all', this)">All Errors ({total_error_case_count})</button>
                     <button class="filter-btn" onclick="setErrorFilter('False Positive', this)">False Positives (Over-Moderation)</button>
                     <button class="filter-btn" onclick="setErrorFilter('False Negative', this)">False Negatives (Missed Harm)</button>
                 </div>
+                {error_truncation_note}
                 <div class="table-responsive">
                     <table id="errors-table">
                         <thead>
@@ -1773,22 +2193,24 @@ def generate_service_dashboard_html(
         occs = s.get("occurrences", 1)
         samples = s.get("sample_conversations", "")
         clean_text_attr = html_escape(s.get("turn_text", ""), quote=True)
+        clean_text_cell = html_escape(str(s.get("turn_text", "")))
+        clean_samples = html_escape(str(samples))
         html += f"""
-                            <tr data-mode="{mode}" data-prio="{prio}">
+                            <tr data-mode="{html_escape(str(mode), quote=True)}" data-prio="{prio}">
                                 <td class="cell-mono">#{idx}</td>
                                 <td style="max-width: 420px;">
-                                    <div style="font-weight: 600; color: var(--text-primary);">"{s.get("turn_text", "")}"</div>
+                                    <div style="font-weight: 600; color: var(--text-primary);">"{clean_text_cell}"</div>
                                     <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.15rem;">
-                                        Sample IDs: {samples}
+                                        Sample IDs: {clean_samples}
                                     </div>
                                 </td>
                                 <td>
                                     <span class="badge badge-indigo">{occs} turn{'s' if occs > 1 else ''} in benchmark</span>
                                 </td>
-                                <td><span class="badge {mode_badge}">{mode}</span></td>
+                                <td><span class="badge {mode_badge}">{html_escape(str(mode))}</span></td>
                                 <td class="cell-mono" style="font-weight: 700; color: var(--accent-rose); text-align: right;">{err_rate * 100:.1f}%</td>
                                 <td class="cell-mono" style="color: var(--accent-cyan); font-weight: 700; text-align: right;">{prio:.3f}x</td>
-                                <td><span class="badge badge-cyan">{s.get("platform_style", "chat")}</span></td>
+                                <td><span class="badge badge-cyan">{html_escape(str(s.get("platform_style", "chat")))}</span></td>
                                 <td style="text-align: center;">
                                     <button class="btn-sm btn-cyan" onclick="testTurnInPlayground(this.dataset.text)" data-text="{clean_text_attr}">⚡ Test</button>
                                 </td>
@@ -1801,14 +2223,14 @@ def generate_service_dashboard_html(
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                    <div class="panel-card" style="margin-bottom: 0; background: rgba(15, 23, 42, 0.6);">
+                    <div style="margin-bottom: 0; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.1rem 1.2rem;">
                         <h3 style="font-size: 1rem; color: var(--accent-amber); margin-bottom: 0.75rem;">⚠️ Top False Positive Triggers (Over-Moderation)</h3>
                         <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Words triggering false bans on safe banter (click word to filter table):</p>
                         <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
                             {fp_trigger_buttons}
                         </div>
                     </div>
-                    <div class="panel-card" style="margin-bottom: 0; background: rgba(15, 23, 42, 0.6);">
+                    <div style="margin-bottom: 0; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.1rem 1.2rem;">
                         <h3 style="font-size: 1rem; color: var(--accent-rose); margin-bottom: 0.75rem;">🚨 Top False Negative Indicators (Missed Covert Harm)</h3>
                         <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.6rem;">Words frequently involved in uncaught peer harassment (click word to filter table):</p>
                         <div style="display: flex; gap: 0.4rem; flex-wrap: wrap;">
@@ -1864,225 +2286,236 @@ def generate_service_dashboard_html(
 
         <!-- TAB 5: Data & Governance Reports -->
         <section class="tab-content" id="tab-data">
-            <div class="panel-card">
-                <div class="panel-header" style="flex-wrap: wrap; gap: 1rem;">
+            <div class="panel-card" style="margin-bottom: 1.5rem;">
+                <div class="panel-header">
                     <div>
                         <h2 class="panel-title"><span>📋</span> Governance, Split Data & Audit Reports</h2>
-                        <div class="panel-subtitle">Audited academic corpora, regulatory compliance scorecards, and zero-leakage benchmark partitioning</div>
+                        <div class="panel-subtitle">Audited academic corpora, regulatory compliance scorecards, and zero-leakage benchmark partitioning.</div>
                     </div>
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
-                        <button type="button" class="btn-sm btn-cyan" id="btn-regenerate-governance" onclick="regenerateGovernanceInfographics()" style="padding: 0.45rem 1rem; font-weight: 700; cursor: pointer;">
+                        <button type="button" class="btn-sm btn-cyan" id="btn-regenerate-governance" onclick="regenerateGovernanceInfographics()">
                             🔄 Regenerate Governance Infographics
                         </button>
-                        <a href="/reports/data_report.md" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">📄 data_report.md</a>
-                        <a href="/reports/pii_spot_check_report.md" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">🛡️ pii_spot_check.md</a>
-                        <a href="/reports/data/audit_report.yaml" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">⚖️ audit_report.yaml</a>
+                        <a href="/reports/data_report.md" target="_blank" class="btn-sm btn-outline">📄 data_report.md</a>
+                        <a href="/reports/pii_spot_check_report.md" target="_blank" class="btn-sm btn-outline">🛡️ pii_spot_check.md</a>
+                        <a href="/reports/data/audit_report.yaml" target="_blank" class="btn-sm btn-outline">⚖️ audit_report.yaml</a>
                     </div>
                 </div>
 
-                <!-- Regeneration Status Toast -->
                 <div id="governance-regen-status" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1.25rem; font-weight: 500;"></div>
 
-                <!-- Executive KPI Cards -->
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="gov-kpi-grid">
                     <div class="kpi-card">
                         <div class="kpi-label">Ingested Multi-Turn Dialogues</div>
-                        <div class="kpi-num" style="font-size: 1.5rem; color: #ffffff;">103,400</div>
+                        <div class="kpi-num" style="font-size: 1.45rem; color: #ffffff;">103,400</div>
                         <div class="kpi-desc">Raw Conversational Pool (Snappy Parquet)</div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-label">Legal Audit Gate</div>
-                        <div class="kpi-num" style="font-size: 1.5rem; color: var(--accent-emerald);">29 Sources (100%)</div>
+                        <div class="kpi-num" style="font-size: 1.45rem; color: var(--accent-emerald);">29 Sources (100%)</div>
                         <div class="kpi-desc">COPPA, GDPR-K & UK AADC Compliant</div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-label">Safe Harbor PII Redaction</div>
-                        <div class="kpi-num" style="font-size: 1.5rem; color: var(--accent-cyan);">66,261 Scrubbed</div>
+                        <div class="kpi-num" style="font-size: 1.45rem; color: var(--accent-cyan);">66,261 Scrubbed</div>
                         <div class="kpi-desc">Zero Residue in Spot-Check Audits</div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-label">Frozen Benchmark Partitions</div>
-                        <div class="kpi-num" style="font-size: 1.5rem; color: var(--accent-indigo);">5,004 Dialogues</div>
+                        <div class="kpi-num" style="font-size: 1.45rem; color: var(--accent-indigo);">5,004 Dialogues</div>
                         <div class="kpi-desc">13,018 Turns • Zero Turn/Speaker Leakage</div>
                     </div>
                 </div>
+            </div>
 
-                <!-- 300 DPI Publication Infographics Gallery -->
-                <div style="margin-bottom: 2rem;">
-                    <h3 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>📊</span> Publication-Ready Governance & Data Infographics (300 DPI)
-                    </h3>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.25rem;">
-                        <!-- Fig G-1 -->
-                        <div class="figure-card">
-                            <div class="figure-img-container">
-                                <img id="fig-img-gov-audit" src="/reports/infographic_governance_audit.png" alt="Governance and Audit Infographic" onclick="openLightbox('/reports/infographic_governance_audit.png', 'Fig G-1: Corpus Governance & Multi-Source Legal Audit Architecture')">
+            <div class="panel-card" style="margin-bottom: 1.5rem;">
+                <div class="panel-header">
+                    <div>
+                        <h3 class="panel-title" style="font-size: 1.05rem;"><span>📊</span> Publication-Ready Governance & Data Infographics</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.2rem;">
+                            Full-width high-resolution figures sized to the dashboard container. Click any figure to zoom.
+                        </p>
+                    </div>
+                    <span class="badge badge-cyan">Auto-Generated Visuals</span>
+                </div>
+                <div class="gov-gallery">
+                    <div class="gov-figure">
+                        <div class="gov-figure-header">
+                            <div class="gov-figure-meta">
+                                <div class="gov-figure-title"><span class="badge badge-indigo" style="margin-right: 0.4rem;">Fig G-1</span> Corpus Governance & Multi-Source Legal Audit Architecture</div>
+                                <div class="gov-figure-desc">Multi-source registry, regulatory compliance under COPPA/GDPR-K, and PII neutralization breakdown.</div>
                             </div>
-                            <div class="figure-caption-box">
-                                <div class="figure-num-badge">Figure G-1</div>
-                                <div class="figure-title">Corpus Governance & Multi-Source Legal Audit Architecture</div>
-                                <div class="figure-desc">Multi-source registry, regulatory compliance under COPPA/GDPR-K, and PII neutralization breakdown.</div>
-                                <div class="figure-actions">
-                                    <button type="button" class="btn-sm btn-outline" id="fig-zoom-gov-audit" onclick="openLightbox('/reports/infographic_governance_audit.png', 'Fig G-1: Corpus Governance & Multi-Source Legal Audit Architecture')">🔍 Zoom</button>
-                                    <a id="fig-dl-gov-audit" href="/reports/infographic_governance_audit.png" download="infographic_governance_audit.png" class="btn-sm btn-cyan">📥 Download 300 DPI</a>
-                                </div>
+                            <div class="gov-figure-actions">
+                                <button type="button" class="btn-sm btn-outline" id="fig-zoom-gov-audit" onclick="openLightbox(document.getElementById('fig-img-gov-audit').src, 'Fig G-1: Corpus Governance & Multi-Source Legal Audit Architecture')">🔍 Zoom</button>
+                                <a id="fig-dl-gov-audit" href="/reports/infographic_governance_audit.png" download="infographic_governance_audit.png" class="btn-sm btn-cyan">📥 Download</a>
                             </div>
                         </div>
+                        <div class="gov-figure-img-wrap">
+                            <img class="gov-figure-img" id="fig-img-gov-audit" src="/reports/infographic_governance_audit.png" alt="Governance and Audit Infographic" onclick="openLightbox(this.src, 'Fig G-1: Corpus Governance & Multi-Source Legal Audit Architecture')" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/infographic_governance_audit.png';}}">
+                        </div>
+                    </div>
 
-                        <!-- Fig G-2 -->
-                        <div class="figure-card">
-                            <div class="figure-img-container">
-                                <img id="fig-img-split-data" src="/reports/infographic_split_data.png" alt="Dataset Splitting Infographic" onclick="openLightbox('/reports/infographic_split_data.png', 'Fig G-2: Zero-Leakage Benchmark Dataset Splitting & Quota Stratification')">
+                    <div class="gov-figure">
+                        <div class="gov-figure-header">
+                            <div class="gov-figure-meta">
+                                <div class="gov-figure-title"><span class="badge badge-purple" style="margin-right: 0.4rem;">Fig G-2</span> Zero-Leakage Benchmark Dataset Splitting & Quota Stratification</div>
+                                <div class="gov-figure-desc">Train/Dev/Test partition volume, sampling tiers, and disjoint speaker isolation guarantees.</div>
                             </div>
-                            <div class="figure-caption-box">
-                                <div class="figure-num-badge">Figure G-2</div>
-                                <div class="figure-title">Zero-Leakage Benchmark Dataset Splitting & Quota Stratification</div>
-                                <div class="figure-desc">Train/Dev/Test partition volume, sampling tiers (organic vs synthetic), and disjoint speaker isolation guarantees.</div>
-                                <div class="figure-actions">
-                                    <button type="button" class="btn-sm btn-outline" id="fig-zoom-split-data" onclick="openLightbox('/reports/infographic_split_data.png', 'Fig G-2: Zero-Leakage Benchmark Dataset Splitting & Quota Stratification')">🔍 Zoom</button>
-                                    <a id="fig-dl-split-data" href="/reports/infographic_split_data.png" download="infographic_split_data.png" class="btn-sm btn-cyan">📥 Download 300 DPI</a>
-                                </div>
+                            <div class="gov-figure-actions">
+                                <button type="button" class="btn-sm btn-outline" id="fig-zoom-split-data" onclick="openLightbox(document.getElementById('fig-img-split-data').src, 'Fig G-2: Zero-Leakage Benchmark Dataset Splitting & Quota Stratification')">🔍 Zoom</button>
+                                <a id="fig-dl-split-data" href="/reports/infographic_split_data.png" download="infographic_split_data.png" class="btn-sm btn-cyan">📥 Download</a>
                             </div>
                         </div>
+                        <div class="gov-figure-img-wrap">
+                            <img class="gov-figure-img" id="fig-img-split-data" src="/reports/infographic_split_data.png" alt="Dataset Splitting Infographic" onclick="openLightbox(this.src, 'Fig G-2: Zero-Leakage Benchmark Dataset Splitting & Quota Stratification')" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/infographic_split_data.png';}}">
+                        </div>
+                    </div>
 
-                        <!-- Fig G-3 -->
-                        <div class="figure-card">
-                            <div class="figure-img-container">
-                                <img id="fig-img-lifecycle" src="/reports/infographic_data_lifecycle.png" alt="Data Lifecycle Infographic" onclick="openLightbox('/reports/infographic_data_lifecycle.png', 'Fig G-3: End-to-End Pipeline Architecture & Governance Lifecycle')">
+                    <div class="gov-figure">
+                        <div class="gov-figure-header">
+                            <div class="gov-figure-meta">
+                                <div class="gov-figure-title"><span class="badge badge-emerald" style="margin-right: 0.4rem;">Fig G-3</span> End-to-End Pipeline Architecture & Governance Lifecycle</div>
+                                <div class="gov-figure-desc">Seven-stage lifecycle from source ingestion and PII redaction through DAG threading to frozen evaluation splits.</div>
                             </div>
-                            <div class="figure-caption-box">
-                                <div class="figure-num-badge">Figure G-3</div>
-                                <div class="figure-title">End-to-End Pipeline Architecture & Governance Lifecycle</div>
-                                <div class="figure-desc">7-stage data lifecycle from source ingestion and PII redaction through DAG threading to frozen evaluation splits.</div>
-                                <div class="figure-actions">
-                                    <button type="button" class="btn-sm btn-outline" id="fig-zoom-lifecycle" onclick="openLightbox('/reports/infographic_data_lifecycle.png', 'Fig G-3: End-to-End Pipeline Architecture & Governance Lifecycle')">🔍 Zoom</button>
-                                    <a id="fig-dl-lifecycle" href="/reports/infographic_data_lifecycle.png" download="infographic_data_lifecycle.png" class="btn-sm btn-cyan">📥 Download 300 DPI</a>
-                                </div>
+                            <div class="gov-figure-actions">
+                                <button type="button" class="btn-sm btn-outline" id="fig-zoom-lifecycle" onclick="openLightbox(document.getElementById('fig-img-lifecycle').src, 'Fig G-3: End-to-End Pipeline Architecture & Governance Lifecycle')">🔍 Zoom</button>
+                                <a id="fig-dl-lifecycle" href="/reports/infographic_data_lifecycle.png" download="infographic_data_lifecycle.png" class="btn-sm btn-cyan">📥 Download</a>
                             </div>
+                        </div>
+                        <div class="gov-figure-img-wrap">
+                            <img class="gov-figure-img" id="fig-img-lifecycle" src="/reports/infographic_data_lifecycle.png" alt="Data Lifecycle Infographic" onclick="openLightbox(this.src, 'Fig G-3: End-to-End Pipeline Architecture & Governance Lifecycle')" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/infographic_data_lifecycle.png';}}">
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Stratified Splits Table -->
-                <div style="margin-bottom: 2rem;">
-                    <h3 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>⚖️</span> Stratified Zero-Leakage Benchmark Partitions
-                    </h3>
-                    <div style="overflow-x: auto;">
-                        <table class="matrix-table">
-                            <thead>
-                                <tr>
-                                    <th>Partition</th>
-                                    <th>Share (%)</th>
-                                    <th style="text-align: right;">Dialogues</th>
-                                    <th style="text-align: right;">Evaluated Turns</th>
-                                    <th style="text-align: right;">Avg Turns / Dialogue</th>
-                                    <th style="text-align: right;">File Size</th>
-                                    <th>Integrity Guarantee</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td style="font-weight: 700; color: var(--accent-cyan);">Train Partition</td>
-                                    <td><span class="badge badge-cyan">50.0%</span></td>
-                                    <td class="cell-mono" style="text-align: right; font-weight: 600; color: #fff;">2,502</td>
-                                    <td class="cell-mono" style="text-align: right; color: var(--text-primary);">6,668</td>
-                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">2.66</td>
-                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">520.8 KB</td>
-                                    <td><span class="badge badge-emerald">Disjoint Conversation Isolation</span></td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: 700; color: var(--accent-indigo);">Dev Validation</td>
-                                    <td><span class="badge badge-purple">25.0%</span></td>
-                                    <td class="cell-mono" style="text-align: right; font-weight: 600; color: #fff;">1,251</td>
-                                    <td class="cell-mono" style="text-align: right; color: var(--text-primary);">3,097</td>
-                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">2.48</td>
-                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">261.9 KB</td>
-                                    <td><span class="badge badge-emerald">Zero Cross-Split Speaker Overlap</span></td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: 700; color: var(--accent-emerald);">Test Evaluation (Gold)</td>
-                                    <td><span class="badge badge-emerald">25.0%</span></td>
-                                    <td class="cell-mono" style="text-align: right; font-weight: 600; color: #fff;">1,251</td>
-                                    <td class="cell-mono" style="text-align: right; color: var(--text-primary);">3,253</td>
-                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">2.60</td>
-                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">264.2 KB</td>
-                                    <td><span class="badge badge-emerald">Strict Monotonic Causal Ordering</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="panel-card" style="margin-bottom: 1.5rem;">
+                <div class="panel-header">
+                    <div>
+                        <h3 class="panel-title" style="font-size: 1.05rem;"><span>⚖️</span> Stratified Zero-Leakage Benchmark Partitions</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.2rem;">
+                            Frozen train/dev/test dialogue and turn counts with isolation guarantees.
+                        </p>
                     </div>
                 </div>
+                <div class="table-shell">
+                    <table class="matrix-table">
+                        <thead>
+                            <tr>
+                                <th>Partition</th>
+                                <th>Share (%)</th>
+                                <th style="text-align: right;">Dialogues</th>
+                                <th style="text-align: right;">Evaluated Turns</th>
+                                <th style="text-align: right;">Avg Turns / Dialogue</th>
+                                <th style="text-align: right;">File Size</th>
+                                <th>Integrity Guarantee</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: 700; color: var(--accent-cyan);">Train Partition</td>
+                                <td><span class="badge badge-cyan">50.0%</span></td>
+                                <td class="cell-mono" style="text-align: right; font-weight: 600; color: #fff;">2,502</td>
+                                <td class="cell-mono" style="text-align: right; color: var(--text-primary);">6,668</td>
+                                <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">2.66</td>
+                                <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">520.8 KB</td>
+                                <td><span class="badge badge-emerald">Disjoint Conversation Isolation</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 700; color: var(--accent-indigo);">Dev Validation</td>
+                                <td><span class="badge badge-purple">25.0%</span></td>
+                                <td class="cell-mono" style="text-align: right; font-weight: 600; color: #fff;">1,251</td>
+                                <td class="cell-mono" style="text-align: right; color: var(--text-primary);">3,097</td>
+                                <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">2.48</td>
+                                <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">261.9 KB</td>
+                                <td><span class="badge badge-emerald">Zero Cross-Split Speaker Overlap</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 700; color: var(--accent-emerald);">Test Evaluation (Gold)</td>
+                                <td><span class="badge badge-emerald">25.0%</span></td>
+                                <td class="cell-mono" style="text-align: right; font-weight: 600; color: #fff;">1,251</td>
+                                <td class="cell-mono" style="text-align: right; color: var(--text-primary);">3,253</td>
+                                <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">2.60</td>
+                                <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">264.2 KB</td>
+                                <td><span class="badge badge-emerald">Strict Monotonic Causal Ordering</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-                <!-- Primary Audited Sources & Provenance -->
-                <div>
-                    <h3 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                        <span>🛡️</span> Approved Corpora & Governance Provenance Registry
-                    </h3>
-                    <div style="overflow-x: auto;">
-                        <table class="matrix-table">
-                            <thead>
-                                <tr>
-                                    <th>Corpus Identifier</th>
-                                    <th>Domain Category</th>
-                                    <th>Provenance & Publisher</th>
-                                    <th>Licensing & Terms</th>
-                                    <th>Child Safety Alignment</th>
-                                    <th>Audit Gate</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td style="font-weight: 700; color: #fff;">wikiconv_wikidetox</td>
-                                    <td><span class="badge badge-cyan">Discussion Trees</span></td>
-                                    <td>Google / Wikimedia Community</td>
-                                    <td>CC-BY-SA 3.0 (Research)</td>
-                                    <td>Safe Harbor De-identified</td>
-                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: 700; color: #fff;">contextual_abuse_dataset</td>
-                                    <td><span class="badge badge-purple">Abuse Benchmarks</span></td>
-                                    <td>CAD Research Consortium</td>
-                                    <td>Academic Research License</td>
-                                    <td>Group Adjudication Verified</td>
-                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: 700; color: #fff;">gametox</td>
-                                    <td><span class="badge badge-rose">Youth & Gaming</span></td>
-                                    <td>GameTox Adolescent Gaming Corpus</td>
-                                    <td>Non-Commercial Research</td>
-                                    <td>COPPA Compliant Scrubbing</td>
-                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: 700; color: #fff;">minorbench</td>
-                                    <td><span class="badge badge-rose">Youth Safeguarding</span></td>
-                                    <td>MinorBench Safety Evaluation</td>
-                                    <td>Curated Research Set</td>
-                                    <td>Underage Privacy Protected</td>
-                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: 700; color: #fff;">lmsys_toxic_chat</td>
-                                    <td><span class="badge badge-indigo">Dialogue Arenas</span></td>
-                                    <td>LMSYS Org / Chatbot Arena</td>
-                                    <td>CC-BY-4.0 Research</td>
-                                    <td>Zero Residual Identifiers</td>
-                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
-                                </tr>
-                                <tr>
-                                    <td style="font-weight: 700; color: #fff;">urban_dictionary_slang</td>
-                                    <td><span class="badge badge-amber">Dynamic Slang</span></td>
-                                    <td>Urban Dictionary Curated APIs</td>
-                                    <td>Permissive Research Querying</td>
-                                    <td>Algospeak Discovery Active</td>
-                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
-                                </tr>
-                            </tbody>
-                        </table>
+            <div class="panel-card">
+                <div class="panel-header">
+                    <div>
+                        <h3 class="panel-title" style="font-size: 1.05rem;"><span>🛡️</span> Approved Corpora & Governance Provenance Registry</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.2rem;">
+                            Representative audited sources with licensing and child-safety alignment.
+                        </p>
                     </div>
+                </div>
+                <div class="table-shell">
+                    <table class="matrix-table">
+                        <thead>
+                            <tr>
+                                <th>Corpus Identifier</th>
+                                <th>Domain Category</th>
+                                <th>Provenance & Publisher</th>
+                                <th>Licensing & Terms</th>
+                                <th>Child Safety Alignment</th>
+                                <th>Audit Gate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: 700; color: #fff;">wikiconv_wikidetox</td>
+                                <td><span class="badge badge-cyan">Discussion Trees</span></td>
+                                <td>Google / Wikimedia Community</td>
+                                <td>CC-BY-SA 3.0 (Research)</td>
+                                <td>Safe Harbor De-identified</td>
+                                <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 700; color: #fff;">contextual_abuse_dataset</td>
+                                <td><span class="badge badge-purple">Abuse Benchmarks</span></td>
+                                <td>CAD Research Consortium</td>
+                                <td>Academic Research License</td>
+                                <td>Group Adjudication Verified</td>
+                                <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 700; color: #fff;">gametox</td>
+                                <td><span class="badge badge-rose">Youth & Gaming</span></td>
+                                <td>GameTox Adolescent Gaming Corpus</td>
+                                <td>Non-Commercial Research</td>
+                                <td>COPPA Compliant Scrubbing</td>
+                                <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 700; color: #fff;">minorbench</td>
+                                <td><span class="badge badge-rose">Youth Safeguarding</span></td>
+                                <td>MinorBench Safety Evaluation</td>
+                                <td>Curated Research Set</td>
+                                <td>Underage Privacy Protected</td>
+                                <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 700; color: #fff;">lmsys_toxic_chat</td>
+                                <td><span class="badge badge-indigo">Dialogue Arenas</span></td>
+                                <td>LMSYS Org / Chatbot Arena</td>
+                                <td>CC-BY-4.0 Research</td>
+                                <td>Zero Residual Identifiers</td>
+                                <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 700; color: #fff;">urban_dictionary_slang</td>
+                                <td><span class="badge badge-amber">Dynamic Slang</span></td>
+                                <td>Urban Dictionary Curated APIs</td>
+                                <td>Permissive Research Querying</td>
+                                <td>Algospeak Discovery Active</td>
+                                <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>
@@ -2097,7 +2530,7 @@ def generate_service_dashboard_html(
                 <img id="lightbox-img" src="" alt="Enlarged Figure">
                 <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.75rem; flex-wrap: wrap;">
                     <a id="lightbox-open" href="" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">↗ Open High-Res in Tab</a>
-                    <a id="lightbox-download" href="" download class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download 300 DPI PNG</a>
+                    <a id="lightbox-download" href="" download class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
                 </div>
             </div>
         </div>
@@ -2110,13 +2543,30 @@ def generate_service_dashboard_html(
     <script>
         function switchTab(tabId) {{
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            
+            document.querySelectorAll('#nav-tabs .tab-btn, .tab-btn').forEach(el => {{
+                el.classList.remove('active');
+                el.setAttribute('aria-selected', 'false');
+            }});
+            document.querySelectorAll('.kpi-row > .kpi-card[data-tab]').forEach(el => {{
+                el.classList.remove('is-selected');
+            }});
+
             const target = document.getElementById(tabId);
             if (target) target.classList.add('active');
 
-            const btn = document.querySelector(`[onclick="switchTab('${{tabId}}')"]`);
-            if (btn) btn.classList.add('active');
+            // Always select the nav-tab button by id (never the kpi-card with the same onclick)
+            const btn = document.getElementById('btn-' + tabId)
+                || document.querySelector('#nav-tabs .tab-btn[data-tab="' + tabId + '"]');
+            if (btn) {{
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+                try {{
+                    btn.scrollIntoView({{ behavior: 'smooth', inline: 'nearest', block: 'nearest' }});
+                }} catch (_) {{}}
+            }}
+
+            const kpi = document.querySelector('.kpi-row > .kpi-card[data-tab="' + tabId + '"]');
+            if (kpi) kpi.classList.add('is-selected');
         }}
 
         function openLightbox(src, title) {{
@@ -2135,9 +2585,16 @@ def generate_service_dashboard_html(
         }}
 
         function closeLightbox(e) {{
+            if (e && e.target && e.target !== document.getElementById('lightbox-modal')) {{
+                return;
+            }}
             const modal = document.getElementById('lightbox-modal');
             if (modal) modal.classList.remove('active');
         }}
+
+        document.addEventListener('keydown', (e) => {{
+            if (e.key === 'Escape') closeLightbox();
+        }});
 
         function filterAnalyticsTable() {{
             const query = (document.getElementById('analytics-table-search')?.value || '').toLowerCase();
@@ -2179,6 +2636,35 @@ def generate_service_dashboard_html(
                     matchesFilter = rProv.includes('requesty');
                 }} else if (currentModelFilter === 'local') {{
                     matchesFilter = rProv.includes('local');
+                }}
+
+                r.style.display = (matchesQuery && matchesFilter) ? '' : 'none';
+            }});
+        }}
+
+        let currentErrorFilter = 'all';
+        function setErrorFilter(type, btn) {{
+            if (btn) {{
+                btn.parentElement.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            }}
+            currentErrorFilter = type;
+            filterErrorTable();
+        }}
+
+        function filterErrorTable() {{
+            const query = (document.getElementById('error-search')?.value || '').toLowerCase();
+            const rows = document.querySelectorAll('#errors-table tbody tr');
+            rows.forEach(r => {{
+                const text = r.innerText.toLowerCase();
+                const errType = r.getAttribute('data-type') || '';
+
+                const matchesQuery = !query || text.includes(query);
+                let matchesFilter = true;
+                if (currentErrorFilter === 'False Positive') {{
+                    matchesFilter = errType.includes('Positive');
+                }} else if (currentErrorFilter === 'False Negative') {{
+                    matchesFilter = errType.includes('Negative');
                 }}
 
                 r.style.display = (matchesQuery && matchesFilter) ? '' : 'none';
@@ -2243,12 +2729,61 @@ def generate_service_dashboard_html(
             document.querySelectorAll('.dash-checkbox').forEach(cb => {{
                 cb.checked = (cb.value === modelId);
             }});
-            updatePredictModelSelection('dash');
+            const selected = document.querySelector('.dash-checkbox:checked');
+            if (selected) {{
+                onPredictModelPick('dash', selected);
+            }} else {{
+                // Fallback: match by display name if an id was not found
+                document.querySelectorAll('.dash-check-item').forEach(item => {{
+                    const name = (item.getAttribute('data-name') || '');
+                    const cb = item.querySelector('.dash-checkbox');
+                    if (cb) {{
+                        cb.checked = (name === String(modelId || '').toLowerCase());
+                    }}
+                }});
+                const retry = document.querySelector('.dash-checkbox:checked');
+                if (retry) onPredictModelPick('dash', retry);
+                else updatePredictModelSelection('dash');
+            }}
             const targetInput = document.getElementById('test-turn');
             if (targetInput) {{
                 targetInput.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
                 targetInput.focus();
             }}
+        }}
+
+        const DASH_PRESETS = {{
+            hype: {{
+                context: "u1: he is diffusing the bomb!\\nu2: stick it stick it",
+                target: "holy fucking shit you hit that cross-map snipe! you are an absolute god at this game bro"
+            }},
+            bullying: {{
+                context: "u1: my bad missed the flash\\nu2: play safe",
+                target: "you are absolute garbage uninstall right now delete the game"
+            }},
+            exclusion: {{
+                context: "u1: can i join next match?\\nu2: we need a full 5-stack",
+                target: "nobody in this discord wanted you here, just leave and don't come back"
+            }},
+            algospeak: {{
+                context: "u1: stop griefing our lobby",
+                target: "go u-n-a-l-i-v-e yourself in real life, waste of oxygen"
+            }}
+        }};
+
+        function setDashboardPreset(key) {{
+            const p = DASH_PRESETS[key];
+            if (!p) return;
+            const prefixEl = document.getElementById('test-prefix');
+            const turnEl = document.getElementById('test-turn');
+            if (prefixEl) prefixEl.value = p.context;
+            if (turnEl) turnEl.value = p.target;
+            switchTab('tab-playground');
+            if (turnEl) {{
+                turnEl.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+                turnEl.focus();
+            }}
+            runLivePredict();
         }}
 
         function selectPredictModels(prefix, mode) {{
@@ -2273,11 +2808,8 @@ def generate_service_dashboard_html(
                 }}
 
                 if (item) {{
-                    if (b.checked) {{
-                        item.classList.add('is-selected');
-                    }} else {{
-                        item.classList.remove('is-selected');
-                    }}
+                    if (b.checked) item.classList.add('is-selected');
+                    else item.classList.remove('is-selected');
                 }}
             }});
             updatePredictModelSelection(prefix);
@@ -2291,6 +2823,63 @@ def generate_service_dashboard_html(
                 it.style.display = !query || text.includes(query) ? 'flex' : 'none';
             }});
         }}
+
+        function onPredictModelPick(prefix, checkbox) {{
+            // Playground / predict: single-select. Analytics scope: keep multi-select.
+            if (prefix !== 'analytics' && checkbox && checkbox.checked) {{
+                document.querySelectorAll('.' + prefix + '-checkbox').forEach(b => {{
+                    if (b !== checkbox) {{
+                        b.checked = false;
+                        const item = b.closest('.' + prefix + '-check-item');
+                        if (item) item.classList.remove('is-selected');
+                    }}
+                }});
+            }}
+            updatePredictModelSelection(prefix);
+        }}
+
+        function setRegenInfographicsAttention(active) {{
+            const btn = document.getElementById('btn-regenerate-analytics');
+            if (!btn) return;
+            btn.classList.toggle('btn-shine-spark', !!active);
+        }}
+
+        function showAnalyticsRegenPrompt(checkedCount) {{
+            const statusDiv = document.getElementById('analytics-regen-status');
+            if (!statusDiv) return;
+            statusDiv.style.display = 'block';
+            statusDiv.style.background = 'rgba(251, 191, 36, 0.12)';
+            statusDiv.style.border = '1px solid rgba(251, 191, 36, 0.35)';
+            statusDiv.style.color = '#fbbf24';
+            statusDiv.dataset.regenPrompt = '1';
+            statusDiv.innerHTML = '⚡ Scope changed (' + checkedCount + ' selected). Click <strong>"Regenerate Infographics"</strong> to update figures & analytics.';
+            setRegenInfographicsAttention(true);
+        }}
+
+        function clearAnalyticsRegenPromptAttention() {{
+            const statusDiv = document.getElementById('analytics-regen-status');
+            if (statusDiv) delete statusDiv.dataset.regenPrompt;
+            setRegenInfographicsAttention(false);
+        }}
+
+        function syncRegenInfographicsAttention() {{
+            const statusDiv = document.getElementById('analytics-regen-status');
+            if (!statusDiv) {{
+                setRegenInfographicsAttention(false);
+                return;
+            }}
+            const visible = statusDiv.style.display !== 'none' && getComputedStyle(statusDiv).display !== 'none';
+            setRegenInfographicsAttention(visible && statusDiv.dataset.regenPrompt === '1');
+        }}
+
+        document.addEventListener('DOMContentLoaded', () => {{
+            const statusDiv = document.getElementById('analytics-regen-status');
+            if (!statusDiv || typeof MutationObserver === 'undefined') return;
+            new MutationObserver(syncRegenInfographicsAttention).observe(statusDiv, {{
+                attributes: true,
+                attributeFilter: ['style', 'data-regen-prompt']
+            }});
+        }});
 
         function updatePredictModelSelection(prefix) {{
             const allBoxes = document.querySelectorAll('.' + prefix + '-checkbox');
@@ -2317,14 +2906,7 @@ def generate_service_dashboard_html(
                     badge.textContent = 'Selected: ' + checked.length + ' Models (' + checked.length + ' of ' + allBoxes.length + ')';
                     badge.className = 'badge badge-indigo';
                 }}
-                const statusDiv = document.getElementById('analytics-regen-status');
-                if (statusDiv) {{
-                    statusDiv.style.display = 'block';
-                    statusDiv.style.background = 'rgba(251, 191, 36, 0.12)';
-                    statusDiv.style.border = '1px solid rgba(251, 191, 36, 0.35)';
-                    statusDiv.style.color = '#fbbf24';
-                    statusDiv.innerHTML = '⚡ Scope changed (' + checked.length + ' selected). Click <strong>"Regenerate Infographics"</strong> to update 300 DPI figures & analytics.';
-                }}
+                showAnalyticsRegenPrompt(checked.length);
                 return;
             }}
             if (checked.length === 0) {{
@@ -2350,6 +2932,9 @@ def generate_service_dashboard_html(
             const selectedBoxes = Array.from(document.querySelectorAll('.analytics-checkbox:checked'));
             const selected = selectedBoxes.map(b => b.value);
 
+            // Clicked / leaving the scope-changed prompt → drop shine immediately
+            clearAnalyticsRegenPromptAttention();
+
             if (selected.length === 0) {{
                 if (statusDiv) {{
                     statusDiv.style.display = 'block';
@@ -2363,7 +2948,7 @@ def generate_service_dashboard_html(
 
             if (btn) {{
                 btn.disabled = true;
-                btn.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#fff; margin-right:6px;"></span>Regenerating 300 DPI Figures...';
+                btn.innerHTML = '<span class="btn-regen-label"><span class="pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#fff; margin-right:6px;"></span>Regenerating Figures...</span>';
             }}
             if (statusDiv) {{
                 statusDiv.style.display = 'block';
@@ -2467,7 +3052,8 @@ def generate_service_dashboard_html(
             }} finally {{
                 if (btn) {{
                     btn.disabled = false;
-                    btn.innerHTML = '<span>🔄</span> Regenerate Infographics';
+                    btn.innerHTML = '<span class="btn-regen-label"><span>🔄</span> Regenerate Infographics</span>';
+                    clearAnalyticsRegenPromptAttention();
                 }}
             }}
         }}
@@ -2478,7 +3064,7 @@ def generate_service_dashboard_html(
 
             if (btn) {{
                 btn.disabled = true;
-                btn.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#fff; margin-right:6px;"></span>Regenerating 300 DPI Governance Figures...';
+                btn.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#fff; margin-right:6px;"></span>Regenerating Governance Figures...';
             }}
             if (statusDiv) {{
                 statusDiv.style.display = 'block';
@@ -2559,11 +3145,17 @@ def generate_service_dashboard_html(
             const existing = document.querySelector('.' + prefix + '-checkbox[value="' + modelId + '"]');
             if (existing) {{
                 existing.checked = true;
-                const item = existing.closest('.' + prefix + '-check-item');
-                if (item) item.classList.add('is-selected');
-                updatePredictModelSelection(prefix);
+                onPredictModelPick(prefix, existing);
                 input.value = '';
                 return;
+            }}
+
+            if (prefix !== 'analytics') {{
+                document.querySelectorAll('.' + prefix + '-checkbox').forEach(b => {{
+                    b.checked = false;
+                    const item = b.closest('.' + prefix + '-check-item');
+                    if (item) item.classList.remove('is-selected');
+                }});
             }}
 
             const label = document.createElement('label');
@@ -2573,7 +3165,7 @@ def generate_service_dashboard_html(
             label.setAttribute('data-provider', 'custom');
             label.setAttribute('data-name', modelId.toLowerCase());
             label.innerHTML = `
-                <input type="checkbox" name="${{prefix}}-selected-models" value="${{modelId}}" class="${{prefix}}-checkbox" checked onchange="updatePredictModelSelection('${{prefix}}')">
+                <input type="checkbox" name="${{prefix}}-selected-models" value="${{modelId}}" class="${{prefix}}-checkbox" checked onchange="onPredictModelPick('${{prefix}}', this)">
                 <div class="model-info">
                     <span class="model-name" title="${{modelId}}">${{modelId}}</span>
                     <div class="model-meta">
@@ -3279,6 +3871,33 @@ def generate_predict_page_html(
 ) -> str:
     """Generate dedicated interactive HTML playground for the /predict endpoint."""
     rep_dir = reports_dir or Path("reports")
+    fingerprint = _dependency_fingerprint(
+        [
+            rep_dir / "evaluation_results.yaml",
+            rep_dir / "data" / "evaluation_results.yaml",
+            Path(".env"),
+        ],
+        "predict_page",
+        host,
+        str(port),
+    )
+    with _HTML_CACHE_LOCK:
+        hit = _HTML_CACHE.get("predict_page")
+        if hit and hit[0] == fingerprint:
+            return hit[1]
+
+    html = _generate_predict_page_html_uncached(host, port, rep_dir)
+    with _HTML_CACHE_LOCK:
+        _HTML_CACHE["predict_page"] = (fingerprint, html)
+    return html
+
+
+def _generate_predict_page_html_uncached(
+    host: str,
+    port: int,
+    rep_dir: Path,
+) -> str:
+    """Build /predict sandbox HTML without the HTML cache."""
     catalog = build_evaluated_models_catalog(rep_dir)
     pred_model_selector = generate_model_selector_component(catalog["models"], prefix="pred")
 
@@ -3571,9 +4190,10 @@ def generate_predict_page_html(
             padding: 0.65rem 0.85rem;
             border-radius: 9px;
             background: rgba(15, 23, 42, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-card);
+            border-color: var(--border-card);
             cursor: pointer;
-            transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+            transition: background 0.15s ease, box-shadow 0.15s ease;
             user-select: none;
             box-sizing: border-box;
             width: 100%;
@@ -3581,7 +4201,7 @@ def generate_predict_page_html(
         }}
         .model-check-item:hover {{
             background: rgba(30, 41, 59, 0.85);
-            border-color: rgba(255, 255, 255, 0.18);
+            border-color: var(--border-card);
         }}
         .model-check-item input[type="checkbox"] {{
             margin: 0;
@@ -3617,12 +4237,13 @@ def generate_predict_page_html(
             font-size: 0.68rem;
             color: var(--text-muted);
         }}
-        /* Selected Box Styling with meaningful padding area color */
+        /* Selected: background only — keep row border-color identical */
         .model-check-item.is-selected,
         .model-check-item:has(input:checked) {{
             background: linear-gradient(135deg, rgba(14, 165, 233, 0.2), rgba(99, 102, 241, 0.16)) !important;
-            border: 1px solid rgba(56, 189, 248, 0.65) !important;
-            box-shadow: 0 0 12px rgba(56, 189, 248, 0.2), inset 0 0 0 1px rgba(56, 189, 248, 0.25) !important;
+            border: 1px solid var(--border-card) !important;
+            border-color: var(--border-card) !important;
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.12) !important;
         }}
         .model-check-item.is-selected .model-name,
         .model-check-item:has(input:checked) .model-name {{
@@ -3644,6 +4265,11 @@ def generate_predict_page_html(
         .badge-amber {{ background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.35); color: #fbbf24; }}
         .badge-emerald {{ background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #34d399; }}
         .badge-rose {{ background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.35); color: #fb7185; }}
+        .badge-outline {{
+            background: rgba(255, 255, 255, 0.04);
+            color: #cbd5e1;
+            border: 1px solid var(--border-subtle);
+        }}
 
         .btn-sm {{ padding: 0.3rem 0.65rem; font-size: 0.78rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.15s ease; border: 1px solid transparent; }}
         .btn-cyan {{ background: #0284c7; color: #ffffff; border-color: #0284c7; }}
@@ -3887,11 +4513,8 @@ print(response.json())</div>
                 }}
 
                 if (item) {{
-                    if (b.checked) {{
-                        item.classList.add('is-selected');
-                    }} else {{
-                        item.classList.remove('is-selected');
-                    }}
+                    if (b.checked) item.classList.add('is-selected');
+                    else item.classList.remove('is-selected');
                 }}
             }});
             updatePredictModelSelection(prefix);
@@ -3904,6 +4527,19 @@ print(response.json())</div>
                 const text = it.innerText.toLowerCase();
                 it.style.display = !query || text.includes(query) ? 'flex' : 'none';
             }});
+        }}
+
+        function onPredictModelPick(prefix, checkbox) {{
+            if (prefix !== 'analytics' && checkbox && checkbox.checked) {{
+                document.querySelectorAll('.' + prefix + '-checkbox').forEach(b => {{
+                    if (b !== checkbox) {{
+                        b.checked = false;
+                        const item = b.closest('.' + prefix + '-check-item');
+                        if (item) item.classList.remove('is-selected');
+                    }}
+                }});
+            }}
+            updatePredictModelSelection(prefix);
         }}
 
         function updatePredictModelSelection(prefix) {{
@@ -3949,11 +4585,17 @@ print(response.json())</div>
             const existing = document.querySelector('.' + prefix + '-checkbox[value="' + modelId + '"]');
             if (existing) {{
                 existing.checked = true;
-                const item = existing.closest('.' + prefix + '-check-item');
-                if (item) item.classList.add('is-selected');
-                updatePredictModelSelection(prefix);
+                onPredictModelPick(prefix, existing);
                 input.value = '';
                 return;
+            }}
+
+            if (prefix !== 'analytics') {{
+                document.querySelectorAll('.' + prefix + '-checkbox').forEach(b => {{
+                    b.checked = false;
+                    const item = b.closest('.' + prefix + '-check-item');
+                    if (item) item.classList.remove('is-selected');
+                }});
             }}
 
             const label = document.createElement('label');
@@ -3963,7 +4605,7 @@ print(response.json())</div>
             label.setAttribute('data-provider', 'custom');
             label.setAttribute('data-name', modelId.toLowerCase());
             label.innerHTML = `
-                <input type="checkbox" name="${{prefix}}-selected-models" value="${{modelId}}" class="${{prefix}}-checkbox" checked onchange="updatePredictModelSelection('${{prefix}}')">
+                <input type="checkbox" name="${{prefix}}-selected-models" value="${{modelId}}" class="${{prefix}}-checkbox" checked onchange="onPredictModelPick('${{prefix}}', this)">
                 <div class="model-info">
                     <span class="model-name" title="${{modelId}}">${{modelId}}</span>
                     <div class="model-meta">

@@ -1041,6 +1041,99 @@ def _generate_html_dashboard(
     return out_path.name
 
 
+def _style_dark_axes(ax: Any) -> None:
+    ax.set_facecolor("#111827")
+    ax.tick_params(colors="#94a3b8", labelsize=9)
+    ax.grid(color="#1e293b", linestyle="--", linewidth=0.7, alpha=0.7)
+    for spine in ax.spines.values():
+        spine.set_color("#334155")
+
+
+def _draw_status_cards(
+    ax: Any,
+    cards: list[tuple[str, str, str, str]],
+    *,
+    y_top: float = 0.90,
+    row_h: float = 0.155,
+    gap: float = 0.025,
+) -> None:
+    """Draw equal-width status cards with a shared outer border and colored left accent."""
+    ax.axis("off")
+    for i, (title, desc, meta, accent) in enumerate(cards):
+        y = y_top - i * (row_h + gap) - row_h
+        # Shared outer border for row consistency
+        outer = plt.Rectangle(
+            (0.02, y),
+            0.96,
+            row_h,
+            facecolor="#1e293b",
+            edgecolor="#334155",
+            linewidth=1.1,
+            transform=ax.transAxes,
+            zorder=1,
+            clip_on=False,
+        )
+        ax.add_patch(outer)
+        accent_bar = plt.Rectangle(
+            (0.02, y),
+            0.012,
+            row_h,
+            facecolor=accent,
+            edgecolor="none",
+            transform=ax.transAxes,
+            zorder=2,
+            clip_on=False,
+        )
+        ax.add_patch(accent_bar)
+        ax.text(
+            0.05,
+            y + row_h * 0.68,
+            title,
+            color=accent,
+            fontsize=9.2,
+            fontweight="bold",
+            transform=ax.transAxes,
+            va="center",
+            clip_on=False,
+        )
+        ax.text(
+            0.05,
+            y + row_h * 0.28,
+            desc,
+            color="#94a3b8",
+            fontsize=7.6,
+            transform=ax.transAxes,
+            va="center",
+            clip_on=False,
+        )
+        ax.text(
+            0.95,
+            y + row_h * 0.5,
+            meta,
+            color="#ffffff",
+            fontsize=8.4,
+            fontweight="bold",
+            ha="right",
+            va="center",
+            transform=ax.transAxes,
+            clip_on=False,
+        )
+
+
+def _savefig_infographic(fig: Any, out_path: Path) -> None:
+    """Save with fixed canvas margins so figures align to page size without uneven crop."""
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(
+        out_path,
+        dpi=300,
+        facecolor=fig.get_facecolor(),
+        edgecolor="none",
+        bbox_inches=None,
+        pad_inches=0.15,
+    )
+    plt.close(fig)
+
+
 def _generate_governance_audit_infographic(
     reports_dir: Path,
     out_path: Path,
@@ -1049,17 +1142,15 @@ def _generate_governance_audit_infographic(
     plt.style.use(
         "seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default"
     )
-    fig, axes = plt.subplots(2, 2, figsize=(16, 11), dpi=300)
+    fig, axes = plt.subplots(
+        2, 2, figsize=(16, 10.5), dpi=300, constrained_layout=True
+    )
     fig.patch.set_facecolor("#0b0f19")
+    fig.set_constrained_layout_pads(w_pad=0.08, h_pad=0.08, wspace=0.05, hspace=0.08)
 
     for ax in axes.flat:
-        ax.set_facecolor("#111827")
-        ax.tick_params(colors="#94a3b8", labelsize=9)
-        ax.grid(color="#1e293b", linestyle="--", linewidth=0.7, alpha=0.7)
-        for spine in ax.spines.values():
-            spine.set_color("#334155")
+        _style_dark_axes(ax)
 
-    # Load audit data if available
     audit_candidates = [
         reports_dir / "data" / "audit_report.yaml",
         reports_dir / "audit_report.yaml",
@@ -1084,144 +1175,152 @@ def _generate_governance_audit_infographic(
     # --- Panel 1: Approved Sources by Domain ---
     ax1 = axes[0, 0]
     domains = [
-        "Curated Multi-Source Lexicons\n(Google, Dsojevic, HurtLex, HateCheck, Badwords)",
-        "Frontier & Dialogue Arenas\n(LMSYS ToxicChat, WildChat, 1M, PersonaChat)",
-        "Academic Abuse Benchmarks\n(CAD, Davidson, Dynabench, HateExplain, TweetEval)",
-        "Youth & Gaming Toxicity\n(GameTox, MinorBench, Gaming Slang, UrbanDict)",
-        "Community Discussion Trees\n(WikiConv/WikiDetox, Conv. Gone Awry)",
+        "Curated Lexicons\n(Google, HurtLex, HateCheck…)",
+        "Dialogue Arenas\n(LMSYS, WildChat, PersonaChat)",
+        "Abuse Benchmarks\n(CAD, Davidson, Dynabench…)",
+        "Youth & Gaming\n(GameTox, MinorBench, UrbanDict)",
+        "Discussion Trees\n(WikiConv / WikiDetox)",
     ]
     counts = [7, 5, 5, 4, 2]
     colors = ["#38bdf8", "#818cf8", "#34d399", "#f59e0b", "#c084fc"]
     y_pos = np.arange(len(domains))
 
-    bars1 = ax1.barh(y_pos, counts, height=0.55, color=colors, alpha=0.9, edgecolor="#334155")
+    bars1 = ax1.barh(y_pos, counts, height=0.58, color=colors, alpha=0.92, edgecolor="#334155")
     ax1.set_yticks(y_pos)
-    ax1.set_yticklabels(domains, color="#f8fafc", fontsize=9, fontweight="medium")
-    ax1.set_xlim(0, 9.5)
+    ax1.set_yticklabels(domains, color="#f8fafc", fontsize=8.8, fontweight="medium")
+    ax1.set_xlim(0, 9.2)
     ax1.set_xlabel("Audited & Approved Repositories", color="#cbd5e1", fontsize=10, fontweight="bold")
     ax1.set_title(
-        f"A. Multi-Source Legal Audit Registry ({total_approved} Approved Sources • 100% Compliant)",
+        f"A. Multi-Source Legal Audit Registry ({total_approved} Sources • 100% Compliant)",
         color="#f8fafc",
-        fontsize=11.5,
+        fontsize=11,
         fontweight="bold",
-        pad=10,
+        pad=8,
     )
     for bar in bars1:
         w = bar.get_width()
         ax1.text(
-            w + 0.18,
+            w + 0.15,
             bar.get_y() + bar.get_height() / 2,
-            f"{int(w)} Sources [Verified]",
+            f"{int(w)} Verified",
             ha="left",
             va="center",
             color="#34d399",
-            fontsize=8.5,
+            fontsize=8.2,
             fontweight="bold",
         )
     ax1.invert_yaxis()
 
-    # --- Panel 2: Regulatory & Safety Compliance Scorecard ---
+    # --- Panel 2: Regulatory compliance ---
     ax2 = axes[0, 1]
     ax2.set_xlim(0, 100)
     ax2.set_ylim(-0.5, 4.5)
     ax2.set_yticks([])
     ax2.set_xticks([0, 25, 50, 75, 100])
-    ax2.set_xticklabels(["0%", "25%", "50%", "75%", "100% (Passed)"], color="#94a3b8", fontsize=8.5)
+    ax2.set_xticklabels(["0%", "25%", "50%", "75%", "100%"], color="#94a3b8", fontsize=8.5)
     ax2.set_title(
         "B. Regulatory Frameworks & Child Safeguarding Compliance",
         color="#f8fafc",
-        fontsize=11.5,
+        fontsize=11,
         fontweight="bold",
-        pad=10,
+        pad=8,
     )
 
     frameworks = [
-        ("COPPA (15 U.S.C. §§ 6501–6506)", "Strict de-identification of underage identifiers; Zero child PII", 100, "#34d399"),
-        ("GDPR-K (Article 8 Rec. 38)", "Children's privacy protection & pseudonymization verified", 100, "#38bdf8"),
-        ("UK Age Appropriate Design Code", "Privacy-by-default safeguards & harm prevention active", 100, "#818cf8"),
-        ("Academic Licensing & Fair Use", "CC-BY-SA, Research Agreements & non-commercial use verified", 100, "#f59e0b"),
-        ("IRB Ethics Exemption Protocol", "Formal ethics review & approval documented (#IRB-2026-YEB)", 100, "#a855f7"),
+        ("COPPA (15 U.S.C. §§ 6501–6506)", "Strict de-identification of underage identifiers", 100, "#34d399"),
+        ("GDPR-K (Article 8 Rec. 38)", "Children's privacy & pseudonymization verified", 100, "#38bdf8"),
+        ("UK Age Appropriate Design Code", "Privacy-by-default & harm prevention active", 100, "#818cf8"),
+        ("Academic Licensing & Fair Use", "CC-BY-SA / research agreements verified", 100, "#f59e0b"),
+        ("IRB Ethics Exemption Protocol", "Ethics review documented (#IRB-2026-YEB)", 100, "#a855f7"),
     ]
-
     for idx, (title, desc, score, clr) in enumerate(frameworks):
         y = 4 - idx
-        ax2.barh(y, 100, height=0.45, color="#1e293b", edgecolor="#334155")
-        ax2.barh(y, score, height=0.45, color=clr, alpha=0.85, edgecolor="#334155")
-        ax2.text(2, y + 0.14, title, color="#ffffff", fontsize=9, fontweight="bold", va="center")
-        ax2.text(2, y - 0.16, desc, color="#94a3b8", fontsize=7.5, va="center")
-        ax2.text(98, y, "100% PASS", color="#ffffff", fontsize=8.5, fontweight="bold", ha="right", va="center")
+        ax2.barh(y, 100, height=0.48, color="#1e293b", edgecolor="#334155")
+        ax2.barh(y, score, height=0.48, color=clr, alpha=0.85, edgecolor="#334155")
+        ax2.text(2, y + 0.12, title, color="#ffffff", fontsize=8.6, fontweight="bold", va="center")
+        ax2.text(2, y - 0.14, desc, color="#94a3b8", fontsize=7.2, va="center")
+        ax2.text(98, y, "PASS", color="#ffffff", fontsize=8.2, fontweight="bold", ha="right", va="center")
 
-    # --- Panel 3: PII Neutralization by Entity Class ---
+    # --- Panel 3: PII donut ---
     ax3 = axes[1, 0]
     pii_labels = ["Usernames & Handles", "Email Addresses", "Full Legal Names", "IP Addresses & Hosts", "Phone & Geo Data"]
     pii_counts = [34800, 14200, 9800, 4900, 2561]
     pii_colors = ["#38bdf8", "#818cf8", "#a855f7", "#ec4899", "#f59e0b"]
 
-    wedges, texts, autotexts = ax3.pie(
+    wedges, _texts, autotexts = ax3.pie(
         pii_counts,
         labels=None,
         autopct="%1.1f%%",
-        pctdistance=0.75,
+        pctdistance=0.72,
         startangle=140,
         colors=pii_colors,
-        wedgeprops=dict(width=0.45, edgecolor="#111827", linewidth=2),
+        wedgeprops=dict(width=0.42, edgecolor="#111827", linewidth=2),
     )
     for at in autotexts:
         at.set_color("#ffffff")
-        at.set_fontsize(8.5)
+        at.set_fontsize(8.2)
         at.set_fontweight("bold")
 
     ax3.text(
-        0, 0,
+        0,
+        0,
         f"{total_pii:,}\nPII Scrubbed\n0.00% Residue",
-        ha="center", va="center", color="#ffffff", fontsize=9.5, fontweight="bold",
+        ha="center",
+        va="center",
+        color="#ffffff",
+        fontsize=9,
+        fontweight="bold",
     )
     ax3.legend(
-        wedges, [f"{l} ({c:,})" for l, c in zip(pii_labels, pii_counts)],
-        loc="center left", bbox_to_anchor=(0.95, 0.5), facecolor="#1e293b",
-        edgecolor="#475569", labelcolor="#f8fafc", fontsize=8,
+        wedges,
+        [f"{label} ({count:,})" for label, count in zip(pii_labels, pii_counts)],
+        loc="center left",
+        bbox_to_anchor=(0.98, 0.5),
+        facecolor="#1e293b",
+        edgecolor="#334155",
+        labelcolor="#f8fafc",
+        fontsize=7.6,
+        framealpha=0.95,
     )
     ax3.set_title(
         "C. Safe Harbor PII Scrubbing & Neutralization Distribution",
-        color="#f8fafc", fontsize=11.5, fontweight="bold", pad=10,
+        color="#f8fafc",
+        fontsize=11,
+        fontweight="bold",
+        pad=8,
     )
 
-    # --- Panel 4: Cryptographic Provenance & Reproducibility Pipeline ---
+    # --- Panel 4: Provenance cards ---
     ax4 = axes[1, 1]
-    ax4.axis("off")
+    ax4.set_facecolor("#111827")
     ax4.set_title(
         "D. End-to-End Cryptographic Audit Trail & Provenance",
-        color="#f8fafc", fontsize=11.5, fontweight="bold", pad=10,
+        color="#f8fafc",
+        fontsize=11,
+        fontweight="bold",
+        pad=8,
+    )
+    _draw_status_cards(
+        ax4,
+        [
+            ("1. Source Registry Signed", "18 vetted sources with signed legal manifests", "SHA256 Verified", "#38bdf8"),
+            ("2. Canonical Parquet Ingest", "Multi-format data normalized into Snappy tables", "103,400 Dialogues", "#818cf8"),
+            ("3. Safe Harbor Redaction", "Regex + NER sanitization; zero residual PII", f"{total_pii:,} Scrubbed", "#34d399"),
+            ("4. Causal DAG Threading", "Temporal monotonicity verified across dialogues", "100% Monotonic", "#f59e0b"),
+            ("5. Consensus Gold Freeze", "Gold annotations sealed with manifest digest", "6,120 Labels Frozen", "#a855f7"),
+        ],
+        y_top=0.92,
+        row_h=0.145,
+        gap=0.02,
     )
 
-    stages = [
-        ("1. Source Registry Signed", "18 vetted sources with signed legal manifests", "SHA256: Verified", "#38bdf8"),
-        ("2. Canonical Parquet Ingest", "Multi-format data normalized into immutable Snappy tables", "103,400 Dialogues", "#818cf8"),
-        ("3. Safe Harbor Redaction", "Regex + NER sanitization with zero residual PII tokens", f"{total_pii:,} Scrubbed", "#34d399"),
-        ("4. Causal DAG Threading", "Temporal monotonicity verified (0 chronological inversions)", "100% Monotonic", "#f59e0b"),
-        ("5. Consensus Gold Freeze", "Frozen gold benchmark annotations sealed with manifest digest", "6,120 Labels Frozen", "#a855f7"),
-    ]
-
-    for i, (stg_name, stg_desc, stg_meta, clr) in enumerate(stages):
-        y_center = 0.88 - (i * 0.20)
-        rect = plt.Rectangle(
-            (0.02, y_center - 0.07), 0.96, 0.16,
-            facecolor="#1e293b", edgecolor=clr, linewidth=1.2,
-            transform=ax4.transAxes, zorder=1,
-        )
-        ax4.add_patch(rect)
-        ax4.text(0.05, y_center + 0.02, stg_name, color=clr, fontsize=9.5, fontweight="bold", transform=ax4.transAxes)
-        ax4.text(0.05, y_center - 0.04, stg_desc, color="#94a3b8", fontsize=8, transform=ax4.transAxes)
-        ax4.text(0.95, y_center, stg_meta, color="#ffffff", fontsize=8.5, fontweight="bold", ha="right", va="center", transform=ax4.transAxes)
-
-    plt.suptitle(
+    fig.suptitle(
         "YouthEscalateBench • Corpus Governance & Multi-Source Legal Audit Architecture",
-        color="#ffffff", fontsize=14, fontweight="bold", y=0.98,
+        color="#ffffff",
+        fontsize=13.5,
+        fontweight="bold",
     )
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(out_path, dpi=300, facecolor=fig.get_facecolor(), bbox_inches="tight")
-    plt.close(fig)
+    _savefig_infographic(fig, out_path)
     return out_path.name
 
 
@@ -1233,17 +1332,15 @@ def _generate_split_data_infographic(
     plt.style.use(
         "seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default"
     )
-    fig, axes = plt.subplots(2, 2, figsize=(16, 11), dpi=300)
+    fig, axes = plt.subplots(
+        2, 2, figsize=(16, 10.5), dpi=300, constrained_layout=True
+    )
     fig.patch.set_facecolor("#0b0f19")
+    fig.set_constrained_layout_pads(w_pad=0.08, h_pad=0.08, wspace=0.05, hspace=0.08)
 
     for ax in axes.flat:
-        ax.set_facecolor("#111827")
-        ax.tick_params(colors="#94a3b8", labelsize=9)
-        ax.grid(color="#1e293b", linestyle="--", linewidth=0.7, alpha=0.7)
-        for spine in ax.spines.values():
-            spine.set_color("#334155")
+        _style_dark_axes(ax)
 
-    # Load split manifest if available
     split_candidates = [
         reports_dir / "data" / "split_manifest.json",
         reports_dir / "split_manifest.json",
@@ -1265,113 +1362,113 @@ def _generate_split_data_infographic(
     test_t = row_map.get("split_test", 3253) or 3253
     total_t = train_t + dev_t + test_t
 
-    # --- Panel 1: Dialogue & Turn Distribution ---
+    # --- Panel 1 ---
     ax1 = axes[0, 0]
-    splits = ["Train Partition\n(50.0%)", "Dev Validation\n(25.0%)", "Test Evaluation\n(25.0%)"]
+    splits = ["Train\n(50%)", "Dev\n(25%)", "Test\n(25%)"]
     x = np.arange(len(splits))
-    width = 0.35
-
-    b_d = ax1.bar(x - width / 2, [train_d, dev_d, test_d], width, label="Dialogues", color="#38bdf8", alpha=0.9, edgecolor="#0284c7")
-    b_t = ax1.bar(x + width / 2, [train_t, dev_t, test_t], width, label="Evaluated Turns", color="#818cf8", alpha=0.9, edgecolor="#4f46e5")
-
+    width = 0.36
+    b_d = ax1.bar(x - width / 2, [train_d, dev_d, test_d], width, label="Dialogues", color="#38bdf8", alpha=0.92, edgecolor="#0284c7")
+    b_t = ax1.bar(x + width / 2, [train_t, dev_t, test_t], width, label="Evaluated Turns", color="#818cf8", alpha=0.92, edgecolor="#4f46e5")
     ax1.set_xticks(x)
     ax1.set_xticklabels(splits, color="#f8fafc", fontsize=9.5, fontweight="bold")
     ax1.set_ylabel("Sample Volume", color="#cbd5e1", fontsize=10, fontweight="bold")
     ax1.set_title(
         f"A. Zero-Leakage Dataset Partitioning ({total_d:,} Dialogues • {total_t:,} Turns)",
-        color="#f8fafc", fontsize=11.5, fontweight="bold", pad=10,
+        color="#f8fafc",
+        fontsize=11,
+        fontweight="bold",
+        pad=8,
     )
-    ax1.legend(facecolor="#1e293b", edgecolor="#475569", labelcolor="#f8fafc", fontsize=9)
-
+    ax1.legend(facecolor="#1e293b", edgecolor="#334155", labelcolor="#f8fafc", fontsize=8.5, loc="upper right")
+    ymax = max(train_t, train_d) * 1.28
+    ax1.set_ylim(0, ymax)
     for bar in b_d:
         h = bar.get_height()
-        ax1.text(bar.get_x() + bar.get_width() / 2, h + 100, f"{int(h):,}\n({(h / total_d) * 100:.1f}%)", ha="center", va="bottom", color="#38bdf8", fontsize=8, fontweight="bold")
+        ax1.text(bar.get_x() + bar.get_width() / 2, h + ymax * 0.02, f"{int(h):,}", ha="center", va="bottom", color="#38bdf8", fontsize=8, fontweight="bold")
     for bar in b_t:
         h = bar.get_height()
-        ax1.text(bar.get_x() + bar.get_width() / 2, h + 100, f"{int(h):,}", ha="center", va="bottom", color="#818cf8", fontsize=8, fontweight="bold")
-    ax1.set_ylim(0, max(train_t, train_d) * 1.25)
+        ax1.text(bar.get_x() + bar.get_width() / 2, h + ymax * 0.02, f"{int(h):,}", ha="center", va="bottom", color="#818cf8", fontsize=8, fontweight="bold")
 
-    # --- Panel 2: Quota Sampling Allocations by Origin Tier ---
+    # --- Panel 2 ---
     ax2 = axes[0, 1]
     tiers = [
-        "Organic Conversational (Jigsaw, WikiDetox, LMSYS)",
-        "Synthetic Youth Escalations (GameTox, MinorBench)",
-        "Functional Safety Test Turn Pairs",
-        "Fixture Anchor Benchmark Baseline Cases",
+        "Organic Conversational\n(Jigsaw, WikiDetox, LMSYS)",
+        "Synthetic Youth Escalations\n(GameTox, MinorBench)",
+        "Functional Safety Test Pairs",
+        "Fixture Anchor Baselines",
     ]
     tier_selected = [4000, 980, 20, 4]
     tier_colors = ["#34d399", "#38bdf8", "#f59e0b", "#ec4899"]
     y_tiers = np.arange(len(tiers))
-
-    bars2 = ax2.barh(y_tiers, tier_selected, height=0.55, color=tier_colors, alpha=0.9, edgecolor="#334155")
+    bars2 = ax2.barh(y_tiers, tier_selected, height=0.58, color=tier_colors, alpha=0.92, edgecolor="#334155")
     ax2.set_yticks(y_tiers)
-    ax2.set_yticklabels(tiers, color="#f8fafc", fontsize=8.5, fontweight="medium")
+    ax2.set_yticklabels(tiers, color="#f8fafc", fontsize=8.4, fontweight="medium")
     ax2.set_xscale("log")
-    ax2.set_xlim(1, 10000)
+    ax2.set_xlim(1, 12000)
     ax2.set_xlabel("Dialogues (Log Scale)", color="#cbd5e1", fontsize=10, fontweight="bold")
     ax2.set_title(
         "B. Quota Sampling Allocations by Conversational Origin Tier",
-        color="#f8fafc", fontsize=11.5, fontweight="bold", pad=10,
+        color="#f8fafc",
+        fontsize=11,
+        fontweight="bold",
+        pad=8,
     )
     for bar in bars2:
         w = bar.get_width()
         pct = (w / sum(tier_selected)) * 100
-        ax2.text(w * 1.25, bar.get_y() + bar.get_height() / 2, f"{int(w):,} ({pct:.1f}%)", ha="left", va="center", color="#ffffff", fontsize=8.5, fontweight="bold")
+        ax2.text(w * 1.2, bar.get_y() + bar.get_height() / 2, f"{int(w):,} ({pct:.1f}%)", ha="left", va="center", color="#ffffff", fontsize=8.2, fontweight="bold")
     ax2.invert_yaxis()
 
-    # --- Panel 3: Deduplication & Quality Filtering Funnel ---
+    # --- Panel 3 ---
     ax3 = axes[1, 0]
-    stages = ["Raw Dialogues", "Exact Dupes", "MinHash LSH", "Benchmark Gold", "Total Turns"]
+    stages = ["Raw\nDialogues", "Exact\nDupes", "MinHash\nLSH", "Benchmark\nGold", "Total\nTurns"]
     colors3 = ["#38bdf8", "#f43f5e", "#fb7185", "#34d399", "#818cf8"]
-
-    bars3 = ax3.bar(stages, [103400, 49, 98347, 5004, 13018], color=colors3, alpha=0.85, edgecolor="#334155")
+    bars3 = ax3.bar(stages, [103400, 49, 98347, 5004, 13018], color=colors3, alpha=0.88, edgecolor="#334155", width=0.65)
     ax3.set_yscale("log")
-    ax3.set_ylim(10, 300000)
+    ax3.set_ylim(10, 350000)
     ax3.set_ylabel("Volume (Log Scale)", color="#cbd5e1", fontsize=10, fontweight="bold")
     ax3.set_title(
         "C. Deduplication & Quality Filtering Funnel (103.4k → 5k Gold)",
-        color="#f8fafc", fontsize=11.5, fontweight="bold", pad=10,
+        color="#f8fafc",
+        fontsize=11,
+        fontweight="bold",
+        pad=8,
     )
-    ax3.tick_params(axis="x", colors="#f8fafc", labelsize=8.5)
+    ax3.tick_params(axis="x", colors="#f8fafc", labelsize=8.2)
     for bar, txt in zip(bars3, ["103,400\nIngested", "-49\nExact", "-1.58M\nNear-Pairs", "5,004\nFrozen", "13,018\nTurns"]):
         h = bar.get_height()
-        ax3.text(bar.get_x() + bar.get_width() / 2, h * 1.3, txt, ha="center", va="bottom", color="#ffffff", fontsize=8, fontweight="bold")
+        ax3.text(bar.get_x() + bar.get_width() / 2, h * 1.35, txt, ha="center", va="bottom", color="#ffffff", fontsize=7.6, fontweight="bold")
 
-    # --- Panel 4: Zero-Contamination Isolation Guarantee ---
+    # --- Panel 4 ---
     ax4 = axes[1, 1]
-    ax4.axis("off")
+    ax4.set_facecolor("#111827")
     ax4.set_title(
         "D. Zero-Contamination Partitioning Guarantees",
-        color="#f8fafc", fontsize=11.5, fontweight="bold", pad=10,
+        color="#f8fafc",
+        fontsize=11,
+        fontweight="bold",
+        pad=8,
+    )
+    _draw_status_cards(
+        ax4,
+        [
+            ("Group-Level Conversation Isolation", "Split on conversation_id; no turn/context bleeding", "0% Dialogue Overlap", "#38bdf8"),
+            ("Disjoint Speaker Identifier Space", "Author handles hashed; zero Train/Test crossover", "100% Disjoint Speakers", "#818cf8"),
+            ("Temporal Monotonicity DAG Preservation", "Reply trees keep non-decreasing causal order", "0 Causal Inversions", "#34d399"),
+            ("Balanced Severity & Onset Stratification", "Escalation density statistically uniform across splits", "KS-Test p > 0.95", "#f59e0b"),
+        ],
+        y_top=0.90,
+        row_h=0.175,
+        gap=0.03,
     )
 
-    guarantees = [
-        ("Group-Level Conversation Isolation", "Group split on conversation_id ensures zero turn or context bleeding across splits", "0% Dialogue Overlap", "#38bdf8"),
-        ("Disjoint Speaker Identifier Space", "Hashing of author handles guarantees zero user identity crossover between Train/Test", "100% Disjoint Speakers", "#818cf8"),
-        ("Temporal Monotonicity DAG Preservation", "Historical reply trees retain strict non-decreasing chronological causal order", "0 Causal Inversions", "#34d399"),
-        ("Balanced Severity & Onset Stratification", "Harm escalation density and slang composition statistically uniform across splits", "KS-Test p > 0.95", "#f59e0b"),
-    ]
-
-    for i, (g_title, g_desc, g_meta, clr) in enumerate(guarantees):
-        y_center = 0.85 - (i * 0.23)
-        rect = plt.Rectangle(
-            (0.02, y_center - 0.08), 0.96, 0.18,
-            facecolor="#1e293b", edgecolor=clr, linewidth=1.2,
-            transform=ax4.transAxes, zorder=1,
-        )
-        ax4.add_patch(rect)
-        ax4.text(0.05, y_center + 0.025, g_title, color=clr, fontsize=9.5, fontweight="bold", transform=ax4.transAxes)
-        ax4.text(0.05, y_center - 0.045, g_desc, color="#94a3b8", fontsize=8, transform=ax4.transAxes)
-        ax4.text(0.95, y_center, g_meta, color="#ffffff", fontsize=8.5, fontweight="bold", ha="right", va="center", transform=ax4.transAxes)
-
-    plt.suptitle(
+    fig.suptitle(
         "YouthEscalateBench • Zero-Leakage Dataset Partitioning & Quota Stratification",
-        color="#ffffff", fontsize=14, fontweight="bold", y=0.98,
+        color="#ffffff",
+        fontsize=13.5,
+        fontweight="bold",
     )
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(out_path, dpi=300, facecolor=fig.get_facecolor(), bbox_inches="tight")
-    plt.close(fig)
+    _savefig_infographic(fig, out_path)
     return out_path.name
 
 
@@ -1383,120 +1480,155 @@ def _generate_data_lifecycle_infographic(
     plt.style.use(
         "seaborn-v0_8-whitegrid" if "seaborn-v0_8-whitegrid" in plt.style.available else "default"
     )
-    fig = plt.figure(figsize=(16, 11), dpi=300)
+    fig = plt.figure(figsize=(16, 10.5), dpi=300, constrained_layout=True)
     fig.patch.set_facecolor("#0b0f19")
-    gs = fig.add_gridspec(2, 2, height_ratios=[1.2, 1.0], hspace=0.3, wspace=0.25)
+    fig.set_constrained_layout_pads(w_pad=0.08, h_pad=0.08, wspace=0.05, hspace=0.1)
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.15, 1.0])
 
     ax_top = fig.add_subplot(gs[0, :])
     ax_bottom_left = fig.add_subplot(gs[1, 0])
     ax_bottom_right = fig.add_subplot(gs[1, 1])
 
     for ax in [ax_top, ax_bottom_left, ax_bottom_right]:
-        ax.set_facecolor("#111827")
-        ax.tick_params(colors="#94a3b8", labelsize=9)
-        ax.grid(color="#1e293b", linestyle="--", linewidth=0.7, alpha=0.7)
-        for spine in ax.spines.values():
-            spine.set_color("#334155")
+        _style_dark_axes(ax)
 
-    # --- Top Panel: End-to-End Pipeline Stage Flow ---
+    # --- Top Panel: pipeline flow filling full width ---
     ax_top.axis("off")
+    ax_top.set_xlim(0, 1)
+    ax_top.set_ylim(0, 1)
     ax_top.set_title(
-        "A. YouthEscalateBench 7-Stage End-to-End Data Pipeline Architecture & Governance Lifecycle",
-        color="#f8fafc", fontsize=12.5, fontweight="bold", pad=15, loc="left",
+        "A. 7-Stage End-to-End Data Pipeline Architecture & Governance Lifecycle",
+        color="#f8fafc",
+        fontsize=12,
+        fontweight="bold",
+        pad=10,
+        loc="left",
     )
 
     flow_stages = [
-        ("1. Source Audit", "25 Approved Corpora\n100% Legal Sign-off", "#38bdf8"),
-        ("2. Ingestion", "103,400 Multi-Turn\nSnappy Parquet Tables", "#818cf8"),
-        ("3. PII Redact", "66,261 Hits Scrubbed\nSafe Harbor Verified", "#34d399"),
-        ("4. DAG Threading", "DAG Topology Valid\n0 Causal Violations", "#f59e0b"),
-        ("5. Deduplication", "1.58M Pairs Pruned\n5,004 Quota Dialogues", "#ec4899"),
-        ("6. Gold Freeze", "6,120 Frozen Labels\nImmutable Digest", "#a855f7"),
-        ("7. Zero-Leakage", "Train: 2,502 (50%)\nDev/Test: 1,251 (25%)", "#10b981"),
+        ("1. Source Audit", "25 Corpora\n100% Sign-off", "#38bdf8"),
+        ("2. Ingestion", "103,400\nParquet Tables", "#818cf8"),
+        ("3. PII Redact", "66,261 Hits\nSafe Harbor", "#34d399"),
+        ("4. DAG Thread", "0 Causal\nViolations", "#f59e0b"),
+        ("5. Deduplicate", "5,004 Quota\nDialogues", "#ec4899"),
+        ("6. Gold Freeze", "6,120 Labels\nImmutable", "#a855f7"),
+        ("7. Zero-Leak", "50/25/25\nTrain/Dev/Test", "#10b981"),
     ]
-
     n_stages = len(flow_stages)
-    box_w = 0.115
-    gap = 0.026
-    start_x = 0.015
+    margin = 0.01
+    gap = 0.012
+    box_w = (1.0 - 2 * margin - (n_stages - 1) * gap) / n_stages
+    box_h = 0.62
+    box_y = 0.18
 
     for idx, (stg_name, stg_detail, stg_clr) in enumerate(flow_stages):
-        x = start_x + idx * (box_w + gap)
+        x = margin + idx * (box_w + gap)
         rect = plt.Rectangle(
-            (x, 0.15), box_w, 0.70,
-            facecolor="#1e293b", edgecolor=stg_clr, linewidth=1.5,
-            transform=ax_top.transAxes, zorder=2,
+            (x, box_y),
+            box_w,
+            box_h,
+            facecolor="#1e293b",
+            edgecolor="#334155",
+            linewidth=1.1,
+            transform=ax_top.transAxes,
+            zorder=2,
+            clip_on=False,
         )
         ax_top.add_patch(rect)
-        ax_top.text(x + box_w / 2, 0.72, stg_name, color=stg_clr, fontsize=9.5, fontweight="bold", ha="center", va="center", transform=ax_top.transAxes)
-        ax_top.text(x + box_w / 2, 0.42, stg_detail, color="#f8fafc", fontsize=7.8, ha="center", va="center", transform=ax_top.transAxes)
-
+        accent = plt.Rectangle(
+            (x, box_y + box_h - 0.035),
+            box_w,
+            0.035,
+            facecolor=stg_clr,
+            edgecolor="none",
+            transform=ax_top.transAxes,
+            zorder=3,
+            clip_on=False,
+        )
+        ax_top.add_patch(accent)
+        ax_top.text(
+            x + box_w / 2,
+            box_y + box_h * 0.68,
+            stg_name,
+            color=stg_clr,
+            fontsize=8.4,
+            fontweight="bold",
+            ha="center",
+            va="center",
+            transform=ax_top.transAxes,
+            clip_on=False,
+        )
+        ax_top.text(
+            x + box_w / 2,
+            box_y + box_h * 0.32,
+            stg_detail,
+            color="#f8fafc",
+            fontsize=7.4,
+            ha="center",
+            va="center",
+            transform=ax_top.transAxes,
+            clip_on=False,
+        )
         if idx < n_stages - 1:
-            arrow_x = x + box_w
             ax_top.annotate(
-                "", xy=(arrow_x + gap, 0.5), xytext=(arrow_x, 0.5),
-                xycoords="axes fraction", textcoords="axes fraction",
-                arrowprops=dict(arrowstyle="->", color="#64748b", lw=2),
-                zorder=3,
+                "",
+                xy=(x + box_w + gap * 0.85, box_y + box_h / 2),
+                xytext=(x + box_w + gap * 0.15, box_y + box_h / 2),
+                xycoords="axes fraction",
+                textcoords="axes fraction",
+                arrowprops=dict(arrowstyle="->", color="#64748b", lw=1.6),
+                zorder=4,
             )
 
-    # --- Bottom Left Panel: Scale Funnel Across Pipeline ---
+    # --- Bottom left ---
     ax_bl = ax_bottom_left
     bl_metrics = ["Ingested Dialogues", "Total Turns Audited", "PII Scrubbed", "Frozen Gold Labels", "Benchmark Dialogues"]
     bl_vals = [103400, 248000, 66261, 6120, 5004]
     bl_colors = ["#38bdf8", "#818cf8", "#34d399", "#f59e0b", "#10b981"]
-
     y_bl = np.arange(len(bl_metrics))
-    bars_bl = ax_bl.barh(y_bl, bl_vals, height=0.55, color=bl_colors, alpha=0.9, edgecolor="#334155")
+    bars_bl = ax_bl.barh(y_bl, bl_vals, height=0.58, color=bl_colors, alpha=0.92, edgecolor="#334155")
     ax_bl.set_yticks(y_bl)
     ax_bl.set_yticklabels(bl_metrics, color="#f8fafc", fontsize=9, fontweight="medium")
     ax_bl.set_xscale("log")
-    ax_bl.set_xlim(100, 600000)
+    ax_bl.set_xlim(80, 700000)
     ax_bl.set_xlabel("Sample Volume (Log Scale)", color="#cbd5e1", fontsize=10, fontweight="bold")
-    ax_bl.set_title(
-        "B. Pipeline Scale & Processing Metrics",
-        color="#f8fafc", fontsize=11.5, fontweight="bold", pad=10,
-    )
+    ax_bl.set_title("B. Pipeline Scale & Processing Metrics", color="#f8fafc", fontsize=11, fontweight="bold", pad=8)
     for bar in bars_bl:
         w = bar.get_width()
-        ax_bl.text(w * 1.25, bar.get_y() + bar.get_height() / 2, f"{int(w):,}", ha="left", va="center", color="#ffffff", fontsize=8.5, fontweight="bold")
+        ax_bl.text(w * 1.2, bar.get_y() + bar.get_height() / 2, f"{int(w):,}", ha="left", va="center", color="#ffffff", fontsize=8.2, fontweight="bold")
     ax_bl.invert_yaxis()
 
-    # --- Bottom Right Panel: Executive Quality Assurance Scorecard ---
+    # --- Bottom right ---
     ax_br = ax_bottom_right
-    ax_br.axis("off")
+    ax_br.set_facecolor("#111827")
     ax_br.set_title(
         "C. Executive Quality & Governance Assurance Scorecard",
-        color="#f8fafc", fontsize=11.5, fontweight="bold", pad=10,
+        color="#f8fafc",
+        fontsize=11,
+        fontweight="bold",
+        pad=8,
+    )
+    _draw_status_cards(
+        ax_br,
+        [
+            ("Source Governance Gate", "25 of 25 sources approved with legal sign-off", "PASSED", "#34d399"),
+            ("Privacy & Ethics Audit", "Safe Harbor scrubbed; zero PII residue detected", "PASSED", "#38bdf8"),
+            ("DAG Causal Validity", "0 temporal or conversational inversions", "100% VALID", "#818cf8"),
+            ("Split Contamination", "Grouped partition; zero cross-split bleeding", "ZERO (0.0%)", "#10b981"),
+            ("Benchmark Reproducibility", "Deterministic seeds & SHA-256 manifests frozen", "VERIFIED", "#f59e0b"),
+        ],
+        y_top=0.92,
+        row_h=0.145,
+        gap=0.02,
     )
 
-    kpis = [
-        ("Source Governance Gate", "PASSED", "25 of 25 sources approved with legal sign-off (100.0%)", "#34d399"),
-        ("Privacy & Ethics Audit", "PASSED", "Safe Harbor scrubbed: 66,261 entities. Zero PII residue detected", "#38bdf8"),
-        ("DAG Causal Validity", "100% VALID", "0 temporal or conversational inversions across all dialogues", "#818cf8"),
-        ("Split Contamination", "ZERO (0.0%)", "Grouped partition guarantees zero cross-split turn bleeding", "#10b981"),
-        ("Benchmark Reproducibility", "VERIFIED", "Deterministic random seeds & SHA-256 manifests frozen", "#f59e0b"),
-    ]
-
-    for i, (k_name, k_status, k_desc, clr) in enumerate(kpis):
-        y_center = 0.88 - (i * 0.20)
-        rect = plt.Rectangle(
-            (0.02, y_center - 0.07), 0.96, 0.16,
-            facecolor="#1e293b", edgecolor=clr, linewidth=1.2,
-            transform=ax_br.transAxes, zorder=1,
-        )
-        ax_br.add_patch(rect)
-        ax_br.text(0.05, y_center + 0.02, k_name, color=clr, fontsize=9.5, fontweight="bold", transform=ax_br.transAxes)
-        ax_br.text(0.05, y_center - 0.04, k_desc, color="#94a3b8", fontsize=7.8, transform=ax_br.transAxes)
-        ax_br.text(0.95, y_center, k_status, color="#ffffff", fontsize=8.5, fontweight="bold", ha="right", va="center", transform=ax_br.transAxes)
-
-    plt.suptitle(
+    fig.suptitle(
         "YouthEscalateBench • Data Lifecycle, Split Architecture & Governance Audit",
-        color="#ffffff", fontsize=14, fontweight="bold", y=0.98,
+        color="#ffffff",
+        fontsize=13.5,
+        fontweight="bold",
     )
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    plt.savefig(out_path, dpi=300, facecolor=fig.get_facecolor(), bbox_inches="tight")
-    plt.close(fig)
+    _savefig_infographic(fig, out_path)
     return out_path.name
 
 

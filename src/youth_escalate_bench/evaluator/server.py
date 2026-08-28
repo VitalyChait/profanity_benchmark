@@ -1,8 +1,11 @@
 """Private benchmark evaluator HTTP server and interactive analysis dashboard."""
 
+import gzip
+import hashlib
 import json
 import mimetypes
 import statistics
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -14,12 +17,16 @@ import yaml
 
 from youth_escalate_bench.baselines.scorers import ModerationScorer, build_default_scorers
 from youth_escalate_bench.evaluator.dashboard import (
+    _load_difficulty_data,
+    _load_json_safe,
     _load_yaml_safe,
+    _unwrap_cached_list,
     build_analytics_matrix_rows_html,
     build_evaluated_models_catalog,
     build_trajectory_bars_html,
     generate_predict_page_html,
     generate_service_dashboard_html,
+    invalidate_dashboard_caches,
 )
 from youth_escalate_bench.reporting.infographics import (
     _get_display_name,
@@ -27,6 +34,70 @@ from youth_escalate_bench.reporting.infographics import (
     generate_governance_and_data_infographics,
 )
 from youth_escalate_bench.schemas.inference import InferenceRequest, ModelOutput
+
+# In-process response caches (mtime-aware). Shared across handler threads.
+_API_BYTES_CACHE: dict[str, tuple[str, bytes]] = {}
+_STATIC_BYTES_CACHE: dict[str, tuple[int, bytes, str]] = {}
+_RESPONSE_CACHE_LOCK = threading.Lock()
+_MAX_STATIC_CACHE_BYTES = 8 * 1024 * 1024  # cache individual files up to 8 MiB
+
+
+def _paths_fingerprint(paths: list[Path]) -> str:
+    parts: list[str] = []
+    for p in paths:
+        try:
+            st = p.stat()
+            parts.append(f"{p.resolve()}:{st.st_mtime_ns}:{st.st_size}")
+        except OSError:
+            parts.append(f"{p}:missing")
+    return "|".join(parts)
+
+
+def _get_cached_api_bytes(cache_key: str, fingerprint: str, builder) -> bytes:
+    with _RESPONSE_CACHE_LOCK:
+        hit = _API_BYTES_CACHE.get(cache_key)
+        if hit and hit[0] == fingerprint:
+            return hit[1]
+    payload = builder()
+    with _RESPONSE_CACHE_LOCK:
+        _API_BYTES_CACHE[cache_key] = (fingerprint, payload)
+    return payload
+
+
+def _get_cached_static_bytes(path: Path) -> tuple[bytes, str] | None:
+    try:
+        st = path.stat()
+    except OSError:
+        return None
+    if st.st_size > _MAX_STATIC_CACHE_BYTES:
+        return None
+    key = str(path.resolve())
+    with _RESPONSE_CACHE_LOCK:
+        hit = _STATIC_BYTES_CACHE.get(key)
+        if hit and hit[0] == st.st_mtime_ns:
+            return hit[1], hit[2]
+    data = path.read_bytes()
+    mime_type, _ = mimetypes.guess_type(path.name)
+    if not mime_type:
+        if path.suffix in (".md", ".txt", ".yaml", ".yml", ".tex"):
+            mime_type = "text/plain; charset=utf-8"
+        elif path.suffix == ".json":
+            mime_type = "application/json"
+        elif path.suffix == ".png":
+            mime_type = "image/png"
+        elif path.suffix in (".html", ".htm"):
+            mime_type = "text/html; charset=utf-8"
+        else:
+            mime_type = "application/octet-stream"
+    with _RESPONSE_CACHE_LOCK:
+        _STATIC_BYTES_CACHE[key] = (st.st_mtime_ns, data, mime_type)
+    return data, mime_type
+
+
+def invalidate_response_caches() -> None:
+    with _RESPONSE_CACHE_LOCK:
+        _API_BYTES_CACHE.clear()
+        _STATIC_BYTES_CACHE.clear()
 
 
 class PredictHandler(BaseHTTPRequestHandler):
@@ -63,7 +134,13 @@ class PredictHandler(BaseHTTPRequestHandler):
                     port=self.server_port,
                     reports_dir=self.reports_dir,
                 )
-                self._send_bytes(200, html_content.encode("utf-8"), "text/html; charset=utf-8")
+                self._send_bytes(
+                    200,
+                    html_content.encode("utf-8"),
+                    "text/html; charset=utf-8",
+                    cacheable=True,
+                    max_age=60,
+                )
                 return
 
             # Programmatic API descriptor for JSON clients
@@ -111,55 +188,97 @@ class PredictHandler(BaseHTTPRequestHandler):
                 host=self.server_host,
                 port=self.server_port,
             )
-            self._send_bytes(200, html_content.encode("utf-8"), "text/html; charset=utf-8")
+            self._send_bytes(
+                200,
+                html_content.encode("utf-8"),
+                "text/html; charset=utf-8",
+                cacheable=True,
+                max_age=60,
+            )
             return
 
         # 4. REST API endpoints for analysis
         if path == "/api/summary":
-            summary_file = self.reports_dir / "report_summary.yaml"
-            if not summary_file.exists():
-                summary_file = Path("data/processed/report/report_summary.yaml")
-            data = {}
-            if summary_file.exists():
-                try:
-                    with summary_file.open("r", encoding="utf-8") as f:
-                        data = yaml.safe_load(f) or {}
-                except Exception:
-                    data = {}
-            self._send_json(200, data)
+            candidates = [
+                self.reports_dir / "report_summary.yaml",
+                Path("data/processed/report/report_summary.yaml"),
+            ]
+            fp = _paths_fingerprint(candidates)
+
+            def _build_summary() -> bytes:
+                data: dict[str, Any] = {}
+                for summary_file in candidates:
+                    if summary_file.exists():
+                        data = _load_yaml_safe(summary_file)
+                        break
+                return json.dumps(data, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+            payload = _get_cached_api_bytes("api_summary", fp, _build_summary)
+            self._send_bytes(200, payload, "application/json", cacheable=True, max_age=120)
             return
 
         if path == "/api/errors":
-            errors_file = self.reports_dir / "llm_error_cases.json"
-            if not errors_file.exists():
-                errors_file = Path("data/processed/report/llm_error_cases.json")
-            data = {}
-            if errors_file.exists():
-                try:
-                    with errors_file.open("r", encoding="utf-8") as f:
-                        data = json.load(f) or {}
-                except Exception:
-                    data = {}
-            self._send_json(200, data)
+            candidates = [
+                self.reports_dir / "llm_error_cases.json",
+                Path("data/processed/report/llm_error_cases.json"),
+            ]
+            fp = _paths_fingerprint(candidates)
+
+            def _build_errors() -> bytes:
+                data: dict[str, Any] = {}
+                best_n = -1
+                for errors_file in candidates:
+                    if not errors_file.exists():
+                        continue
+                    candidate = _load_json_safe(errors_file)
+                    n = int((candidate.get("summary") or {}).get("total_error_instances", 0) or 0)
+                    if n > best_n:
+                        data = candidate
+                        best_n = n
+                return json.dumps(data, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+            payload = _get_cached_api_bytes("api_errors", fp, _build_errors)
+            self._send_bytes(200, payload, "application/json", cacheable=True, max_age=120)
             return
 
         if path == "/api/difficulty":
-            diff_file = self.reports_dir / "difficulty_ranking.yaml"
-            if not diff_file.exists():
-                diff_file = Path("data/processed/report/difficulty_ranking.yaml")
-            data = {}
-            if diff_file.exists():
-                try:
-                    with diff_file.open("r", encoding="utf-8") as f:
-                        data = yaml.safe_load(f) or {}
-                except Exception:
-                    data = {}
-            self._send_json(200, data)
+            yaml_candidates = [
+                self.reports_dir / "difficulty_ranking.yaml",
+                Path("data/processed/report/difficulty_ranking.yaml"),
+                Path("data/processed/evaluate/difficulty_ranking.yaml"),
+            ]
+            json_candidates = [p.with_suffix(".json") for p in yaml_candidates]
+            fp = _paths_fingerprint(yaml_candidates + json_candidates)
+
+            def _build_difficulty() -> bytes:
+                data: dict[str, Any] = {}
+                for yaml_path in yaml_candidates:
+                    if yaml_path.exists() or yaml_path.with_suffix(".json").exists():
+                        data = _load_difficulty_data(yaml_path)
+                        if data:
+                            break
+                return json.dumps(data, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+            payload = _get_cached_api_bytes("api_difficulty", fp, _build_difficulty)
+            self._send_bytes(200, payload, "application/json", cacheable=True, max_age=120)
             return
 
         if path == "/api/models":
-            models_catalog = build_evaluated_models_catalog(self.reports_dir)
-            self._send_json(200, models_catalog)
+            fp = _paths_fingerprint(
+                [
+                    self.reports_dir / "evaluation_results.yaml",
+                    self.reports_dir / "data" / "evaluation_results.yaml",
+                    Path("data/processed/report/evaluation_results.yaml"),
+                    Path(".env"),
+                ]
+            )
+
+            def _build_models() -> bytes:
+                models_catalog = build_evaluated_models_catalog(self.reports_dir)
+                return json.dumps(models_catalog, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+            payload = _get_cached_api_bytes("api_models", fp, _build_models)
+            self._send_bytes(200, payload, "application/json", cacheable=True, max_age=60)
             return
 
         if path == "/api/infographics/regenerate":
@@ -170,12 +289,15 @@ class PredictHandler(BaseHTTPRequestHandler):
             self._handle_regenerate_governance_infographics()
             return
 
-        # 4. Static reports, figures, heatmaps, and summaries
+        # 5. Static reports, figures, heatmaps, and summaries
         filename = path.lstrip("/")
+        # Keep full relative path under reports/ or data/processed/report/
+        # so alternate roots remain reachable when stubs shadow basenames.
+        relative_name = filename
         if filename.startswith("reports/"):
-            filename = filename[len("reports/") :]
+            relative_name = filename[len("reports/") :]
         elif filename.startswith("data/processed/report/"):
-            filename = filename[len("data/processed/report/") :]
+            relative_name = filename[len("data/processed/report/") :]
 
         candidate_dirs = [
             self.reports_dir,
@@ -184,9 +306,32 @@ class PredictHandler(BaseHTTPRequestHandler):
             Path("reports/snapshots/snapshot_2026.Q1"),
         ]
 
+        matches: list[Path] = []
         for c_dir in candidate_dirs:
-            target = c_dir / filename
+            target = c_dir / relative_name
             if target.is_file():
+                matches.append(target)
+            # Also try basename-only for legacy links
+            base_only = c_dir / Path(relative_name).name
+            if base_only.is_file() and base_only not in matches:
+                matches.append(base_only)
+
+        if matches:
+            # Prefer the richest artifact (larger, then newer) so stub reports/
+            # files do not hide full copies under data/processed/report/.
+            def _rank(p: Path) -> tuple[int, float]:
+                try:
+                    st = p.stat()
+                    return (st.st_size, st.st_mtime)
+                except OSError:
+                    return (0, 0.0)
+
+            target = max(matches, key=_rank)
+            cached = _get_cached_static_bytes(target)
+            if cached is not None:
+                data, mime_type = cached
+            else:
+                data = target.read_bytes()
                 mime_type, _ = mimetypes.guess_type(target.name)
                 if not mime_type:
                     if target.suffix in (".md", ".txt", ".yaml", ".yml", ".tex"):
@@ -199,8 +344,8 @@ class PredictHandler(BaseHTTPRequestHandler):
                         mime_type = "text/html; charset=utf-8"
                     else:
                         mime_type = "application/octet-stream"
-                self._send_bytes(200, target.read_bytes(), mime_type)
-                return
+            self._send_bytes(200, data, mime_type, cacheable=True, max_age=300)
+            return
 
         self.send_error(404, f"Resource not found: {path}")
 
@@ -615,8 +760,12 @@ class PredictHandler(BaseHTTPRequestHandler):
         eval_path = next((p for p in eval_candidates if p.exists()), None)
         raw_results: list[dict[str, Any]] = []
         if eval_path:
-            raw_data = _load_yaml_safe(eval_path)
-            raw_results = raw_data if isinstance(raw_data, list) else raw_data.get("results", [])
+            raw_data = _unwrap_cached_list(_load_yaml_safe(eval_path))
+            if isinstance(raw_data, list):
+                raw_results = [r for r in raw_data if isinstance(r, dict)]
+            elif isinstance(raw_data, dict):
+                nested = raw_data.get("results", [])
+                raw_results = nested if isinstance(nested, list) else []
 
         # 2. Build full catalog
         full_catalog = build_evaluated_models_catalog(self.reports_dir)
@@ -661,6 +810,8 @@ class PredictHandler(BaseHTTPRequestHandler):
             self.reports_dir,
             onset_data,
         )
+        invalidate_dashboard_caches()
+        invalidate_response_caches()
 
         # 6. Recompute KPI summaries for selected models
         top_llm = next((m for m in selected_models if m.get("provider") != "Local Baseline"), None)
@@ -705,6 +856,8 @@ class PredictHandler(BaseHTTPRequestHandler):
             self.reports_dir,
             self.reports_dir,
         )
+        invalidate_dashboard_caches()
+        invalidate_response_caches()
         elapsed_ms = round((time.perf_counter() - t0) * 1000.0, 1)
         resp = {
             "status": "success",
@@ -714,21 +867,93 @@ class PredictHandler(BaseHTTPRequestHandler):
         }
         self._send_json(200, resp)
 
+    def _client_accepts_gzip(self) -> bool:
+        accept = (self.headers.get("Accept-Encoding") or "").lower()
+        return "gzip" in accept
+
     def _send_json(self, status: int, data: Any) -> None:
-        payload = json.dumps(data, indent=2).encode("utf-8")
+        payload = json.dumps(data, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
         self._send_bytes(status, payload, "application/json")
 
-    def _send_bytes(self, status: int, payload: bytes, content_type: str) -> None:
+    def _send_bytes(
+        self,
+        status: int,
+        payload: bytes,
+        content_type: str,
+        *,
+        cacheable: bool = False,
+        max_age: int = 300,
+    ) -> None:
+        use_gzip = (
+            self._client_accepts_gzip()
+            and len(payload) >= 512
+            and (
+                content_type.startswith("text/")
+                or content_type.startswith("application/json")
+                or "javascript" in content_type
+            )
+        )
+        body = gzip.compress(payload, compresslevel=6) if use_gzip else payload
+
         self.send_response(status)
         self.send_header("Content-Type", content_type)
-        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Content-Length", str(len(body)))
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Vary", "Accept-Encoding")
+        if use_gzip:
+            self.send_header("Content-Encoding", "gzip")
+        if cacheable:
+            self.send_header("Cache-Control", f"public, max-age={max_age}")
+            etag = hashlib.sha1(payload).hexdigest()[:16]
+            self.send_header("ETag", f'"{etag}"')
+        else:
+            self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(payload)
+        self.wfile.write(body)
 
     def log_message(self, format: str, *args: Any) -> None:
         # Suppress noisy raw request text logging (private benchmark policy)
         return
+
+
+def _prewarm_service_caches(reports_dir: Path, host: str, port: int, lexicon_path: Path) -> None:
+    """Warm dashboard HTML, API payloads, and baseline scorers before accepting traffic."""
+    t0 = time.perf_counter()
+    try:
+        PredictHandler.get_all_scorers(lexicon_path)
+    except Exception:
+        pass
+    try:
+        generate_service_dashboard_html(reports_dir=reports_dir, host=host, port=port)
+    except Exception:
+        pass
+    try:
+        generate_predict_page_html(host=host, port=port, reports_dir=reports_dir)
+    except Exception:
+        pass
+    try:
+        build_evaluated_models_catalog(reports_dir)
+    except Exception:
+        pass
+    # Prefetch hot API payloads into the byte cache
+    try:
+        for yaml_path in (
+            reports_dir / "difficulty_ranking.yaml",
+            Path("data/processed/report/difficulty_ranking.yaml"),
+        ):
+            if yaml_path.exists() or yaml_path.with_suffix(".json").exists():
+                _load_difficulty_data(yaml_path)
+                break
+        for errors_file in (
+            reports_dir / "llm_error_cases.json",
+            Path("data/processed/report/llm_error_cases.json"),
+        ):
+            if errors_file.exists():
+                _load_json_safe(errors_file)
+                break
+    except Exception:
+        pass
+    print(f"  • Cache prewarm complete   : {round((time.perf_counter() - t0) * 1000.0)} ms")
 
 
 def serve(
@@ -744,6 +969,10 @@ def serve(
         PredictHandler.reports_dir = reports_dir
     PredictHandler.server_host = host
     PredictHandler.server_port = port
+
+    lex = PredictHandler.lexicon_path
+    reps = PredictHandler.reports_dir
+    _prewarm_service_caches(reps, host, port, lex)
 
     ThreadingHTTPServer.allow_reuse_address = True
     server = ThreadingHTTPServer((host, port), PredictHandler)

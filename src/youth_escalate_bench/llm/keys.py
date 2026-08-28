@@ -15,33 +15,37 @@ ENV_FILE_PATH = _ROOT_DIR / ".env"
 ENV_EXAMPLE_PATH = _ROOT_DIR / ".env.example"
 
 
+_ENV_LOADED_MTIME: float | None = None
+
+
 def load_env_file() -> None:
-    """Auto-load environment variables from the designated .env file."""
-    # Check current working directory or repository root
+    """Auto-load environment variables from the designated .env file (mtime-cached)."""
+    global _ENV_LOADED_MTIME
     candidates = [
         Path.cwd() / ".env",
         ENV_FILE_PATH,
     ]
-    for env_path in candidates:
-        if env_path.exists():
-            try:
-                # Use python-dotenv if available
-                from dotenv import load_dotenv
+    env_path = next((p for p in candidates if p.exists()), None)
+    mtime = env_path.stat().st_mtime if env_path is not None else -1.0
+    if _ENV_LOADED_MTIME is not None and _ENV_LOADED_MTIME == mtime:
+        return
 
-                load_dotenv(dotenv_path=env_path, override=False)
-                return
-            except ImportError:
-                # Fallback manual parser
-                with env_path.open("r", encoding="utf-8") as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith("#") and "=" in line:
-                            k, v = line.split("=", 1)
-                            k = k.strip()
-                            v = v.strip().strip("\"'")
-                            if k and k not in os.environ and v:
-                                os.environ[k] = v
-                return
+    if env_path is not None:
+        try:
+            from dotenv import load_dotenv
+
+            load_dotenv(dotenv_path=env_path, override=False)
+        except ImportError:
+            with env_path.open("r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        k = k.strip()
+                        v = v.strip().strip("\"'")
+                        if k and k not in os.environ and v:
+                            os.environ[k] = v
+    _ENV_LOADED_MTIME = mtime
 
 
 # Auto-load on import
