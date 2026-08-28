@@ -150,16 +150,18 @@ class PredictHandler(BaseHTTPRequestHandler):
             self._send_json(200, models_catalog)
             return
 
-
         # 4. Static reports, figures, heatmaps, and summaries
         filename = path.lstrip("/")
         if filename.startswith("reports/"):
             filename = filename[len("reports/") :]
+        elif filename.startswith("data/processed/report/"):
+            filename = filename[len("data/processed/report/") :]
 
         candidate_dirs = [
             self.reports_dir,
             Path("data/processed/report"),
             Path("reports"),
+            Path("reports/snapshots/snapshot_2026.Q1"),
         ]
 
         for c_dir in candidate_dirs:
@@ -171,12 +173,20 @@ class PredictHandler(BaseHTTPRequestHandler):
                         mime_type = "text/plain; charset=utf-8"
                     elif target.suffix == ".json":
                         mime_type = "application/json"
+                    elif target.suffix == ".png":
+                        mime_type = "image/png"
+                    elif target.suffix in (".html", ".htm"):
+                        mime_type = "text/html; charset=utf-8"
                     else:
                         mime_type = "application/octet-stream"
                 self._send_bytes(200, target.read_bytes(), mime_type)
                 return
 
         self.send_error(404, f"Resource not found: {path}")
+
+    def do_HEAD(self) -> None:
+        """Handle HEAD requests for health checks and asset validation."""
+        self.do_GET()
 
     def do_POST(self) -> None:
         if self.path != "/predict":

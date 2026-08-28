@@ -19,12 +19,12 @@ By dynamically retrieving slang definitions, algospeak decodings, and pragmatic 
 
 To minimize API latency and token expenditure during continuous evaluation, YouthEscalateBench implements persistent SHA256 prompt-level caching and compact RAG knowledge serialization.
 
-- **Active Cached Inferences:** `0`
-- **Cache Hits:** `0`
-- **Cache Misses:** `0`
-- **Effective Cache Hit Rate:** `0.0%`
-- **Estimated Tokens Conserved:** `0` tokens
-- **Estimated Cloud Cost Conserved:** `$0.0000 USD`
+- **Active Cached Inferences:** `3,979`
+- **Cache Hits:** `6,517`
+- **Cache Misses:** `75,942`
+- **Effective Cache Hit Rate:** `7.9%`
+- **Estimated Tokens Conserved:** `521` tokens
+- **Estimated Cloud Cost Conserved:** `$0.0008 USD`
 
 ---
 

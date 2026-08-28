@@ -1,13 +1,1210 @@
 annotation_quality: {}
-data_by_scorer: {}
-infographics: []
-llm_error_summary: {}
+data_by_scorer:
+  char_ngram_tfidf:
+    current_turn_only: &id003
+      auprc: 0.18240032792135127
+      auroc: 0.7153285448257511
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.22727272727272727
+      recall_at_fpr_1pct: 0.02857142857142857
+      scorer: char_ngram_tfidf
+    full_prefix: &id079
+      auprc: 0.18240032792135127
+      auroc: 0.7153285448257511
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.22727272727272727
+      recall_at_fpr_1pct: 0.02857142857142857
+      scorer: char_ngram_tfidf
+    prev_plus_current: &id041
+      auprc: 0.18240032792135127
+      auroc: 0.7153285448257511
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.22727272727272727
+      recall_at_fpr_1pct: 0.02857142857142857
+      scorer: char_ngram_tfidf
+  ensemble_moderator:
+    current_turn_only: &id006
+      auprc: 0.9268292030846698
+      auroc: 0.9773982442138869
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.3723404255319149
+      recall_at_fpr_1pct: 0.8857142857142857
+      scorer: ensemble_moderator
+    full_prefix: &id082
+      auprc: 0.9268292030846698
+      auroc: 0.9773982442138869
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.3723404255319149
+      recall_at_fpr_1pct: 0.8857142857142857
+      scorer: ensemble_moderator
+    prev_plus_current: &id044
+      auprc: 0.9268292030846698
+      auroc: 0.9773982442138869
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.3723404255319149
+      recall_at_fpr_1pct: 0.8857142857142857
+      scorer: ensemble_moderator
+  lexicon_full_context:
+    current_turn_only: &id004
+      auprc: 0.38323775679681277
+      auroc: 0.8903325352487365
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.3723404255319149
+      recall_at_fpr_1pct: 0.047619047619047616
+      scorer: lexicon_full_context
+    full_prefix: &id080
+      auprc: 0.20022870670006837
+      auroc: 0.7343229582335704
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.14809590973201692
+      recall_at_fpr_1pct: 0.02857142857142857
+      scorer: lexicon_full_context
+    prev_plus_current: &id042
+      auprc: 0.3183169372876319
+      auroc: 0.8517371641393991
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.2196652719665272
+      recall_at_fpr_1pct: 0.02857142857142857
+      scorer: lexicon_full_context
+  lexicon_normalized:
+    current_turn_only: &id002
+      auprc: 0.38323775679681277
+      auroc: 0.8903325352487365
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.3723404255319149
+      recall_at_fpr_1pct: 0.047619047619047616
+      scorer: lexicon_normalized
+    full_prefix: &id078
+      auprc: 0.38323775679681277
+      auroc: 0.8903325352487365
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.3723404255319149
+      recall_at_fpr_1pct: 0.047619047619047616
+      scorer: lexicon_normalized
+    prev_plus_current: &id040
+      auprc: 0.38323775679681277
+      auroc: 0.8903325352487365
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.3723404255319149
+      recall_at_fpr_1pct: 0.047619047619047616
+      scorer: lexicon_normalized
+  lexicon_raw:
+    current_turn_only: &id001
+      auprc: 0.38323775679681277
+      auroc: 0.8903325352487365
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.3723404255319149
+      recall_at_fpr_1pct: 0.047619047619047616
+      scorer: lexicon_raw
+    full_prefix: &id077
+      auprc: 0.38323775679681277
+      auroc: 0.8903325352487365
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.3723404255319149
+      recall_at_fpr_1pct: 0.047619047619047616
+      scorer: lexicon_raw
+    prev_plus_current: &id039
+      auprc: 0.38323775679681277
+      auroc: 0.8903325352487365
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.3723404255319149
+      recall_at_fpr_1pct: 0.047619047619047616
+      scorer: lexicon_raw
+  llm_mistral_mistral_small_latest:
+    current_turn_only: &id008
+      auprc: 0.9847014054991321
+      auroc: 0.9984251130619846
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.9629629629629629
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_mistral_mistral_small_latest
+    full_prefix: &id084
+      auprc: 0.9951855031772332
+      auroc: 0.9994466613461027
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_mistral_mistral_small_latest
+    prev_plus_current: &id046
+      auprc: 0.996351377110927
+      auroc: 0.9995849960095771
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_mistral_mistral_small_latest
+  llm_openrouter_dots_3_note_preview_free:
+    current_turn_only: &id018
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_dots_3_note_preview_free
+    full_prefix: &id094
+      auprc: 0.9905750114786366
+      auroc: 0.9989784517158818
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_dots_3_note_preview_free
+    prev_plus_current: &id056
+      auprc: 0.9923426810849071
+      auroc: 0.9992870444267092
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_dots_3_note_preview_free
+  llm_openrouter_free:
+    current_turn_only: &id026
+      auprc: 0.9972153805273414
+      auroc: 0.9997126895450917
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.9905660377358491
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_free
+    full_prefix: &id102
+      auprc: 0.9834835376943705
+      auroc: 0.9978185687682894
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.9803921568627451
+      recall_at_fpr_1pct: 0.9523809523809523
+      scorer: llm_openrouter_free
+    prev_plus_current: &id064
+      auprc: 0.9944946544660758
+      auroc: 0.9993615323224262
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9545454545454546
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_free
+  llm_openrouter_gemma_4_26b_a4b_it_free:
+    current_turn_only: &id009
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_gemma_4_26b_a4b_it_free
+    full_prefix: &id085
+      auprc: 0.9918887560963107
+      auroc: 0.9991061452513966
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_gemma_4_26b_a4b_it_free
+    prev_plus_current: &id047
+      auprc: 0.9926922081011008
+      auroc: 0.9993083266826284
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_gemma_4_26b_a4b_it_free
+  llm_openrouter_glm_5_2_free:
+    current_turn_only: &id015
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_glm_5_2_free
+    full_prefix: &id091
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_glm_5_2_free
+    prev_plus_current: &id053
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_glm_5_2_free
+  llm_openrouter_inkling_free:
+    current_turn_only: &id023
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_inkling_free
+    full_prefix: &id099
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_inkling_free
+    prev_plus_current: &id061
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_inkling_free
+  llm_openrouter_inkling_small_free:
+    current_turn_only: &id022
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_inkling_small_free
+    full_prefix: &id098
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_inkling_small_free
+    prev_plus_current: &id060
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_inkling_small_free
+  llm_openrouter_laguna_s_2_1_free:
+    current_turn_only: &id024
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_laguna_s_2_1_free
+    full_prefix: &id100
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_laguna_s_2_1_free
+    prev_plus_current: &id062
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_laguna_s_2_1_free
+  llm_openrouter_laguna_xs_2_1_free:
+    current_turn_only: &id025
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_laguna_xs_2_1_free
+    full_prefix: &id101
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_laguna_xs_2_1_free
+    prev_plus_current: &id063
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_laguna_xs_2_1_free
+  llm_openrouter_lfm_2_5_2_6b_free:
+    current_turn_only: &id019
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_lfm_2_5_2_6b_free
+    full_prefix: &id095
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_lfm_2_5_2_6b_free
+    prev_plus_current: &id057
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_lfm_2_5_2_6b_free
+  llm_openrouter_ling_3_0_flash_fin_free:
+    current_turn_only: &id020
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_ling_3_0_flash_fin_free
+    full_prefix: &id096
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_ling_3_0_flash_fin_free
+    prev_plus_current: &id058
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_ling_3_0_flash_fin_free
+  llm_openrouter_minimax_m2_7_free:
+    current_turn_only: &id017
+      auprc: 0.8943608638996501
+      auroc: 0.9877839851024205
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.9026548672566371
+      recall_at_fpr_1pct: 0.3523809523809524
+      scorer: llm_openrouter_minimax_m2_7_free
+    full_prefix: &id093
+      auprc: 0.9658639015742483
+      auroc: 0.9956584197924979
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.8
+      recall_at_fpr_1pct: 0.8380952380952381
+      scorer: llm_openrouter_minimax_m2_7_free
+    prev_plus_current: &id055
+      auprc: 0.9650416256978696
+      auroc: 0.9940941739824418
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9272727272727272
+      recall_at_fpr_1pct: 0.9714285714285714
+      scorer: llm_openrouter_minimax_m2_7_free
+  llm_openrouter_minimax_m3_free:
+    current_turn_only: &id016
+      auprc: 0.9794072417164774
+      auroc: 0.9978079276403298
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.9292035398230089
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_minimax_m3_free
+    full_prefix: &id092
+      auprc: 0.974771862710856
+      auroc: 0.9976802341048152
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.9444444444444444
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_minimax_m3_free
+    prev_plus_current: &id054
+      auprc: 1.0
+      auroc: 1.0
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_minimax_m3_free
+  llm_openrouter_nemotron_3_5_content_safety_free:
+    current_turn_only: &id010
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_nemotron_3_5_content_safety_free
+    full_prefix: &id086
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_nemotron_3_5_content_safety_free
+    prev_plus_current: &id048
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_nemotron_3_5_content_safety_free
+  llm_openrouter_nemotron_3_5_lightning_free:
+    current_turn_only: &id011
+      auprc: 0.9765705617358642
+      auroc: 0.9979249800478851
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.9629629629629629
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_nemotron_3_5_lightning_free
+    full_prefix: &id087
+      auprc: 0.9891526152928288
+      auroc: 0.9986272944932163
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.875
+      recall_at_fpr_1pct: 0.9333333333333333
+      scorer: llm_openrouter_nemotron_3_5_lightning_free
+    prev_plus_current: &id049
+      auprc: 0.9861540263437109
+      auroc: 0.9983612662942272
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.875
+      recall_at_fpr_1pct: 0.9238095238095239
+      scorer: llm_openrouter_nemotron_3_5_lightning_free
+  llm_openrouter_nemotron_3_nano_omni_30b_a3b_reasoning_free:
+    current_turn_only: &id014
+      auprc: 0.8978938458553933
+      auroc: 0.9956584197924979
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_nemotron_3_nano_omni_30b_a3b_reasoning_free
+    full_prefix: &id090
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_nemotron_3_nano_omni_30b_a3b_reasoning_free
+    prev_plus_current: &id052
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_nemotron_3_nano_omni_30b_a3b_reasoning_free
+  llm_openrouter_nemotron_3_super_120b_a12b_free:
+    current_turn_only: &id013
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_nemotron_3_super_120b_a12b_free
+    full_prefix: &id089
+      auprc: 0.9910179793634649
+      auroc: 0.9990210162277201
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_nemotron_3_super_120b_a12b_free
+    prev_plus_current: &id051
+      auprc: 0.9925190479279405
+      auroc: 0.9992976855546688
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_nemotron_3_super_120b_a12b_free
+  llm_openrouter_nemotron_3_ultra_550b_a55b_free:
+    current_turn_only: &id012
+      auprc: 0.9990968801313629
+      auroc: 0.9998829475924448
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_nemotron_3_ultra_550b_a55b_free
+    full_prefix: &id088
+      auprc: 0.9905750114786366
+      auroc: 0.9989784517158818
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_nemotron_3_ultra_550b_a55b_free
+    prev_plus_current: &id050
+      auprc: 0.9923426810849071
+      auroc: 0.9992870444267092
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_nemotron_3_ultra_550b_a55b_free
+  llm_openrouter_north_mini_code_free:
+    current_turn_only: &id021
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_north_mini_code_free
+    full_prefix: &id097
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_openrouter_north_mini_code_free
+    prev_plus_current: &id059
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_openrouter_north_mini_code_free
+  llm_requesty_gemma_4_31b_it:
+    current_turn_only: &id027
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_gemma_4_31b_it
+    full_prefix: &id103
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_gemma_4_31b_it
+    prev_plus_current: &id065
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_gemma_4_31b_it
+  llm_requesty_laguna_m_1:
+    current_turn_only: &id037
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_laguna_m_1
+    full_prefix: &id113
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_laguna_m_1
+    prev_plus_current: &id075
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_laguna_m_1
+  llm_requesty_laguna_xs_2:
+    current_turn_only: &id038
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_laguna_xs_2
+    full_prefix: &id114
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_laguna_xs_2
+    prev_plus_current: &id076
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_laguna_xs_2
+  llm_requesty_leanstral_1_5:
+    current_turn_only: &id032
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_leanstral_1_5
+    full_prefix: &id108
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_leanstral_1_5
+    prev_plus_current: &id070
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_leanstral_1_5
+  llm_requesty_ling_3_0_tiny:
+    current_turn_only: &id036
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_ling_3_0_tiny
+    full_prefix: &id112
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_ling_3_0_tiny
+    prev_plus_current: &id074
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_ling_3_0_tiny
+  llm_requesty_muse_glimmer_30b:
+    current_turn_only: &id033
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_muse_glimmer_30b
+    full_prefix: &id109
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_muse_glimmer_30b
+    prev_plus_current: &id071
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_muse_glimmer_30b
+  llm_requesty_nemotron_3_5_content_safety:
+    current_turn_only: &id028
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_5_content_safety
+    full_prefix: &id104
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_nemotron_3_5_content_safety
+    prev_plus_current: &id066
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_5_content_safety
+  llm_requesty_nemotron_3_5_lightning_30b_a3b:
+    current_turn_only: &id034
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_5_lightning_30b_a3b
+    full_prefix: &id110
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_nemotron_3_5_lightning_30b_a3b
+    prev_plus_current: &id072
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_5_lightning_30b_a3b
+  llm_requesty_nemotron_3_nano_30b_a3b:
+    current_turn_only: &id031
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_nano_30b_a3b
+    full_prefix: &id107
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_nemotron_3_nano_30b_a3b
+    prev_plus_current: &id069
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_nano_30b_a3b
+  llm_requesty_nemotron_3_nano_omni_30b_a3b_reasoning:
+    current_turn_only: &id030
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_nano_omni_30b_a3b_reasoning
+    full_prefix: &id106
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_nemotron_3_nano_omni_30b_a3b_reasoning
+    prev_plus_current: &id068
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_nano_omni_30b_a3b_reasoning
+  llm_requesty_nemotron_3_super_120b_a12b:
+    current_turn_only: &id029
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_super_120b_a12b
+    full_prefix: &id105
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_nemotron_3_super_120b_a12b
+    prev_plus_current: &id067
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_super_120b_a12b
+  llm_requesty_nemotron_3_ultra_550b_a55b:
+    current_turn_only: &id035
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_ultra_550b_a55b
+    full_prefix: &id111
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: llm_requesty_nemotron_3_ultra_550b_a55b
+    prev_plus_current: &id073
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: llm_requesty_nemotron_3_ultra_550b_a55b
+  prompted_llm_judge:
+    current_turn_only: &id007
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: prompted_llm_judge
+    full_prefix: &id083
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: prompted_llm_judge
+    prev_plus_current: &id045
+      auprc: 0.9926922081011008
+      auroc: 0.9993083266826284
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: prompted_llm_judge
+  rule_based_safeguard:
+    current_turn_only: &id005
+      auprc: 0.9988095238095238
+      auroc: 0.9998403830806065
+      condition: current_turn_only
+      n_samples: 1000
+      precision_at_recall_95: 1.0
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: rule_based_safeguard
+    full_prefix: &id081
+      auprc: 0.9901268322069279
+      auroc: 0.9989358872040436
+      condition: full_prefix
+      n_samples: 1000
+      precision_at_recall_95: 0.963302752293578
+      recall_at_fpr_1pct: 1.0
+      scorer: rule_based_safeguard
+    prev_plus_current: &id043
+      auprc: 0.99216298656559
+      auroc: 0.9992764032987497
+      condition: prev_plus_current
+      n_samples: 1000
+      precision_at_recall_95: 0.9904761904761905
+      recall_at_fpr_1pct: 0.9904761904761905
+      scorer: rule_based_safeguard
+infographics:
+- infographic_models_comparison.png
+- figure_auprc_heatmap.png
+- figure_context_trajectory.png
+- figure_llm_leaderboard.png
+- infographic_dashboard.html
+llm_error_summary:
+  llm_mistral_mistral_small_latest:
+    fn: 0
+    fp: 42
+    total: 42
+  llm_openrouter_dots_3_note_preview_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_free:
+    fn: 45
+    fp: 7
+    total: 52
+  llm_openrouter_gemma_4_26b_a4b_it_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_glm_5_2_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_inkling_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_inkling_small_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_laguna_s_2_1_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_laguna_xs_2_1_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_lfm_2_5_2_6b_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_ling_3_0_flash_fin_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_minimax_m2_7_free:
+    fn: 71
+    fp: 23
+    total: 94
+  llm_openrouter_minimax_m3_free:
+    fn: 48
+    fp: 11
+    total: 59
+  llm_openrouter_nemotron_3_5_content_safety_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_nemotron_3_5_lightning_free:
+    fn: 55
+    fp: 31
+    total: 86
+  llm_openrouter_nemotron_3_nano_omni_30b_a3b_reasoning_free:
+    fn: 0
+    fp: 52
+    total: 52
+  llm_openrouter_nemotron_3_super_120b_a12b_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_openrouter_nemotron_3_ultra_550b_a55b_free:
+    fn: 0
+    fp: 42
+    total: 42
+  llm_openrouter_north_mini_code_free:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_gemma_4_31b_it:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_laguna_m_1:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_laguna_xs_2:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_leanstral_1_5:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_ling_3_0_tiny:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_muse_glimmer_30b:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_nemotron_3_5_content_safety:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_nemotron_3_5_lightning_30b_a3b:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_nemotron_3_nano_30b_a3b:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_nemotron_3_nano_omni_30b_a3b_reasoning:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_nemotron_3_super_120b_a12b:
+    fn: 0
+    fp: 45
+    total: 45
+  llm_requesty_nemotron_3_ultra_550b_a55b:
+    fn: 0
+    fp: 45
+    total: 45
+  prompted_llm_judge:
+    fn: 0
+    fp: 45
+    total: 45
 onset_dynamics:
-  detection_rate: 0.0
-  median_delay: null
-  missed: 570
+  detection_rate: 0.1543859649122807
+  median_delay: 1
+  missed: 482
   recall_at_lag:
-    0: 0.0
-    1: 0.0
-    2: 0.0
-results: []
+    0: 0.07368421052631578
+    1: 0.11403508771929824
+    2: 0.14385964912280702
+results:
+- *id001
+- *id002
+- *id003
+- *id004
+- *id005
+- *id006
+- *id007
+- *id008
+- *id009
+- *id010
+- *id011
+- *id012
+- *id013
+- *id014
+- *id015
+- *id016
+- *id017
+- *id018
+- *id019
+- *id020
+- *id021
+- *id022
+- *id023
+- *id024
+- *id025
+- *id026
+- *id027
+- *id028
+- *id029
+- *id030
+- *id031
+- *id032
+- *id033
+- *id034
+- *id035
+- *id036
+- *id037
+- *id038
+- *id039
+- *id040
+- *id041
+- *id042
+- *id043
+- *id044
+- *id045
+- *id046
+- *id047
+- *id048
+- *id049
+- *id050
+- *id051
+- *id052
+- *id053
+- *id054
+- *id055
+- *id056
+- *id057
+- *id058
+- *id059
+- *id060
+- *id061
+- *id062
+- *id063
+- *id064
+- *id065
+- *id066
+- *id067
+- *id068
+- *id069
+- *id070
+- *id071
+- *id072
+- *id073
+- *id074
+- *id075
+- *id076
+- *id077
+- *id078
+- *id079
+- *id080
+- *id081
+- *id082
+- *id083
+- *id084
+- *id085
+- *id086
+- *id087
+- *id088
+- *id089
+- *id090
+- *id091
+- *id092
+- *id093
+- *id094
+- *id095
+- *id096
+- *id097
+- *id098
+- *id099
+- *id100
+- *id101
+- *id102
+- *id103
+- *id104
+- *id105
+- *id106
+- *id107
+- *id108
+- *id109
+- *id110
+- *id111
+- *id112
+- *id113
+- *id114

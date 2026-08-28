@@ -36,6 +36,10 @@ def test_generate_service_dashboard_html() -> None:
     assert "Visual Analytics" in html
     assert "Live Predict Playground" in html
     assert "Failure Case Diagnostics" in html
+    assert "Fig 1: Comprehensive Multi-Panel" in html
+    assert "Causal Context Trajectories" in html
+    assert "analytics-matrix-table" in html
+    assert "lightbox-modal" in html
 
 
 def test_server_health_check(live_server: tuple[str, int]) -> None:
@@ -46,6 +50,13 @@ def test_server_health_check(live_server: tuple[str, int]) -> None:
     assert res.status == 200
     data = json.loads(res.read().decode("utf-8"))
     assert data["status"] == "healthy"
+    conn.close()
+
+    # Test HEAD request
+    conn = HTTPConnection(host, port, timeout=5)
+    conn.request("HEAD", "/health")
+    res_head = conn.getresponse()
+    assert res_head.status == 200
     conn.close()
 
 

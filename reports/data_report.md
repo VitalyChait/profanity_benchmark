@@ -1,7 +1,7 @@
 # YouthEscalateBench Data Lifecycle & Corpus Report
 
 **Benchmark Version:** `0.1.2`  
-**Report Generated:** `2026-08-27 22:28:20 UTC`  
+**Report Generated:** `2026-08-28 17:27:54 UTC`  
 **Governance & Safety Status:** 🟢 All Data Stages Validated & Governance Gate Passed
 
 ---

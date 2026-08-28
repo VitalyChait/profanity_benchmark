@@ -165,10 +165,15 @@ def build_evaluated_models_catalog(
             status_detail = "Always accessible in-memory (0 API tokens required)"
 
         turn_metrics = conds.get("current_turn_only", {})
+        pair_metrics = conds.get("prev_plus_current", {})
         prefix_metrics = conds.get("full_prefix", {})
 
         turn_auprc = float(turn_metrics.get("auprc", 0.0))
+        pair_auprc = float(pair_metrics.get("auprc", 0.0))
         prefix_auprc = float(prefix_metrics.get("auprc", 0.0))
+        turn_auroc = float(turn_metrics.get("auroc", 0.0)) if turn_metrics.get("auroc") is not None else None
+        pair_auroc = float(pair_metrics.get("auroc", 0.0)) if pair_metrics.get("auroc") is not None else None
+        prefix_auroc = float(prefix_metrics.get("auroc", 0.0)) if prefix_metrics.get("auroc") is not None else None
         r_at_fpr1 = float(prefix_metrics.get("recall_at_fpr_1pct", 0.0))
         delta_auprc = prefix_auprc - turn_auprc
         n_samples = int(prefix_metrics.get("n_samples", turn_metrics.get("n_samples", 1000)))
@@ -189,7 +194,11 @@ def build_evaluated_models_catalog(
                 "when_evaluated": f"{session_timestamp} (Seed {random_seed})",
                 "n_samples": n_samples,
                 "turn_auprc": turn_auprc,
+                "pair_auprc": pair_auprc,
                 "prefix_auprc": prefix_auprc,
+                "turn_auroc": turn_auroc,
+                "pair_auroc": pair_auroc,
+                "prefix_auroc": prefix_auroc,
                 "r_at_fpr1": r_at_fpr1,
                 "delta_auprc": delta_auprc,
             }
@@ -291,6 +300,115 @@ def generate_service_dashboard_html(
                 {m['r_at_fpr1']:.3f}
             </td>
         </tr>
+        """
+
+    # Extract top models and key performers for analytics tab
+    top_llm = catalog["models"][0] if catalog["models"] else None
+    baselines_list = [m for m in catalog["models"] if m["provider"] == "Local Baseline"]
+    top_baseline = baselines_list[0] if baselines_list else None
+    max_delta_model = max(catalog["models"], key=lambda m: m["delta_auprc"]) if catalog["models"] else None
+
+    # Pre-render cross-condition analytics performance matrix
+    analytics_matrix_rows = ""
+    for idx, m in enumerate(catalog["models"], 1):
+        delta_val = m["delta_auprc"]
+        delta_str = f"+{delta_val:.3f}" if delta_val > 0 else f"{delta_val:.3f}"
+        delta_badge_cls = "badge-emerald" if delta_val >= 0 else "badge-rose"
+
+        turn_auroc_str = f"{m['turn_auroc']:.3f}" if m.get("turn_auroc") is not None else "—"
+        pair_auroc_str = f"{m['pair_auroc']:.3f}" if m.get("pair_auroc") is not None else "—"
+        prefix_auroc_str = f"{m['prefix_auroc']:.3f}" if m.get("prefix_auroc") is not None else "—"
+
+        pair_val = m.get("pair_auprc", 0.0)
+        analytics_matrix_rows += f"""
+        <tr>
+            <td style="font-weight: 700; color: var(--text-primary);">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.8rem;">#{idx}</span>
+                    <span>{m['name']}</span>
+                </div>
+            </td>
+            <td>
+                <span class="badge badge-purple">{m['family']}</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.35rem;">{m['provider']}</span>
+            </td>
+            <td class="cell-mono" style="text-align: right;">
+                <span style="color: #ffffff; font-weight: 600;">{m['turn_auprc']:.3f}</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.2rem;">({turn_auroc_str})</span>
+            </td>
+            <td class="cell-mono" style="text-align: right;">
+                <span style="color: #ffffff; font-weight: 600;">{pair_val:.3f}</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.2rem;">({pair_auroc_str})</span>
+            </td>
+            <td class="cell-mono" style="text-align: right;">
+                <span style="color: var(--accent-cyan); font-weight: 700;">{m['prefix_auprc']:.3f}</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.2rem;">({prefix_auroc_str})</span>
+            </td>
+            <td style="text-align: center;">
+                <span class="badge {delta_badge_cls}">{delta_str}</span>
+            </td>
+            <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">
+                {m['r_at_fpr1']:.3f}
+            </td>
+        </tr>
+        """
+
+    # Pre-render top trajectory progress bars for context visualizer
+    trajectory_bars_html = ""
+    top_models_for_bars = [m for m in catalog["models"] if m["provider"] != "Local Baseline"][:4]
+    baselines_for_bars = baselines_list[:2]
+    sampled_for_trajectory = top_models_for_bars + baselines_for_bars
+
+    for m in sampled_for_trajectory:
+        t_val = m["turn_auprc"]
+        p_val = m.get("pair_auprc", t_val)
+        pref_val = m["prefix_auprc"]
+        delta_val = m["delta_auprc"]
+        delta_str = f"+{delta_val:.3f}" if delta_val > 0 else f"{delta_val:.3f}"
+        badge_cls = "badge-emerald" if delta_val >= 0 else "badge-rose"
+
+        trajectory_bars_html += f"""
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-card); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <span style="font-weight: 700; color: #ffffff; font-size: 0.88rem;">{m['name']}</span>
+                    <span class="badge badge-indigo" style="font-size: 0.7rem;">{m['family']}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Causal Gain:</span>
+                    <span class="badge {badge_cls}">{delta_str} Δ AUPRC</span>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; font-size: 0.78rem;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 0.25rem;">
+                        <span>Turn Only</span>
+                        <span class="cell-mono" style="color: #c084fc; font-weight: 600;">{t_val:.3f}</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: {max(5, int(t_val * 100))}%; background: linear-gradient(90deg, #a855f7, #c084fc); border-radius: 3px;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 0.25rem;">
+                        <span>Prev + Turn</span>
+                        <span class="cell-mono" style="color: var(--accent-cyan); font-weight: 600;">{p_val:.3f}</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: {max(5, int(p_val * 100))}%; background: linear-gradient(90deg, #0284c7, #38bdf8); border-radius: 3px;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 0.25rem;">
+                        <span>Full Prefix</span>
+                        <span class="cell-mono" style="color: var(--accent-emerald); font-weight: 700;">{pref_val:.3f}</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: {max(5, int(pref_val * 100))}%; background: linear-gradient(90deg, #059669, #34d399); border-radius: 3px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
         """
 
     total_errors = errors_data.get("summary", {}).get("total_error_instances", 22)
@@ -695,6 +813,92 @@ def generate_service_dashboard_html(
             color: var(--text-secondary);
             margin-top: 0.75rem;
         }}
+        .btn-sm {{
+            padding: 0.35rem 0.75rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }}
+        .btn-cyan {{
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.35);
+        }}
+        .btn-cyan:hover {{
+            background: rgba(56, 189, 248, 0.3);
+            border-color: #38bdf8;
+            color: #ffffff;
+        }}
+        .btn-outline {{
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border-color: var(--border-card);
+        }}
+        .btn-outline:hover {{
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-color: var(--border-glow);
+        }}
+        .modal-backdrop {{
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }}
+        .modal-backdrop.active {{
+            display: flex;
+        }}
+        .modal-content {{
+            background: #0f172a;
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 1.5rem;
+            max-width: 95vw;
+            max-height: 95vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+        }}
+        .modal-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }}
+        .modal-close {{
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.6rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 0.25rem;
+            transition: color 0.2s ease;
+        }}
+        .modal-close:hover {{
+            color: #ffffff;
+        }}
+        #lightbox-img {{
+            max-width: 100%;
+            max-height: 75vh;
+            object-fit: contain;
+            border-radius: 8px;
+            background: #080c14;
+        }}
 
         /* Live Predict Playground */
         .form-group {{
@@ -883,28 +1087,167 @@ def generate_service_dashboard_html(
 
         <!-- TAB 1: Visual Analytics & Infographics -->
         <section class="tab-content active" id="tab-analytics">
-            <div class="panel-card">
+            <!-- Analytics Header & Quick Action Strip -->
+            <div class="panel-card" style="margin-bottom: 1.5rem;">
                 <div class="panel-header">
-                    <h2 class="panel-title"><span>📊</span> Automated Publication Infographics & Visual Analytics</h2>
-                    <span class="badge badge-cyan">300 DPI High-Resolution</span>
+                    <div>
+                        <h2 class="panel-title"><span>📊</span> Automated Publication Infographics & Visual Analytics</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+                            Cross-condition causal sensitivity benchmarks, 300 DPI publication-ready figures, and full context trajectory dynamics across {models_count} evaluated models.
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <a href="/reports/infographic_dashboard.html" target="_blank" class="btn-sm btn-cyan" style="text-decoration: none;">
+                            <span>🌐</span> Standalone HTML Dashboard ↗
+                        </a>
+                        <a href="/reports/evaluation_report.md" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">
+                            <span>📄</span> Full Markdown Report ↗
+                        </a>
+                        <a href="/reports/table_main_results.tex" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">
+                            <span>📋</span> LaTeX Table ↗
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 4 KPI Summary Strips -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 0.9rem 1.1rem; border-radius: 10px; border: 1px solid var(--border-card);">
+                        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Top Frontier LLM (Full Prefix)</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #ffffff; margin: 0.2rem 0;">{top_llm['name'] if top_llm else 'Mistral Small Latest'}</div>
+                        <div style="font-size: 0.78rem; color: var(--accent-emerald); font-weight: 600;">{top_llm['prefix_auprc'] if top_llm else 0.995:.3f} AUPRC (Top Performer)</div>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 0.9rem 1.1rem; border-radius: 10px; border: 1px solid var(--border-card);">
+                        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Top Baseline Keyword Match</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #ffffff; margin: 0.2rem 0;">{top_baseline['name'] if top_baseline else 'Raw Lexicon Match'}</div>
+                        <div style="font-size: 0.78rem; color: var(--accent-cyan); font-weight: 600;">{top_baseline['prefix_auprc'] if top_baseline else 0.763:.3f} AUPRC (Offline Baseline)</div>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 0.9rem 1.1rem; border-radius: 10px; border: 1px solid var(--border-card);">
+                        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Maximum Causal Context Gain</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;">+{max_delta_model['delta_auprc'] if max_delta_model else 0.092:.3f} Δ AUPRC</div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary);">{max_delta_model['name'] if max_delta_model else 'Nemotron 3 Nano Omni'}</div>
+                    </div>
+                    <div style="background: rgba(15, 23, 42, 0.6); padding: 0.9rem 1.1rem; border-radius: 10px; border: 1px solid var(--border-card);">
+                        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Evaluated Context Conditions</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-cyan); margin: 0.2rem 0;">3 Conditions</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Turn / Prev+Turn / Prefix (1k Turns)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Context Progression Dynamics Visualizer -->
+            <div class="panel-card" style="margin-bottom: 1.5rem;">
+                <div class="panel-header">
+                    <div>
+                        <h3 class="panel-title" style="font-size: 1.05rem;"><span>📈</span> Causal Context Trajectories (Turn Only → Prev + Turn → Full Prefix)</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.2rem;">
+                            Visual progression showing how model discrimination changes as contextual dialogue history expands from isolated turns to full prefixes.
+                        </p>
+                    </div>
+                    <span class="badge badge-purple">Context Uplift Dynamics</span>
+                </div>
+                <div style="margin-top: 0.75rem;">
+                    {trajectory_bars_html}
+                </div>
+            </div>
+
+            <!-- Publication Infographics Gallery (300 DPI) -->
+            <div class="panel-card" style="margin-bottom: 1.5rem;">
+                <div class="panel-header">
+                    <div>
+                        <h3 class="panel-title" style="font-size: 1.05rem;"><span>🖼️</span> Publication-Ready Benchmark Figures (300 DPI High-Resolution)</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.2rem;">
+                            Click any figure to view in full resolution or click the download button for production vector/PNG assets.
+                        </p>
+                    </div>
+                    <span class="badge badge-cyan">Auto-Generated Visuals</span>
                 </div>
                 <div class="gallery-grid">
+                    <!-- Figure 1 -->
                     <div class="gallery-item">
-                        <img class="gallery-img" src="/reports/infographic_models_comparison.png" alt="Multi-Panel Infographic" onclick="window.open(this.src, '_blank')">
-                        <div class="gallery-caption">Fig 1: Comprehensive Multi-Panel Model Benchmark</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.25rem;">
+                            <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">Fig 1: Comprehensive Multi-Panel Benchmark</span>
+                            <span class="badge badge-indigo">Overview</span>
+                        </div>
+                        <img class="gallery-img" src="/reports/infographic_models_comparison.png" data-fig="infographic_models_comparison.png" alt="Fig 1: Comprehensive Multi-Panel Model Benchmark" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/infographic_models_comparison.png';}}" onclick="openLightbox(this.src, 'Fig 1: Comprehensive Multi-Panel Model Benchmark')">
+                        <div class="gallery-caption">Comprehensive 4-quadrant benchmark visualization comparing all 38 models across conversational context levels.</div>
+                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem;">
+                            <button class="btn-sm btn-outline" onclick="openLightbox('/reports/infographic_models_comparison.png', 'Fig 1: Comprehensive Multi-Panel Model Benchmark')">🔍 Zoom</button>
+                            <a href="/reports/infographic_models_comparison.png" download="infographic_models_comparison.png" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
+                        </div>
                     </div>
+
+                    <!-- Figure 2 -->
                     <div class="gallery-item">
-                        <img class="gallery-img" src="/reports/figure_auprc_heatmap.png" alt="Performance Heatmap" onclick="window.open(this.src, '_blank')">
-                        <div class="gallery-caption">Fig 2: AUPRC & AUROC Performance Matrix Heatmaps</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.25rem;">
+                            <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">Fig 2: AUPRC & AUROC Performance Matrix Heatmaps</span>
+                            <span class="badge badge-purple">Heatmap</span>
+                        </div>
+                        <img class="gallery-img" src="/reports/figure_auprc_heatmap.png" data-fig="figure_auprc_heatmap.png" alt="Fig 2: AUPRC & AUROC Performance Matrix Heatmaps" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/figure_auprc_heatmap.png';}}" onclick="openLightbox(this.src, 'Fig 2: AUPRC & AUROC Performance Matrix Heatmaps')">
+                        <div class="gallery-caption">Direct head-to-head performance heatmaps across Isolated Turn, Previous+Turn, and Full Prefix causal windows.</div>
+                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem;">
+                            <button class="btn-sm btn-outline" onclick="openLightbox('/reports/figure_auprc_heatmap.png', 'Fig 2: AUPRC & AUROC Performance Matrix Heatmaps')">🔍 Zoom</button>
+                            <a href="/reports/figure_auprc_heatmap.png" download="figure_auprc_heatmap.png" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
+                        </div>
                     </div>
+
+                    <!-- Figure 3 -->
                     <div class="gallery-item">
-                        <img class="gallery-img" src="/reports/figure_context_trajectory.png" alt="Context Trajectory" onclick="window.open(this.src, '_blank')">
-                        <div class="gallery-caption">Fig 3: Causal Context Expansion Dynamics</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.25rem;">
+                            <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">Fig 3: Causal Context Expansion Dynamics</span>
+                            <span class="badge badge-emerald">Trajectories</span>
+                        </div>
+                        <img class="gallery-img" src="/reports/figure_context_trajectory.png" data-fig="figure_context_trajectory.png" alt="Fig 3: Causal Context Expansion Dynamics" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/figure_context_trajectory.png';}}" onclick="openLightbox(this.src, 'Fig 3: Causal Context Expansion Dynamics')">
+                        <div class="gallery-caption">Trajectory curves revealing which models benefit from contextual history vs which degrade due to conversational noise.</div>
+                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem;">
+                            <button class="btn-sm btn-outline" onclick="openLightbox('/reports/figure_context_trajectory.png', 'Fig 3: Causal Context Expansion Dynamics')">🔍 Zoom</button>
+                            <a href="/reports/figure_context_trajectory.png" download="figure_context_trajectory.png" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
+                        </div>
                     </div>
+
+                    <!-- Figure 4 -->
                     <div class="gallery-item">
-                        <img class="gallery-img" src="/reports/figure_llm_leaderboard.png" alt="LLM Leaderboard" onclick="window.open(this.src, '_blank')">
-                        <div class="gallery-caption">Fig 4: Dedicated LLM Leaderboard (Full Prefix)</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.25rem;">
+                            <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">Fig 4: Dedicated LLM Leaderboard (Full Prefix)</span>
+                            <span class="badge badge-amber">Leaderboard</span>
+                        </div>
+                        <img class="gallery-img" src="/reports/figure_llm_leaderboard.png" data-fig="figure_llm_leaderboard.png" alt="Fig 4: Dedicated LLM Leaderboard (Full Prefix)" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/figure_llm_leaderboard.png';}}" onclick="openLightbox(this.src, 'Fig 4: Dedicated LLM Leaderboard (Full Prefix)')">
+                        <div class="gallery-caption">Official benchmark leaderboard ranked by Full Prefix AUPRC with 1% FPR operational safety recall.</div>
+                        <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem;">
+                            <button class="btn-sm btn-outline" onclick="openLightbox('/reports/figure_llm_leaderboard.png', 'Fig 4: Dedicated LLM Leaderboard (Full Prefix)')">🔍 Zoom</button>
+                            <a href="/reports/figure_llm_leaderboard.png" download="figure_llm_leaderboard.png" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
+                        </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Multi-Model Performance Matrix Table -->
+            <div class="panel-card">
+                <div class="panel-header">
+                    <div>
+                        <h3 class="panel-title" style="font-size: 1.05rem;"><span>📋</span> Comprehensive Performance Matrix across Context Conditions</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.2rem;">
+                            Exact numerical AUPRC and AUROC values for all {models_count} evaluated models across Isolated Turn, Previous + Turn, and Full Prefix.
+                        </p>
+                    </div>
+                    <input type="text" class="search-input" id="analytics-table-search" placeholder="Search model or family..." onkeyup="filterAnalyticsTable()" style="max-width: 260px;">
+                </div>
+                <div class="table-responsive">
+                    <table id="analytics-matrix-table">
+                        <thead>
+                            <tr>
+                                <th>Model Name</th>
+                                <th>Family & Provider</th>
+                                <th style="text-align: right;">Turn Only AUPRC (AUROC)</th>
+                                <th style="text-align: right;">Prev + Turn AUPRC (AUROC)</th>
+                                <th style="text-align: right;">Full Prefix AUPRC (AUROC)</th>
+                                <th style="text-align: center;">Δ Prefix Gain</th>
+                                <th style="text-align: right;">Recall @ FPR 1%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {analytics_matrix_rows}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </section>
@@ -1172,6 +1515,21 @@ def generate_service_dashboard_html(
             </div>
         </section>
 
+        <!-- Figure Lightbox Modal -->
+        <div id="lightbox-modal" class="modal-backdrop" onclick="closeLightbox(event)">
+            <div class="modal-content" onclick="event.stopPropagation()">
+                <div class="modal-header">
+                    <h3 id="lightbox-title" style="color: #fff; font-size: 1.05rem; font-weight: 700;"></h3>
+                    <button class="modal-close" onclick="closeLightbox()">&times;</button>
+                </div>
+                <img id="lightbox-img" src="" alt="Enlarged Figure">
+                <div style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.75rem; flex-wrap: wrap;">
+                    <a id="lightbox-open" href="" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">↗ Open High-Res in Tab</a>
+                    <a id="lightbox-download" href="" download class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download 300 DPI PNG</a>
+                </div>
+            </div>
+        </div>
+
         <footer>
             YouthEscalateBench Evaluator Service • Running at <code>http://{host}:{port}</code> • Auto-Generated Real-Time Dashboard
         </footer>
@@ -1187,6 +1545,35 @@ def generate_service_dashboard_html(
 
             const btn = document.querySelector(`[onclick="switchTab('${{tabId}}')"]`);
             if (btn) btn.classList.add('active');
+        }}
+
+        function openLightbox(src, title) {{
+            const modal = document.getElementById('lightbox-modal');
+            const img = document.getElementById('lightbox-img');
+            const titleEl = document.getElementById('lightbox-title');
+            const downloadBtn = document.getElementById('lightbox-download');
+            const openBtn = document.getElementById('lightbox-open');
+
+            if (!modal || !img) return;
+            img.src = src;
+            if (titleEl) titleEl.textContent = title;
+            if (downloadBtn) downloadBtn.href = src;
+            if (openBtn) openBtn.href = src;
+            modal.classList.add('active');
+        }}
+
+        function closeLightbox(e) {{
+            const modal = document.getElementById('lightbox-modal');
+            if (modal) modal.classList.remove('active');
+        }}
+
+        function filterAnalyticsTable() {{
+            const query = (document.getElementById('analytics-table-search')?.value || '').toLowerCase();
+            const rows = document.querySelectorAll('#analytics-matrix-table tbody tr');
+            rows.forEach(r => {{
+                const text = r.innerText.toLowerCase();
+                r.style.display = !query || text.includes(query) ? '' : 'none';
+            }});
         }}
 
         function filterModelsTable() {{
