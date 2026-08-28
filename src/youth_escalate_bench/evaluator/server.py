@@ -21,7 +21,11 @@ from youth_escalate_bench.evaluator.dashboard import (
     generate_predict_page_html,
     generate_service_dashboard_html,
 )
-from youth_escalate_bench.reporting.infographics import _get_display_name, generate_all_infographics
+from youth_escalate_bench.reporting.infographics import (
+    _get_display_name,
+    generate_all_infographics,
+    generate_governance_and_data_infographics,
+)
 from youth_escalate_bench.schemas.inference import InferenceRequest, ModelOutput
 
 
@@ -160,6 +164,10 @@ class PredictHandler(BaseHTTPRequestHandler):
 
         if path == "/api/infographics/regenerate":
             self._handle_regenerate_infographics()
+            return
+
+        if path in ("/api/governance/regenerate", "/api/infographics/regenerate_governance"):
+            self._handle_regenerate_governance_infographics()
             return
 
         # 4. Static reports, figures, heatmaps, and summaries
@@ -395,8 +403,12 @@ class PredictHandler(BaseHTTPRequestHandler):
             self._handle_regenerate_infographics()
             return
 
+        if self.path in ("/api/governance/regenerate", "/api/infographics/regenerate_governance"):
+            self._handle_regenerate_governance_infographics()
+            return
+
         if self.path != "/predict":
-            self.send_error(404, "Unknown endpoint. Only POST /predict and /api/infographics/regenerate are supported.")
+            self.send_error(404, "Unknown endpoint. Supported: POST /predict, /api/infographics/regenerate, /api/governance/regenerate.")
             return
 
         length = int(self.headers.get("Content-Length", 0))
@@ -680,6 +692,23 @@ class PredictHandler(BaseHTTPRequestHandler):
             } if max_delta_model else None,
             "trajectory_bars_html": trajectory_html,
             "matrix_rows_html": matrix_html,
+            "elapsed_ms": elapsed_ms,
+            "timestamp": int(time.time() * 1000),
+        }
+        self._send_json(200, resp)
+
+    def _handle_regenerate_governance_infographics(self) -> None:
+        """Handle on-demand generation of governance, split data & audit reports infographics."""
+        t0 = time.perf_counter()
+        self.reports_dir.mkdir(parents=True, exist_ok=True)
+        generated_files = generate_governance_and_data_infographics(
+            self.reports_dir,
+            self.reports_dir,
+        )
+        elapsed_ms = round((time.perf_counter() - t0) * 1000.0, 1)
+        resp = {
+            "status": "success",
+            "generated_files": generated_files,
             "elapsed_ms": elapsed_ms,
             "timestamp": int(time.time() * 1000),
         }

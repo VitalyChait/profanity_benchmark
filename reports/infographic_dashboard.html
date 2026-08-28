@@ -154,17 +154,17 @@
         <div class="kpi-grid">
             <div class="kpi-card">
                 <div class="kpi-title">Total Evaluated Models</div>
-                <div class="kpi-value">1</div>
+                <div class="kpi-value">38</div>
                 <div class="kpi-sub">6 LLMs & 6 Baselines</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Top Frontier LLM (AUPRC)</div>
-                <div class="kpi-value">0.000</div>
+                <div class="kpi-value">0.995</div>
                 <div class="kpi-sub">Gemma 4 31B Judge</div>
             </div>
             <div class="kpi-card">
                 <div class="kpi-title">Top Baseline (AUPRC)</div>
-                <div class="kpi-value">0.383</div>
+                <div class="kpi-value">0.990</div>
                 <div class="kpi-sub">Char N-Gram TF-IDF</div>
             </div>
             <div class="kpi-card">
@@ -196,6 +196,376 @@
             <td><span class="score-pill">0.383</span> <span class="sub-score">(0.890)</span></td>
             <td><span class="score-pill score-highlight">0.383</span> <span class="sub-score">(0.890)</span></td>
             <td><span class='badge badge-green'>+0.000</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Normalized Lexicon</strong></td>
+            <td><span class='badge badge-gray'>Lexical Baseline</span></td>
+            <td><span class="score-pill">0.383</span> <span class="sub-score">(0.890)</span></td>
+            <td><span class="score-pill">0.383</span> <span class="sub-score">(0.890)</span></td>
+            <td><span class="score-pill score-highlight">0.383</span> <span class="sub-score">(0.890)</span></td>
+            <td><span class='badge badge-green'>+0.000</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Char N-Gram TF-IDF</strong></td>
+            <td><span class='badge badge-gray'>Subword Baseline</span></td>
+            <td><span class="score-pill">0.182</span> <span class="sub-score">(0.715)</span></td>
+            <td><span class="score-pill">0.182</span> <span class="sub-score">(0.715)</span></td>
+            <td><span class="score-pill score-highlight">0.182</span> <span class="sub-score">(0.715)</span></td>
+            <td><span class='badge badge-green'>+0.000</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Full-Context Lexicon</strong></td>
+            <td><span class='badge badge-gray'>Lexical Baseline</span></td>
+            <td><span class="score-pill">0.383</span> <span class="sub-score">(0.890)</span></td>
+            <td><span class="score-pill">0.318</span> <span class="sub-score">(0.852)</span></td>
+            <td><span class="score-pill score-highlight">0.200</span> <span class="sub-score">(0.734)</span></td>
+            <td><span class='badge badge-red'>-0.183</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Rule Safeguard Expert</strong></td>
+            <td><span class='badge badge-gray'>Rule Baseline</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Ensemble Moderator</strong></td>
+            <td><span class='badge badge-blue'>Ensemble</span></td>
+            <td><span class="score-pill">0.927</span> <span class="sub-score">(0.977)</span></td>
+            <td><span class="score-pill">0.927</span> <span class="sub-score">(0.977)</span></td>
+            <td><span class="score-pill score-highlight">0.927</span> <span class="sub-score">(0.977)</span></td>
+            <td><span class='badge badge-green'>+0.000</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Gemma 4 31B (Default Judge)</strong></td>
+            <td><span class='badge badge-purple'>LLM Judge</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.993</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Mistral Small Latest</strong></td>
+            <td><span class='badge badge-purple'>Mistral LLM</span></td>
+            <td><span class="score-pill">0.985</span> <span class="sub-score">(0.998)</span></td>
+            <td><span class="score-pill">0.996</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill score-highlight">0.995</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-green'>+0.010</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Gemma 4 26B A4B IT (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.993</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.007</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Nemotron 3.5 Safety (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Nemotron 3.5 Lightning (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.977</span> <span class="sub-score">(0.998)</span></td>
+            <td><span class="score-pill">0.986</span> <span class="sub-score">(0.998)</span></td>
+            <td><span class="score-pill score-highlight">0.989</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-green'>+0.013</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Nemotron 3 Ultra 550B A55B (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.991</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Nemotron 3 Super 120B A12B (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.993</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.991</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.008</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Nemotron 3 Nano Omni 30B A3B Reasoning (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.898</span> <span class="sub-score">(0.996)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-green'>+0.092</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>GLM 5.2 (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Minimax M3 (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.979</span> <span class="sub-score">(0.998)</span></td>
+            <td><span class="score-pill">1.000</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill score-highlight">0.975</span> <span class="sub-score">(0.998)</span></td>
+            <td><span class='badge badge-red'>-0.005</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Minimax M2.7 (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.894</span> <span class="sub-score">(0.988)</span></td>
+            <td><span class="score-pill">0.965</span> <span class="sub-score">(0.994)</span></td>
+            <td><span class="score-pill score-highlight">0.966</span> <span class="sub-score">(0.996)</span></td>
+            <td><span class='badge badge-green'>+0.072</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Dots 3 Note Preview (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.991</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.008</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Liquid LFM 2.5 2.6B (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Ling 3.0 Flash Fin (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>North Mini Code (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Inkling Small (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Inkling (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Laguna S 2.1 (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Laguna Xs 2.1 (Free)</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Free</strong></td>
+            <td><span class='badge badge-purple'>OpenRouter LLM</span></td>
+            <td><span class="score-pill">0.997</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.994</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.983</span> <span class="sub-score">(0.998)</span></td>
+            <td><span class='badge badge-red'>-0.014</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Gemma 4 31B IT</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Nemotron 3.5 Safety</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Nemotron 3 Super 120B A12B</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Nemotron 3 Nano Omni 30B A3B Reasoning</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Nemotron 3 Nano 30B A3B</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Leanstral 1.5</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Muse Glimmer 30B</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Nemotron 3.5 Lightning 30B A3B</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Nemotron 3 Ultra 550B A55B</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Ling 3.0 Tiny</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Laguna M 1</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
+        </tr>
+        
+
+        <tr>
+            <td class="model-name"><strong>Requesty Laguna Xs 2</strong></td>
+            <td><span class='badge badge-purple'>LLM Model</span></td>
+            <td><span class="score-pill">0.999</span> <span class="sub-score">(1.000)</span></td>
+            <td><span class="score-pill">0.992</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class="score-pill score-highlight">0.990</span> <span class="sub-score">(0.999)</span></td>
+            <td><span class='badge badge-red'>-0.009</span></td>
         </tr>
         
                 </tbody>

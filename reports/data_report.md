@@ -120,7 +120,20 @@
 
 ---
 
-## 9. Exported Stage Artifacts
+## 9. Automated Governance & Data Split Infographics
+
+### Fig G-1: Corpus Governance & Multi-Source Legal Audit Architecture
+![Corpus Governance & Legal Audit](infographic_governance_audit.png)
+
+### Fig G-2: Zero-Leakage Benchmark Dataset Splitting & Quota Stratification
+![Zero-Leakage Dataset Splitting & Quotas](infographic_split_data.png)
+
+### Fig G-3: YouthEscalateBench End-to-End Data Pipeline Architecture & Audit Lifecycle
+![End-to-End Data Pipeline Architecture & Lifecycle](infographic_data_lifecycle.png)
+
+---
+
+## 10. Exported Stage Artifacts
 
 - **Source Audit:** [`reports/data/audit_report.yaml`](data/audit_report.yaml)
 - **PII Audit:** [`reports/data/pii_report.yaml`](data/pii_report.yaml)

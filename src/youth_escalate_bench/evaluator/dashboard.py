@@ -1865,38 +1865,224 @@ def generate_service_dashboard_html(
         <!-- TAB 5: Data & Governance Reports -->
         <section class="tab-content" id="tab-data">
             <div class="panel-card">
-                <div class="panel-header">
-                    <h2 class="panel-title"><span>📋</span> Governance, Split Data & Audit Reports</h2>
+                <div class="panel-header" style="flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h2 class="panel-title"><span>📋</span> Governance, Split Data & Audit Reports</h2>
+                        <div class="panel-subtitle">Audited academic corpora, regulatory compliance scorecards, and zero-leakage benchmark partitioning</div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                        <button type="button" class="btn-sm btn-cyan" id="btn-regenerate-governance" onclick="regenerateGovernanceInfographics()" style="padding: 0.45rem 1rem; font-weight: 700; cursor: pointer;">
+                            🔄 Regenerate Governance Infographics
+                        </button>
+                        <a href="/reports/data_report.md" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">📄 data_report.md</a>
+                        <a href="/reports/pii_spot_check_report.md" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">🛡️ pii_spot_check.md</a>
+                        <a href="/reports/data/audit_report.yaml" target="_blank" class="btn-sm btn-outline" style="text-decoration: none;">⚖️ audit_report.yaml</a>
+                    </div>
                 </div>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
-                    <a href="/reports/data_report.md" target="_blank" style="text-decoration: none;">
-                        <div class="kpi-card">
-                            <div class="kpi-label">Corpora Overview</div>
-                            <div class="kpi-num" style="font-size: 1.3rem;">data_report.md</div>
-                            <div class="kpi-desc">14 Datasets & 79k+ Turns</div>
+
+                <!-- Regeneration Status Toast -->
+                <div id="governance-regen-status" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 1.25rem; font-weight: 500;"></div>
+
+                <!-- Executive KPI Cards -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="kpi-card">
+                        <div class="kpi-label">Ingested Multi-Turn Dialogues</div>
+                        <div class="kpi-num" style="font-size: 1.5rem; color: #ffffff;">103,400</div>
+                        <div class="kpi-desc">Raw Conversational Pool (Snappy Parquet)</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Legal Audit Gate</div>
+                        <div class="kpi-num" style="font-size: 1.5rem; color: var(--accent-emerald);">29 Sources (100%)</div>
+                        <div class="kpi-desc">COPPA, GDPR-K & UK AADC Compliant</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Safe Harbor PII Redaction</div>
+                        <div class="kpi-num" style="font-size: 1.5rem; color: var(--accent-cyan);">66,261 Scrubbed</div>
+                        <div class="kpi-desc">Zero Residue in Spot-Check Audits</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">Frozen Benchmark Partitions</div>
+                        <div class="kpi-num" style="font-size: 1.5rem; color: var(--accent-indigo);">5,004 Dialogues</div>
+                        <div class="kpi-desc">13,018 Turns • Zero Turn/Speaker Leakage</div>
+                    </div>
+                </div>
+
+                <!-- 300 DPI Publication Infographics Gallery -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>📊</span> Publication-Ready Governance & Data Infographics (300 DPI)
+                    </h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.25rem;">
+                        <!-- Fig G-1 -->
+                        <div class="figure-card">
+                            <div class="figure-img-container">
+                                <img id="fig-img-gov-audit" src="/reports/infographic_governance_audit.png" alt="Governance and Audit Infographic" onclick="openLightbox('/reports/infographic_governance_audit.png', 'Fig G-1: Corpus Governance & Multi-Source Legal Audit Architecture')">
+                            </div>
+                            <div class="figure-caption-box">
+                                <div class="figure-num-badge">Figure G-1</div>
+                                <div class="figure-title">Corpus Governance & Multi-Source Legal Audit Architecture</div>
+                                <div class="figure-desc">Multi-source registry, regulatory compliance under COPPA/GDPR-K, and PII neutralization breakdown.</div>
+                                <div class="figure-actions">
+                                    <button type="button" class="btn-sm btn-outline" id="fig-zoom-gov-audit" onclick="openLightbox('/reports/infographic_governance_audit.png', 'Fig G-1: Corpus Governance & Multi-Source Legal Audit Architecture')">🔍 Zoom</button>
+                                    <a id="fig-dl-gov-audit" href="/reports/infographic_governance_audit.png" download="infographic_governance_audit.png" class="btn-sm btn-cyan">📥 Download 300 DPI</a>
+                                </div>
+                            </div>
                         </div>
-                    </a>
-                    <a href="/reports/pii_spot_check_report.md" target="_blank" style="text-decoration: none;">
-                        <div class="kpi-card">
-                            <div class="kpi-label">Privacy & Ethics</div>
-                            <div class="kpi-num" style="font-size: 1.3rem; color: var(--accent-emerald);">PASSED</div>
-                            <div class="kpi-desc">pii_spot_check_report.md</div>
+
+                        <!-- Fig G-2 -->
+                        <div class="figure-card">
+                            <div class="figure-img-container">
+                                <img id="fig-img-split-data" src="/reports/infographic_split_data.png" alt="Dataset Splitting Infographic" onclick="openLightbox('/reports/infographic_split_data.png', 'Fig G-2: Zero-Leakage Benchmark Dataset Splitting & Quota Stratification')">
+                            </div>
+                            <div class="figure-caption-box">
+                                <div class="figure-num-badge">Figure G-2</div>
+                                <div class="figure-title">Zero-Leakage Benchmark Dataset Splitting & Quota Stratification</div>
+                                <div class="figure-desc">Train/Dev/Test partition volume, sampling tiers (organic vs synthetic), and disjoint speaker isolation guarantees.</div>
+                                <div class="figure-actions">
+                                    <button type="button" class="btn-sm btn-outline" id="fig-zoom-split-data" onclick="openLightbox('/reports/infographic_split_data.png', 'Fig G-2: Zero-Leakage Benchmark Dataset Splitting & Quota Stratification')">🔍 Zoom</button>
+                                    <a id="fig-dl-split-data" href="/reports/infographic_split_data.png" download="infographic_split_data.png" class="btn-sm btn-cyan">📥 Download 300 DPI</a>
+                                </div>
+                            </div>
                         </div>
-                    </a>
-                    <a href="/reports/agentic_discovery_digest.md" target="_blank" style="text-decoration: none;">
-                        <div class="kpi-card">
-                            <div class="kpi-label">Slang Discovery</div>
-                            <div class="kpi-num" style="font-size: 1.3rem; color: var(--accent-cyan);">Active</div>
-                            <div class="kpi-desc">agentic_discovery_digest.md</div>
+
+                        <!-- Fig G-3 -->
+                        <div class="figure-card">
+                            <div class="figure-img-container">
+                                <img id="fig-img-lifecycle" src="/reports/infographic_data_lifecycle.png" alt="Data Lifecycle Infographic" onclick="openLightbox('/reports/infographic_data_lifecycle.png', 'Fig G-3: End-to-End Pipeline Architecture & Governance Lifecycle')">
+                            </div>
+                            <div class="figure-caption-box">
+                                <div class="figure-num-badge">Figure G-3</div>
+                                <div class="figure-title">End-to-End Pipeline Architecture & Governance Lifecycle</div>
+                                <div class="figure-desc">7-stage data lifecycle from source ingestion and PII redaction through DAG threading to frozen evaluation splits.</div>
+                                <div class="figure-actions">
+                                    <button type="button" class="btn-sm btn-outline" id="fig-zoom-lifecycle" onclick="openLightbox('/reports/infographic_data_lifecycle.png', 'Fig G-3: End-to-End Pipeline Architecture & Governance Lifecycle')">🔍 Zoom</button>
+                                    <a id="fig-dl-lifecycle" href="/reports/infographic_data_lifecycle.png" download="infographic_data_lifecycle.png" class="btn-sm btn-cyan">📥 Download 300 DPI</a>
+                                </div>
+                            </div>
                         </div>
-                    </a>
-                    <a href="/api/difficulty" target="_blank" style="text-decoration: none;">
-                        <div class="kpi-card">
-                            <div class="kpi-label">Raw REST Endpoint</div>
-                            <div class="kpi-num" style="font-size: 1.3rem; color: var(--accent-indigo);">/api/difficulty</div>
-                            <div class="kpi-desc">JSON Difficulty API</div>
-                        </div>
-                    </a>
+                    </div>
+                </div>
+
+                <!-- Stratified Splits Table -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>⚖️</span> Stratified Zero-Leakage Benchmark Partitions
+                    </h3>
+                    <div style="overflow-x: auto;">
+                        <table class="matrix-table">
+                            <thead>
+                                <tr>
+                                    <th>Partition</th>
+                                    <th>Share (%)</th>
+                                    <th style="text-align: right;">Dialogues</th>
+                                    <th style="text-align: right;">Evaluated Turns</th>
+                                    <th style="text-align: right;">Avg Turns / Dialogue</th>
+                                    <th style="text-align: right;">File Size</th>
+                                    <th>Integrity Guarantee</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="font-weight: 700; color: var(--accent-cyan);">Train Partition</td>
+                                    <td><span class="badge badge-cyan">50.0%</span></td>
+                                    <td class="cell-mono" style="text-align: right; font-weight: 600; color: #fff;">2,502</td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-primary);">6,668</td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">2.66</td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">520.8 KB</td>
+                                    <td><span class="badge badge-emerald">Disjoint Conversation Isolation</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700; color: var(--accent-indigo);">Dev Validation</td>
+                                    <td><span class="badge badge-purple">25.0%</span></td>
+                                    <td class="cell-mono" style="text-align: right; font-weight: 600; color: #fff;">1,251</td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-primary);">3,097</td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">2.48</td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">261.9 KB</td>
+                                    <td><span class="badge badge-emerald">Zero Cross-Split Speaker Overlap</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700; color: var(--accent-emerald);">Test Evaluation (Gold)</td>
+                                    <td><span class="badge badge-emerald">25.0%</span></td>
+                                    <td class="cell-mono" style="text-align: right; font-weight: 600; color: #fff;">1,251</td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-primary);">3,253</td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">2.60</td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">264.2 KB</td>
+                                    <td><span class="badge badge-emerald">Strict Monotonic Causal Ordering</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Primary Audited Sources & Provenance -->
+                <div>
+                    <h3 style="font-size: 1.1rem; font-weight: 700; color: #ffffff; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>🛡️</span> Approved Corpora & Governance Provenance Registry
+                    </h3>
+                    <div style="overflow-x: auto;">
+                        <table class="matrix-table">
+                            <thead>
+                                <tr>
+                                    <th>Corpus Identifier</th>
+                                    <th>Domain Category</th>
+                                    <th>Provenance & Publisher</th>
+                                    <th>Licensing & Terms</th>
+                                    <th>Child Safety Alignment</th>
+                                    <th>Audit Gate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="font-weight: 700; color: #fff;">wikiconv_wikidetox</td>
+                                    <td><span class="badge badge-cyan">Discussion Trees</span></td>
+                                    <td>Google / Wikimedia Community</td>
+                                    <td>CC-BY-SA 3.0 (Research)</td>
+                                    <td>Safe Harbor De-identified</td>
+                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700; color: #fff;">contextual_abuse_dataset</td>
+                                    <td><span class="badge badge-purple">Abuse Benchmarks</span></td>
+                                    <td>CAD Research Consortium</td>
+                                    <td>Academic Research License</td>
+                                    <td>Group Adjudication Verified</td>
+                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700; color: #fff;">gametox</td>
+                                    <td><span class="badge badge-rose">Youth & Gaming</span></td>
+                                    <td>GameTox Adolescent Gaming Corpus</td>
+                                    <td>Non-Commercial Research</td>
+                                    <td>COPPA Compliant Scrubbing</td>
+                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700; color: #fff;">minorbench</td>
+                                    <td><span class="badge badge-rose">Youth Safeguarding</span></td>
+                                    <td>MinorBench Safety Evaluation</td>
+                                    <td>Curated Research Set</td>
+                                    <td>Underage Privacy Protected</td>
+                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700; color: #fff;">lmsys_toxic_chat</td>
+                                    <td><span class="badge badge-indigo">Dialogue Arenas</span></td>
+                                    <td>LMSYS Org / Chatbot Arena</td>
+                                    <td>CC-BY-4.0 Research</td>
+                                    <td>Zero Residual Identifiers</td>
+                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                                </tr>
+                                <tr>
+                                    <td style="font-weight: 700; color: #fff;">urban_dictionary_slang</td>
+                                    <td><span class="badge badge-amber">Dynamic Slang</span></td>
+                                    <td>Urban Dictionary Curated APIs</td>
+                                    <td>Permissive Research Querying</td>
+                                    <td>Algospeak Discovery Active</td>
+                                    <td><span class="badge badge-emerald">🟢 PASSED</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </section>
@@ -2282,6 +2468,81 @@ def generate_service_dashboard_html(
                 if (btn) {{
                     btn.disabled = false;
                     btn.innerHTML = '<span>🔄</span> Regenerate Infographics';
+                }}
+            }}
+        }}
+
+        async function regenerateGovernanceInfographics() {{
+            const btn = document.getElementById('btn-regenerate-governance');
+            const statusDiv = document.getElementById('governance-regen-status');
+
+            if (btn) {{
+                btn.disabled = true;
+                btn.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#fff; margin-right:6px;"></span>Regenerating 300 DPI Governance Figures...';
+            }}
+            if (statusDiv) {{
+                statusDiv.style.display = 'block';
+                statusDiv.style.background = 'rgba(56, 189, 248, 0.12)';
+                statusDiv.style.border = '1px solid rgba(56, 189, 248, 0.35)';
+                statusDiv.style.color = '#38bdf8';
+                statusDiv.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#38bdf8; margin-right:6px;"></span>Rendering 3 high-resolution figures for Governance, Split Data & Audit Reports...';
+            }}
+
+            const tStart = performance.now();
+
+            try {{
+                const resp = await fetch('/api/governance/regenerate', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }}
+                }});
+                if (!resp.ok) {{
+                    throw new Error('Server returned HTTP ' + resp.status);
+                }}
+                const data = await resp.json();
+                const elapsedSec = ((performance.now() - tStart) / 1000).toFixed(2);
+                const t = data.timestamp || Date.now();
+
+                // Refresh the 3 governance gallery figures with cache-busting
+                const govFigs = [
+                    {{ id: 'fig-img-gov-audit', downloadId: 'fig-dl-gov-audit', zoomId: 'fig-zoom-gov-audit', name: 'infographic_governance_audit.png', title: 'Fig G-1: Corpus Governance & Multi-Source Legal Audit Architecture' }},
+                    {{ id: 'fig-img-split-data', downloadId: 'fig-dl-split-data', zoomId: 'fig-zoom-split-data', name: 'infographic_split_data.png', title: 'Fig G-2: Zero-Leakage Benchmark Dataset Splitting & Quota Stratification' }},
+                    {{ id: 'fig-img-lifecycle', downloadId: 'fig-dl-lifecycle', zoomId: 'fig-zoom-lifecycle', name: 'infographic_data_lifecycle.png', title: 'Fig G-3: End-to-End Pipeline Architecture & Governance Lifecycle' }}
+                ];
+
+                govFigs.forEach(item => {{
+                    const img = document.getElementById(item.id);
+                    if (img) {{
+                        const newSrc = '/reports/' + item.name + '?t=' + t;
+                        img.src = newSrc;
+                        img.onclick = () => openLightbox(newSrc, item.title);
+                    }}
+                    const dl = document.getElementById(item.downloadId);
+                    if (dl) {{
+                        dl.href = '/reports/' + item.name + '?t=' + t;
+                    }}
+                    const zoom = document.getElementById(item.zoomId);
+                    if (zoom) {{
+                        zoom.onclick = () => openLightbox('/reports/' + item.name + '?t=' + t, item.title);
+                    }}
+                }});
+
+                if (statusDiv) {{
+                    statusDiv.style.background = 'rgba(52, 211, 153, 0.15)';
+                    statusDiv.style.border = '1px solid rgba(52, 211, 153, 0.4)';
+                    statusDiv.style.color = '#34d399';
+                    statusDiv.innerHTML = '✅ Successfully regenerated 3 publication-ready governance & data split infographics in ' + elapsedSec + 's!';
+                }}
+            }} catch (err) {{
+                if (statusDiv) {{
+                    statusDiv.style.background = 'rgba(244, 63, 94, 0.15)';
+                    statusDiv.style.border = '1px solid rgba(244, 63, 94, 0.4)';
+                    statusDiv.style.color = '#fb7185';
+                    statusDiv.innerHTML = '❌ Failed to regenerate governance infographics: ' + err.message;
+                }}
+            }} finally {{
+                if (btn) {{
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>🔄</span> Regenerate Governance Infographics';
                 }}
             }}
         }}
