@@ -2072,6 +2072,403 @@ def generate_service_dashboard_html(
             }}
         }}
 
+        async function executeStreamingPredict({{ payload, btn, statusSpan, resultBox, verdictDiv }}) {{
+            if (btn) btn.disabled = true;
+            if (verdictDiv) verdictDiv.style.display = 'block';
+
+            const tStart = performance.now();
+            let timerInterval = null;
+
+            const updateTimer = () => {{
+                const now = performance.now();
+                const elapsedSec = ((now - tStart) / 1000).toFixed(2);
+                if (statusSpan) {{
+                    statusSpan.innerHTML = `<span class="pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#38bdf8; margin-right:5px;"></span>Live Elapsed: ${{elapsedSec}}s`;
+                }}
+            }};
+            timerInterval = setInterval(updateTimer, 40);
+            updateTimer();
+
+            const modelsState = new Map();
+            let currentAggregate = null;
+            let totalExpected = 1;
+            let isMulti = false;
+            let rawOutputAccumulator = {{}};
+
+            const renderUI = (isComplete = false) => {{
+                const now = performance.now();
+                const currentElapsedSec = ((now - tStart) / 1000).toFixed(2);
+                const completedList = Array.from(modelsState.values()).filter(m => m.status === 'done');
+                const completedCount = completedList.length;
+                const pct = totalExpected > 0 ? Math.round((completedCount / totalExpected) * 100) : 0;
+
+                if (resultBox) {{
+                    resultBox.textContent = JSON.stringify(rawOutputAccumulator, null, 2);
+                }}
+
+                if (isMulti || totalExpected > 1) {{
+                    let progressHtml = `
+                        <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.15rem; margin-bottom: 1.2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <div style="font-size: 0.88rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                                    ${{isComplete 
+                                        ? '<span style="color: var(--accent-emerald);">✅ Asynchronous Inference Complete</span>' 
+                                        : '<span class="pulse-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#38bdf8;"></span><span>Asynchronous Model Stream in Progress...</span>'}}
+                                </div>
+                                <div style="font-size: 0.8rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 600;">
+                                    ${{completedCount}} / ${{totalExpected}} Models (${{pct}}%) • ${{currentElapsedSec}}s
+                                </div>
+                            </div>
+                            <div style="height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 0.85rem;">
+                                <div style="height: 100%; width: ${{Math.max(3, pct)}}%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.15s ease;"></div>
+                            </div>
+                    `;
+
+                    if (currentAggregate && completedCount > 0) {{
+                        const agg = currentAggregate;
+                        const isActionable = agg.consensus_actionable;
+                        const bannerBg = isActionable 
+                            ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.22), rgba(225, 29, 72, 0.1))' 
+                            : 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.08))';
+                        const bannerBorder = isActionable ? 'rgba(244, 63, 94, 0.45)' : 'rgba(16, 185, 129, 0.4)';
+                        const titleColor = isActionable ? '#fb7185' : '#34d399';
+                        const badgeCls = isActionable ? 'badge-rose' : 'badge-emerald';
+
+                        const flaggedChips = (agg.flagged_by || []).map(f => `<span class="badge badge-rose" style="margin: 0.15rem;">🚨 ${{f}}</span>`).join('') || '<span style="color: var(--text-muted); font-size: 0.8rem;">None (0 models)</span>';
+                        const clearedChips = (agg.cleared_by || []).map(c => `<span class="badge badge-emerald" style="margin: 0.15rem;">🟢 ${{c}}</span>`).join('') || '<span style="color: var(--text-muted); font-size: 0.8rem;">None (0 models)</span>';
+
+                        progressHtml += `
+                            <div style="background: ${{bannerBg}}; border: 1px solid ${{bannerBorder}}; padding: 0.85rem 1.15rem; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <div>
+                                    <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: ${{titleColor}}; letter-spacing: 0.05em;">
+                                        Progressive Consensus (${{completedCount}} of ${{totalExpected}} Models Reporting)
+                                    </div>
+                                    <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 0.15rem;">
+                                        ${{agg.verdict_label}} (${{agg.agreement_percentage}}% Consensus)
+                                    </div>
+                                </div>
+                                <span class="badge ${{badgeCls}}" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;">${{agg.divergence_level}}</span>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.65rem; margin-bottom: 0.9rem;">
+                                <div style="background: rgba(0,0,0,0.35); padding: 0.65rem 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Mean Harm Prob</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #fff; font-family: var(--font-mono);">${{agg.mean_harm_probability.toFixed(3)}} <span style="font-size: 0.7rem; color: var(--text-muted);">±${{agg.std_harm_probability.toFixed(2)}}</span></div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.35); padding: 0.65rem 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Agreement Rate</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-cyan); font-family: var(--font-mono);">${{agg.agreement_percentage}}%</div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.35); padding: 0.65rem 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Consensus Severity</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-amber);">${{agg.dominant_severity.toUpperCase()}}</div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.35); padding: 0.65rem 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Ratio</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #fff; font-family: var(--font-mono);"><span style="color: var(--accent-rose);">${{agg.actionable_count}} Flagged</span> / <span style="color: var(--accent-emerald);">${{agg.cleared_count}} Cleared</span></div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 0.85rem;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.2rem;">
+                                    <span style="color: var(--accent-rose); font-weight: 600;">Actionable (${{agg.actionable_count}})</span>
+                                    <span style="color: var(--accent-emerald); font-weight: 600;">Benign (${{agg.cleared_count}})</span>
+                                </div>
+                                <div style="height: 7px; border-radius: 4px; background: rgba(255,255,255,0.06); display: flex; overflow: hidden;">
+                                    <div style="height: 100%; width: ${{ (agg.actionable_count / Math.max(1, agg.models_evaluated_count)) * 100 }}%; background: linear-gradient(90deg, #f43f5e, #fb7185);"></div>
+                                    <div style="height: 100%; width: ${{ (agg.cleared_count / Math.max(1, agg.models_evaluated_count)) * 100 }}%; background: linear-gradient(90deg, #059669, #34d399);"></div>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; background: rgba(0,0,0,0.25); padding: 0.75rem 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan); margin-bottom: 0.85rem;">
+                                <strong style="color: #fff;">Consensus Synthesis:</strong> ${{agg.synthesis}}
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.78rem;">
+                                <div style="background: rgba(0,0,0,0.2); padding: 0.55rem 0.75rem; border-radius: 6px;">
+                                    <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: 600; text-transform: uppercase;">Flagged by (${{agg.actionable_count}}):</div>
+                                    <div style="display: flex; flex-wrap: wrap;">${{flaggedChips}}</div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.2); padding: 0.55rem 0.75rem; border-radius: 6px;">
+                                    <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: 600; text-transform: uppercase;">Cleared by (${{agg.cleared_count}}):</div>
+                                    <div style="display: flex; flex-wrap: wrap;">${{clearedChips}}</div>
+                                </div>
+                            </div>
+                        `;
+                    }}
+
+                    progressHtml += `</div>`;
+
+                    const allModels = Array.from(modelsState.values());
+                    allModels.sort((a, b) => {{
+                        if (a.status === 'done' && b.status !== 'done') return -1;
+                        if (a.status !== 'done' && b.status === 'done') return 1;
+                        if (a.status === 'done' && b.status === 'done') {{
+                            return (b.harm_probability || 0) - (a.harm_probability || 0);
+                        }}
+                        return 0;
+                    }});
+
+                    let tableRows = '';
+                    allModels.forEach(m => {{
+                        if (m.status === 'done') {{
+                            const mAct = m.actionable;
+                            const mBadge = mAct 
+                                ? '<span class="badge badge-rose">🚨 FLAGGED</span>' 
+                                : '<span class="badge badge-emerald">🟢 CLEARED</span>';
+                            const mProbPct = Math.round((m.harm_probability || 0) * 100);
+                            const mProbColor = mAct ? '#f43f5e' : '#38bdf8';
+                            const returnedAtSec = m.elapsed_since_req_ms ? (m.elapsed_since_req_ms / 1000).toFixed(2) + 's' : '';
+
+                            tableRows += `
+                                <tr>
+                                    <td style="font-weight: 600; color: #fff;">
+                                        <div>${{m.model_name}}</div>
+                                        <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
+                                    </td>
+                                    <td><span class="badge badge-indigo">${{m.provider}}</span></td>
+                                    <td class="cell-mono" style="text-align: right;">
+                                        <div style="font-weight: 700; color: ${{mProbColor}}; font-size: 0.88rem;">${{(m.harm_probability || 0).toFixed(4)}}</div>
+                                        <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 3px;">
+                                            <div style="height: 100%; width: ${{Math.max(4, mProbPct)}}%; background: ${{mProbColor}};"></div>
+                                        </div>
+                                    </td>
+                                    <td>${{mBadge}}</td>
+                                    <td><span class="badge badge-amber">${{m.dominant_severity || 'safe'}}</span></td>
+                                    <td class="cell-mono" style="text-align: right;">
+                                        <div style="font-weight: 600; color: var(--accent-cyan); font-size: 0.8rem;">⚡ ${{m.latency_ms || 0}}ms</div>
+                                        ${{returnedAtSec ? `<div style="font-size: 0.7rem; color: var(--text-muted);">+${{returnedAtSec}} returned</div>` : ''}}
+                                    </td>
+                                </tr>
+                            `;
+                        }} else {{
+                            tableRows += `
+                                <tr style="opacity: 0.7;">
+                                    <td style="font-weight: 600; color: #cbd5e1;">
+                                        <div>${{m.model_name}}</div>
+                                        <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
+                                    </td>
+                                    <td><span class="badge badge-outline">${{m.provider}}</span></td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-muted); font-size: 0.75rem;">
+                                        Calculating...
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-cyan" style="background: rgba(56, 189, 248, 0.1);">
+                                            <span class="pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#38bdf8; margin-right:4px;"></span>In Flight
+                                        </span>
+                                    </td>
+                                    <td><span style="color: var(--text-muted); font-size: 0.75rem;">-</span></td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--accent-amber); font-size: 0.78rem;">
+                                        ⏱️ ${{currentElapsedSec}}s...
+                                    </td>
+                                </tr>
+                            `;
+                        }}
+                    }});
+
+                    progressHtml += `
+                        <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.15rem; margin-bottom: 1.2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;"><span>📊</span> Model Predictions Breakdown (${{completedCount}} of ${{totalExpected}} Completed)</h3>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Real-time Asynchronous Stream • Elapsed: ${{currentElapsedSec}}s</span>
+                            </div>
+                            <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Evaluated Model</th>
+                                            <th>Provider</th>
+                                            <th style="text-align: right;">Harm Probability</th>
+                                            <th>Decision</th>
+                                            <th>Dominant Severity</th>
+                                            <th style="text-align: right;">Latency & Return Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${{tableRows}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+
+                    verdictDiv.innerHTML = progressHtml;
+                }} else {{
+                    const completedList = Array.from(modelsState.values()).filter(m => m.status === 'done');
+                    if (completedList.length > 0) {{
+                        const data = completedList[0];
+                        const harmProb = data.harm_probability !== undefined ? data.harm_probability : 0.0;
+                        const actionable = data.actionable !== undefined ? data.actionable : (harmProb >= 0.5);
+                        const modelName = data.model_name || data.model_id || 'Model';
+                        const provider = data.provider || 'Local Baseline';
+                        const sevProbs = data.severity_probabilities || {{}};
+                        let domSev = data.dominant_severity || 'safe';
+                        if (!domSev && Object.keys(sevProbs).length) {{
+                            domSev = Object.keys(sevProbs).reduce((a, b) => sevProbs[a] > sevProbs[b] ? a : b);
+                        }}
+                        const badgeCls = actionable ? 'badge-rose' : 'badge-emerald';
+                        const verdictTitle = actionable ? '🚨 ACTIONABLE VIOLATION' : '🟢 NON-ACTIONABLE / SAFE';
+
+                        let sevBars = '';
+                        for (const [k, v] of Object.entries(sevProbs)) {{
+                            const spct = Math.round(v * 100);
+                            sevBars += `
+                                <div style="margin-bottom: 0.4rem;">
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.15rem;">
+                                        <span>${{k}}</span>
+                                        <span class="cell-mono">${{(v).toFixed(3)}}</span>
+                                    </div>
+                                    <div style="height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                                        <div style="height: 100%; width: ${{Math.max(2, spct)}}%; background: var(--accent-cyan);"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }}
+
+                        verdictDiv.innerHTML = `
+                            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                                    <div>
+                                        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted);">Evaluated Model</div>
+                                        <div style="font-size: 1.15rem; font-weight: 700; color: #fff;">${{modelName}}</div>
+                                        <div style="font-size: 0.72rem; color: var(--text-muted);">${{provider}} • ⚡ ${{data.latency_ms || 0}}ms (returned at +${{currentElapsedSec}}s)</div>
+                                    </div>
+                                    <span class="badge ${{badgeCls}}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">${{verdictTitle}}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px;">
+                                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Harm Probability</div>
+                                        <div style="font-size: 1.4rem; font-weight: 800; color: ${{actionable ? '#f43f5e' : '#34d399'}}; font-family: var(--font-mono);">${{harmProb.toFixed(4)}}</div>
+                                    </div>
+                                    <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px;">
+                                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Dominant Severity</div>
+                                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-amber); font-family: var(--font-mono);">${{domSev.toUpperCase()}}</div>
+                                    </div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.25); padding: 0.75rem 1rem; border-radius: 8px;">
+                                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 600;">Severity Distribution</div>
+                                    ${{sevBars}}
+                                </div>
+                            </div>
+                        `;
+                    }} else {{
+                        verdictDiv.innerHTML = `
+                            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                                <span class="pulse-dot" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#38bdf8; margin-bottom: 0.5rem;"></span>
+                                <div style="font-size: 1rem; font-weight: 700; color: #fff;">Inference In Flight</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Elapsed: ${{currentElapsedSec}}s...</div>
+                            </div>
+                        `;
+                    }}
+                }}
+            }};
+
+            try {{
+                const streamPayload = {{ ...payload, stream: true }};
+                const res = await fetch('/predict', {{
+                    method: 'POST',
+                    headers: {{
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    }},
+                    body: JSON.stringify(streamPayload)
+                }});
+
+                if (!res.ok) {{
+                    throw new Error(`HTTP ${{res.status}} ${{res.statusText}}`);
+                }}
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = "";
+
+                while (true) {{
+                    const {{ done, value }} = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, {{ stream: true }});
+
+                    const parts = buffer.split("\\n\\n");
+                    buffer = parts.pop() || "";
+
+                    for (const chunk of parts) {{
+                        if (!chunk.trim()) continue;
+                        let eventName = "message";
+                        let eventData = "";
+                        const lines = chunk.split("\\n");
+                        for (const l of lines) {{
+                            if (l.startsWith("event:")) {{
+                                eventName = l.slice(6).trim();
+                            }} else if (l.startsWith("data:")) {{
+                                eventData += l.slice(5).trim();
+                            }}
+                        }}
+                        if (!eventData) continue;
+
+                        let dataObj;
+                        try {{
+                            dataObj = JSON.parse(eventData);
+                        }} catch (e) {{
+                            continue;
+                        }}
+
+                        if (eventName === "init") {{
+                            totalExpected = dataObj.models_count || 1;
+                            isMulti = dataObj.mode === "multi_model" || totalExpected > 1;
+                            if (Array.isArray(dataObj.models_queued)) {{
+                                dataObj.models_queued.forEach(mq => {{
+                                    modelsState.set(mq.model_id, {{
+                                        model_id: mq.model_id,
+                                        model_name: mq.model_name,
+                                        provider: mq.provider,
+                                        status: 'waiting'
+                                    }});
+                                }});
+                            }}
+                            rawOutputAccumulator = {{ ...dataObj, models: {{}}, status: "in_progress" }};
+                            renderUI(false);
+                        }} else if (eventName === "model_done") {{
+                            const m = dataObj.model;
+                            if (m && m.model_id) {{
+                                modelsState.set(m.model_id, {{
+                                    ...m,
+                                    status: 'done'
+                                }});
+                            }}
+                            if (dataObj.aggregate) {{
+                                currentAggregate = dataObj.aggregate;
+                            }}
+                            if (!rawOutputAccumulator.models) rawOutputAccumulator.models = {{}};
+                            if (m && m.model_id) rawOutputAccumulator.models[m.model_id] = m;
+                            rawOutputAccumulator.aggregate = currentAggregate;
+                            renderUI(false);
+                        }} else if (eventName === "complete") {{
+                            if (dataObj.aggregate) currentAggregate = dataObj.aggregate;
+                            if (dataObj.models) {{
+                                for (const [mid, m] of Object.entries(dataObj.models)) {{
+                                    modelsState.set(mid, {{ ...m, status: 'done' }});
+                                }}
+                            }}
+                            rawOutputAccumulator = dataObj;
+                            renderUI(true);
+                        }}
+                    }}
+                }}
+
+                clearInterval(timerInterval);
+                const totalElapsedSec = ((performance.now() - tStart) / 1000).toFixed(2);
+                if (statusSpan) {{
+                    statusSpan.innerHTML = `<span style="color: var(--accent-emerald);">HTTP ${{res.status}} (${{totalElapsedSec}}s total)</span>`;
+                }}
+                renderUI(true);
+            }} catch (err) {{
+                clearInterval(timerInterval);
+                if (statusSpan) statusSpan.textContent = "Error";
+                if (resultBox) resultBox.textContent = "Error during asynchronous streaming: " + err.message;
+            }} finally {{
+                if (btn) btn.disabled = false;
+            }}
+        }}
+
         async function runLivePredict() {{
             const turnText = document.getElementById('test-turn').value.trim();
             const prefixRaw = document.getElementById('test-prefix').value.trim();
@@ -2135,21 +2532,13 @@ def generate_service_dashboard_html(
                 payload.models = selected;
             }}
 
-            try {{
-                const startTime = performance.now();
-                const res = await fetch('/predict', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify(payload)
-                }});
-                const elapsed = Math.round(performance.now() - startTime);
-                const jsonRes = await res.json();
-                renderPredictResponse(jsonRes, elapsed, box, verdictDiv);
-            }} catch (err) {{
-                box.textContent = "Error executing /predict: " + err.message;
-            }} finally {{
-                if (btn) btn.disabled = false;
-            }}
+            await executeStreamingPredict({{
+                payload,
+                btn,
+                statusSpan: null,
+                resultBox: box,
+                verdictDiv: verdictDiv
+            }});
         }}
     </script>
 </body>
@@ -2871,6 +3260,403 @@ print(response.json())</div>
             }}
         }}
 
+        async function executeStreamingPredict({{ payload, btn, statusSpan, resultBox, verdictDiv }}) {{
+            if (btn) btn.disabled = true;
+            if (verdictDiv) verdictDiv.style.display = 'block';
+
+            const tStart = performance.now();
+            let timerInterval = null;
+
+            const updateTimer = () => {{
+                const now = performance.now();
+                const elapsedSec = ((now - tStart) / 1000).toFixed(2);
+                if (statusSpan) {{
+                    statusSpan.innerHTML = `<span class="pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#38bdf8; margin-right:5px;"></span>Live Elapsed: ${{elapsedSec}}s`;
+                }}
+            }};
+            timerInterval = setInterval(updateTimer, 40);
+            updateTimer();
+
+            const modelsState = new Map();
+            let currentAggregate = null;
+            let totalExpected = 1;
+            let isMulti = false;
+            let rawOutputAccumulator = {{}};
+
+            const renderUI = (isComplete = false) => {{
+                const now = performance.now();
+                const currentElapsedSec = ((now - tStart) / 1000).toFixed(2);
+                const completedList = Array.from(modelsState.values()).filter(m => m.status === 'done');
+                const completedCount = completedList.length;
+                const pct = totalExpected > 0 ? Math.round((completedCount / totalExpected) * 100) : 0;
+
+                if (resultBox) {{
+                    resultBox.textContent = JSON.stringify(rawOutputAccumulator, null, 2);
+                }}
+
+                if (isMulti || totalExpected > 1) {{
+                    let progressHtml = `
+                        <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.15rem; margin-bottom: 1.2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <div style="font-size: 0.88rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 0.5rem;">
+                                    ${{isComplete 
+                                        ? '<span style="color: var(--accent-emerald);">✅ Asynchronous Inference Complete</span>' 
+                                        : '<span class="pulse-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#38bdf8;"></span><span>Asynchronous Model Stream in Progress...</span>'}}
+                                </div>
+                                <div style="font-size: 0.8rem; font-family: var(--font-mono); color: var(--accent-cyan); font-weight: 600;">
+                                    ${{completedCount}} / ${{totalExpected}} Models (${{pct}}%) • ${{currentElapsedSec}}s
+                                </div>
+                            </div>
+                            <div style="height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; margin-bottom: 0.85rem;">
+                                <div style="height: 100%; width: ${{Math.max(3, pct)}}%; background: linear-gradient(90deg, #38bdf8, #818cf8); transition: width 0.15s ease;"></div>
+                            </div>
+                    `;
+
+                    if (currentAggregate && completedCount > 0) {{
+                        const agg = currentAggregate;
+                        const isActionable = agg.consensus_actionable;
+                        const bannerBg = isActionable 
+                            ? 'linear-gradient(135deg, rgba(244, 63, 94, 0.22), rgba(225, 29, 72, 0.1))' 
+                            : 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.08))';
+                        const bannerBorder = isActionable ? 'rgba(244, 63, 94, 0.45)' : 'rgba(16, 185, 129, 0.4)';
+                        const titleColor = isActionable ? '#fb7185' : '#34d399';
+                        const badgeCls = isActionable ? 'badge-rose' : 'badge-emerald';
+
+                        const flaggedChips = (agg.flagged_by || []).map(f => `<span class="badge badge-rose" style="margin: 0.15rem;">🚨 ${{f}}</span>`).join('') || '<span style="color: var(--text-muted); font-size: 0.8rem;">None (0 models)</span>';
+                        const clearedChips = (agg.cleared_by || []).map(c => `<span class="badge badge-emerald" style="margin: 0.15rem;">🟢 ${{c}}</span>`).join('') || '<span style="color: var(--text-muted); font-size: 0.8rem;">None (0 models)</span>';
+
+                        progressHtml += `
+                            <div style="background: ${{bannerBg}}; border: 1px solid ${{bannerBorder}}; padding: 0.85rem 1.15rem; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <div>
+                                    <div style="font-size: 0.7rem; text-transform: uppercase; font-weight: 700; color: ${{titleColor}}; letter-spacing: 0.05em;">
+                                        Progressive Consensus (${{completedCount}} of ${{totalExpected}} Models Reporting)
+                                    </div>
+                                    <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 0.15rem;">
+                                        ${{agg.verdict_label}} (${{agg.agreement_percentage}}% Consensus)
+                                    </div>
+                                </div>
+                                <span class="badge ${{badgeCls}}" style="font-size: 0.8rem; padding: 0.3rem 0.7rem;">${{agg.divergence_level}}</span>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.65rem; margin-bottom: 0.9rem;">
+                                <div style="background: rgba(0,0,0,0.35); padding: 0.65rem 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Mean Harm Prob</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #fff; font-family: var(--font-mono);">${{agg.mean_harm_probability.toFixed(3)}} <span style="font-size: 0.7rem; color: var(--text-muted);">±${{agg.std_harm_probability.toFixed(2)}}</span></div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.35); padding: 0.65rem 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Agreement Rate</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-cyan); font-family: var(--font-mono);">${{agg.agreement_percentage}}%</div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.35); padding: 0.65rem 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Consensus Severity</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-amber);">${{agg.dominant_severity.toUpperCase()}}</div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.35); padding: 0.65rem 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Ratio</div>
+                                    <div style="font-size: 1.1rem; font-weight: 700; color: #fff; font-family: var(--font-mono);"><span style="color: var(--accent-rose);">${{agg.actionable_count}} Flagged</span> / <span style="color: var(--accent-emerald);">${{agg.cleared_count}} Cleared</span></div>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 0.85rem;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.2rem;">
+                                    <span style="color: var(--accent-rose); font-weight: 600;">Actionable (${{agg.actionable_count}})</span>
+                                    <span style="color: var(--accent-emerald); font-weight: 600;">Benign (${{agg.cleared_count}})</span>
+                                </div>
+                                <div style="height: 7px; border-radius: 4px; background: rgba(255,255,255,0.06); display: flex; overflow: hidden;">
+                                    <div style="height: 100%; width: ${{ (agg.actionable_count / Math.max(1, agg.models_evaluated_count)) * 100 }}%; background: linear-gradient(90deg, #f43f5e, #fb7185);"></div>
+                                    <div style="height: 100%; width: ${{ (agg.cleared_count / Math.max(1, agg.models_evaluated_count)) * 100 }}%; background: linear-gradient(90deg, #059669, #34d399);"></div>
+                                </div>
+                            </div>
+
+                            <div style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; background: rgba(0,0,0,0.25); padding: 0.75rem 0.9rem; border-radius: 8px; border-left: 3px solid var(--accent-cyan); margin-bottom: 0.85rem;">
+                                <strong style="color: #fff;">Consensus Synthesis:</strong> ${{agg.synthesis}}
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; font-size: 0.78rem;">
+                                <div style="background: rgba(0,0,0,0.2); padding: 0.55rem 0.75rem; border-radius: 6px;">
+                                    <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: 600; text-transform: uppercase;">Flagged by (${{agg.actionable_count}}):</div>
+                                    <div style="display: flex; flex-wrap: wrap;">${{flaggedChips}}</div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.2); padding: 0.55rem 0.75rem; border-radius: 6px;">
+                                    <div style="font-size: 0.68rem; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: 600; text-transform: uppercase;">Cleared by (${{agg.cleared_count}}):</div>
+                                    <div style="display: flex; flex-wrap: wrap;">${{clearedChips}}</div>
+                                </div>
+                            </div>
+                        `;
+                    }}
+
+                    progressHtml += `</div>`;
+
+                    const allModels = Array.from(modelsState.values());
+                    allModels.sort((a, b) => {{
+                        if (a.status === 'done' && b.status !== 'done') return -1;
+                        if (a.status !== 'done' && b.status === 'done') return 1;
+                        if (a.status === 'done' && b.status === 'done') {{
+                            return (b.harm_probability || 0) - (a.harm_probability || 0);
+                        }}
+                        return 0;
+                    }});
+
+                    let tableRows = '';
+                    allModels.forEach(m => {{
+                        if (m.status === 'done') {{
+                            const mAct = m.actionable;
+                            const mBadge = mAct 
+                                ? '<span class="badge badge-rose">🚨 FLAGGED</span>' 
+                                : '<span class="badge badge-emerald">🟢 CLEARED</span>';
+                            const mProbPct = Math.round((m.harm_probability || 0) * 100);
+                            const mProbColor = mAct ? '#f43f5e' : '#38bdf8';
+                            const returnedAtSec = m.elapsed_since_req_ms ? (m.elapsed_since_req_ms / 1000).toFixed(2) + 's' : '';
+
+                            tableRows += `
+                                <tr>
+                                    <td style="font-weight: 600; color: #fff;">
+                                        <div>${{m.model_name}}</div>
+                                        <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
+                                    </td>
+                                    <td><span class="badge badge-indigo">${{m.provider}}</span></td>
+                                    <td class="cell-mono" style="text-align: right;">
+                                        <div style="font-weight: 700; color: ${{mProbColor}}; font-size: 0.88rem;">${{(m.harm_probability || 0).toFixed(4)}}</div>
+                                        <div style="height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; margin-top: 3px;">
+                                            <div style="height: 100%; width: ${{Math.max(4, mProbPct)}}%; background: ${{mProbColor}};"></div>
+                                        </div>
+                                    </td>
+                                    <td>${{mBadge}}</td>
+                                    <td><span class="badge badge-amber">${{m.dominant_severity || 'safe'}}</span></td>
+                                    <td class="cell-mono" style="text-align: right;">
+                                        <div style="font-weight: 600; color: var(--accent-cyan); font-size: 0.8rem;">⚡ ${{m.latency_ms || 0}}ms</div>
+                                        ${{returnedAtSec ? `<div style="font-size: 0.7rem; color: var(--text-muted);">+${{returnedAtSec}} returned</div>` : ''}}
+                                    </td>
+                                </tr>
+                            `;
+                        }} else {{
+                            tableRows += `
+                                <tr style="opacity: 0.7;">
+                                    <td style="font-weight: 600; color: #cbd5e1;">
+                                        <div>${{m.model_name}}</div>
+                                        <div style="font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);">${{m.model_id}}</div>
+                                    </td>
+                                    <td><span class="badge badge-outline">${{m.provider}}</span></td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--text-muted); font-size: 0.75rem;">
+                                        Calculating...
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-cyan" style="background: rgba(56, 189, 248, 0.1);">
+                                            <span class="pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#38bdf8; margin-right:4px;"></span>In Flight
+                                        </span>
+                                    </td>
+                                    <td><span style="color: var(--text-muted); font-size: 0.75rem;">-</span></td>
+                                    <td class="cell-mono" style="text-align: right; color: var(--accent-amber); font-size: 0.78rem;">
+                                        ⏱️ ${{currentElapsedSec}}s...
+                                    </td>
+                                </tr>
+                            `;
+                        }}
+                    }});
+
+                    progressHtml += `
+                        <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.15rem; margin-bottom: 1.2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                                <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff;"><span>📊</span> Model Predictions Breakdown (${{completedCount}} of ${{totalExpected}} Completed)</h3>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Real-time Asynchronous Stream • Elapsed: ${{currentElapsedSec}}s</span>
+                            </div>
+                            <div class="table-responsive" style="max-height: 340px; overflow-y: auto;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Evaluated Model</th>
+                                            <th>Provider</th>
+                                            <th style="text-align: right;">Harm Probability</th>
+                                            <th>Decision</th>
+                                            <th>Dominant Severity</th>
+                                            <th style="text-align: right;">Latency & Return Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${{tableRows}}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    `;
+
+                    verdictDiv.innerHTML = progressHtml;
+                }} else {{
+                    const completedList = Array.from(modelsState.values()).filter(m => m.status === 'done');
+                    if (completedList.length > 0) {{
+                        const data = completedList[0];
+                        const harmProb = data.harm_probability !== undefined ? data.harm_probability : 0.0;
+                        const actionable = data.actionable !== undefined ? data.actionable : (harmProb >= 0.5);
+                        const modelName = data.model_name || data.model_id || 'Model';
+                        const provider = data.provider || 'Local Baseline';
+                        const sevProbs = data.severity_probabilities || {{}};
+                        let domSev = data.dominant_severity || 'safe';
+                        if (!domSev && Object.keys(sevProbs).length) {{
+                            domSev = Object.keys(sevProbs).reduce((a, b) => sevProbs[a] > sevProbs[b] ? a : b);
+                        }}
+                        const badgeCls = actionable ? 'badge-rose' : 'badge-emerald';
+                        const verdictTitle = actionable ? '🚨 ACTIONABLE VIOLATION' : '🟢 NON-ACTIONABLE / SAFE';
+
+                        let sevBars = '';
+                        for (const [k, v] of Object.entries(sevProbs)) {{
+                            const spct = Math.round(v * 100);
+                            sevBars += `
+                                <div style="margin-bottom: 0.4rem;">
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.15rem;">
+                                        <span>${{k}}</span>
+                                        <span class="cell-mono">${{(v).toFixed(3)}}</span>
+                                    </div>
+                                    <div style="height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                                        <div style="height: 100%; width: ${{Math.max(2, spct)}}%; background: var(--accent-cyan);"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }}
+
+                        verdictDiv.innerHTML = `
+                            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                                    <div>
+                                        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted);">Evaluated Model</div>
+                                        <div style="font-size: 1.15rem; font-weight: 700; color: #fff;">${{modelName}}</div>
+                                        <div style="font-size: 0.72rem; color: var(--text-muted);">${{provider}} • ⚡ ${{data.latency_ms || 0}}ms (returned at +${{currentElapsedSec}}s)</div>
+                                    </div>
+                                    <span class="badge ${{badgeCls}}" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">${{verdictTitle}}</span>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px;">
+                                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Harm Probability</div>
+                                        <div style="font-size: 1.4rem; font-weight: 800; color: ${{actionable ? '#f43f5e' : '#34d399'}}; font-family: var(--font-mono);">${{harmProb.toFixed(4)}}</div>
+                                    </div>
+                                    <div style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px;">
+                                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Dominant Severity</div>
+                                        <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent-amber); font-family: var(--font-mono);">${{domSev.toUpperCase()}}</div>
+                                    </div>
+                                </div>
+                                <div style="background: rgba(0,0,0,0.25); padding: 0.75rem 1rem; border-radius: 8px;">
+                                    <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; font-weight: 600;">Severity Distribution</div>
+                                    ${{sevBars}}
+                                </div>
+                            </div>
+                        `;
+                    }} else {{
+                        verdictDiv.innerHTML = `
+                            <div style="background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-card); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                                <span class="pulse-dot" style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#38bdf8; margin-bottom: 0.5rem;"></span>
+                                <div style="font-size: 1rem; font-weight: 700; color: #fff;">Inference In Flight</div>
+                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Elapsed: ${{currentElapsedSec}}s...</div>
+                            </div>
+                        `;
+                    }}
+                }}
+            }};
+
+            try {{
+                const streamPayload = {{ ...payload, stream: true }};
+                const res = await fetch('/predict', {{
+                    method: 'POST',
+                    headers: {{
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream'
+                    }},
+                    body: JSON.stringify(streamPayload)
+                }});
+
+                if (!res.ok) {{
+                    throw new Error(`HTTP ${{res.status}} ${{res.statusText}}`);
+                }}
+
+                const reader = res.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = "";
+
+                while (true) {{
+                    const {{ done, value }} = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, {{ stream: true }});
+
+                    const parts = buffer.split("\\n\\n");
+                    buffer = parts.pop() || "";
+
+                    for (const chunk of parts) {{
+                        if (!chunk.trim()) continue;
+                        let eventName = "message";
+                        let eventData = "";
+                        const lines = chunk.split("\\n");
+                        for (const l of lines) {{
+                            if (l.startsWith("event:")) {{
+                                eventName = l.slice(6).trim();
+                            }} else if (l.startsWith("data:")) {{
+                                eventData += l.slice(5).trim();
+                            }}
+                        }}
+                        if (!eventData) continue;
+
+                        let dataObj;
+                        try {{
+                            dataObj = JSON.parse(eventData);
+                        }} catch (e) {{
+                            continue;
+                        }}
+
+                        if (eventName === "init") {{
+                            totalExpected = dataObj.models_count || 1;
+                            isMulti = dataObj.mode === "multi_model" || totalExpected > 1;
+                            if (Array.isArray(dataObj.models_queued)) {{
+                                dataObj.models_queued.forEach(mq => {{
+                                    modelsState.set(mq.model_id, {{
+                                        model_id: mq.model_id,
+                                        model_name: mq.model_name,
+                                        provider: mq.provider,
+                                        status: 'waiting'
+                                    }});
+                                }});
+                            }}
+                            rawOutputAccumulator = {{ ...dataObj, models: {{}}, status: "in_progress" }};
+                            renderUI(false);
+                        }} else if (eventName === "model_done") {{
+                            const m = dataObj.model;
+                            if (m && m.model_id) {{
+                                modelsState.set(m.model_id, {{
+                                    ...m,
+                                    status: 'done'
+                                }});
+                            }}
+                            if (dataObj.aggregate) {{
+                                currentAggregate = dataObj.aggregate;
+                            }}
+                            if (!rawOutputAccumulator.models) rawOutputAccumulator.models = {{}};
+                            if (m && m.model_id) rawOutputAccumulator.models[m.model_id] = m;
+                            rawOutputAccumulator.aggregate = currentAggregate;
+                            renderUI(false);
+                        }} else if (eventName === "complete") {{
+                            if (dataObj.aggregate) currentAggregate = dataObj.aggregate;
+                            if (dataObj.models) {{
+                                for (const [mid, m] of Object.entries(dataObj.models)) {{
+                                    modelsState.set(mid, {{ ...m, status: 'done' }});
+                                }}
+                            }}
+                            rawOutputAccumulator = dataObj;
+                            renderUI(true);
+                        }}
+                    }}
+                }}
+
+                clearInterval(timerInterval);
+                const totalElapsedSec = ((performance.now() - tStart) / 1000).toFixed(2);
+                if (statusSpan) {{
+                    statusSpan.innerHTML = `<span style="color: var(--accent-emerald);">HTTP ${{res.status}} (${{totalElapsedSec}}s total)</span>`;
+                }}
+                renderUI(true);
+            }} catch (err) {{
+                clearInterval(timerInterval);
+                if (statusSpan) statusSpan.textContent = "Error";
+                if (resultBox) resultBox.textContent = "Error during asynchronous streaming: " + err.message;
+            }} finally {{
+                if (btn) btn.disabled = false;
+            }}
+        }}
+
         async function submitPredict() {{
             const targetText = document.getElementById('target-turn').value.trim();
             const contextRaw = document.getElementById('context-turns').value.trim();
@@ -2882,7 +3668,7 @@ print(response.json())</div>
             const resultBox = document.getElementById('response-json');
             const verdictDiv = document.getElementById('visual-verdict');
 
-            btn.disabled = true;
+            if (btn) btn.disabled = true;
             statusSpan.textContent = "Executing...";
             resultBox.textContent = "Sending POST /predict payload to server...";
 
@@ -2939,25 +3725,13 @@ print(response.json())</div>
                 payload.models = selected;
             }}
 
-            try {{
-                const startTime = performance.now();
-                const res = await fetch('/predict', {{
-                    method: 'POST',
-                    headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify(payload)
-                }});
-                const elapsed = Math.round(performance.now() - startTime);
-                const data = await res.json();
-
-                statusSpan.textContent = `HTTP ${{res.status}} (${{elapsed}}ms)`;
-                renderPredictResponse(data, elapsed, resultBox, verdictDiv);
-            }} catch (err) {{
-                statusSpan.textContent = "Error";
-                resultBox.textContent = "Error executing request: " + err.message;
-                verdictDiv.style.display = 'none';
-            }} finally {{
-                btn.disabled = false;
-            }}
+            await executeStreamingPredict({{
+                payload,
+                btn,
+                statusSpan,
+                resultBox,
+                verdictDiv
+            }});
         }}
 
         function copyCurl() {{

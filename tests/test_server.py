@@ -4,6 +4,7 @@ import json
 import threading
 from http.client import HTTPConnection
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -363,3 +364,65 @@ def test_server_resolve_scorers_all() -> None:
     scorers = handler._resolve_scorers(None, "all")
     assert len(scorers) >= 30
     assert any(s[0] == "lexicon_raw" for s in scorers)
+
+
+def test_server_predict_streaming_multi_model(live_server: tuple[str, int]) -> None:
+    host, port = live_server
+    conn = HTTPConnection(host, port, timeout=10)
+
+    req_body = {
+        "stream": True,
+        "models": ["lexicon_raw", "lexicon_normalized", "char_ngram_tfidf"],
+        "turns": [
+            {
+                "turn_id": "t1",
+                "speaker_id": "user1",
+                "role": "user",
+                "relative_time": "0s",
+                "text": "you are trash and useless uninstall right now",
+            }
+        ],
+    }
+    payload = json.dumps(req_body).encode("utf-8")
+    headers = {"Content-Type": "application/json", "Content-Length": str(len(payload))}
+
+    conn.request("POST", "/predict", body=payload, headers=headers)
+    res = conn.getresponse()
+    assert res.status == 200
+    assert "text/event-stream" in res.getheader("Content-Type", "")
+
+    events: list[tuple[str, dict[str, Any]]] = []
+    current_event = "message"
+    for line_bytes in res:
+        line = line_bytes.decode("utf-8").strip()
+        if not line:
+            continue
+        if line.startswith("event:"):
+            current_event = line.split(":", 1)[1].strip()
+        elif line.startswith("data:"):
+            data_str = line.split(":", 1)[1].strip()
+            events.append((current_event, json.loads(data_str)))
+
+    event_names = [e[0] for e in events]
+    assert "init" in event_names
+    assert "model_done" in event_names
+    assert "complete" in event_names
+
+    # Verify progressive model_done events
+    model_done_events = [e[1] for e in events if e[0] == "model_done"]
+    assert len(model_done_events) == 3
+    for mde in model_done_events:
+        assert "model" in mde
+        assert "completed_count" in mde
+        assert "total_count" in mde
+        assert mde["total_count"] == 3
+        assert "aggregate" in mde
+        assert "consensus_actionable" in mde["aggregate"]
+
+    # Verify complete event
+    complete_event = next(e[1] for e in events if e[0] == "complete")
+    assert complete_event["models_count"] == 3
+    assert len(complete_event["models"]) == 3
+    assert "aggregate" in complete_event
+    assert complete_event["aggregate"]["is_final"] is True
+    conn.close()

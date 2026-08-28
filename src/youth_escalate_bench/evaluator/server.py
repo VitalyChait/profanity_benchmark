@@ -4,7 +4,7 @@ import json
 import mimetypes
 import statistics
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -300,7 +300,10 @@ class PredictHandler(BaseHTTPRequestHandler):
             }
 
     @staticmethod
-    def _compute_multi_model_aggregation(results: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    def _compute_multi_model_aggregation(
+        results: dict[str, dict[str, Any]],
+        total_expected: int | None = None,
+    ) -> dict[str, Any]:
         valid_items = [r for r in results.values() if r["status"] == "success" and not r["abstain"]]
         if not valid_items:
             valid_items = list(results.values())
@@ -331,7 +334,18 @@ class PredictHandler(BaseHTTPRequestHandler):
 
         divergence_level = "Low (High Consensus)" if agreement_rate >= 0.75 else "High (Divergent Context)"
 
-        if agreement_rate == 1.0:
+        total_models = total_expected or len(results)
+        is_in_progress = total_expected is not None and len(results) < total_expected
+
+        if is_in_progress:
+            synthesis = (
+                f"Asynchronous evaluation in progress: {len(results)} of {total_models} models reporting "
+                f"({round((len(results) / total_models) * 100)}%). "
+                f"Current trend: {majority_count} of {len(results)} models indicate "
+                f"{'actionable violation' if consensus_actionable else 'benign conversation'} "
+                f"({round(agreement_rate * 100)}% current consensus)."
+            )
+        elif agreement_rate == 1.0:
             if consensus_actionable:
                 synthesis = f"Unanimous consensus: All {n_total} models agreed this turn represents actionable harmful language (mean harm: {mean_p:.2f})."
             else:
@@ -353,6 +367,10 @@ class PredictHandler(BaseHTTPRequestHandler):
             "max_harm_probability": round(max_p, 4),
             "dominant_severity": dominant_severity,
             "models_evaluated_count": len(results),
+            "models_reporting_count": len(results),
+            "models_total_count": total_models,
+            "is_final": not is_in_progress,
+            "progress_percentage": round((len(results) / max(1, total_models)) * 100, 1),
             "actionable_count": n_flagged,
             "cleared_count": n_cleared,
             "flagged_by": flagged_models,
@@ -377,8 +395,9 @@ class PredictHandler(BaseHTTPRequestHandler):
             if not isinstance(data, dict):
                 data = {}
 
-            req_model = data.get("model")
-            req_models = data.get("models")
+            req_model = data.pop("model", None)
+            req_models = data.pop("models", None)
+            is_stream = bool(data.pop("stream", False)) or ("stream=true" in self.path.lower()) or ("text/event-stream" in self.headers.get("Accept", ""))
 
             # Determine multi-model mode
             is_multi = False
@@ -395,6 +414,8 @@ class PredictHandler(BaseHTTPRequestHandler):
             # Fill convenience defaults for interactive playground or partial requests
             if "benchmark_version" not in data:
                 data["benchmark_version"] = "0.1.2"
+            if "conversation_id" not in data:
+                data["conversation_id"] = f"predict_{int(time.time() * 1000)}"
             if "current_turn_id" not in data and data.get("turns"):
                 data["current_turn_id"] = data["turns"][-1].get("turn_id", "t1")
             if "platform_style" not in data:
@@ -407,7 +428,81 @@ class PredictHandler(BaseHTTPRequestHandler):
             request = InferenceRequest.model_validate(data)
             scorers_to_run = self._resolve_scorers(req_model, req_models)
 
-            if not is_multi and len(scorers_to_run) == 1:
+            if is_stream:
+                self.send_response(200)
+                self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+                self.send_header("Cache-Control", "no-cache, no-transform")
+                self.send_header("Connection", "close")
+                self.send_header("X-Accel-Buffering", "no")
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
+
+                t_start = time.perf_counter()
+                total_models = len(scorers_to_run)
+
+                # Send init event listing all queued models
+                init_info = {
+                    "event": "init",
+                    "mode": "multi_model" if is_multi or total_models > 1 else "single_model",
+                    "models_count": total_models,
+                    "models_queued": [
+                        {
+                            "model_id": s_name,
+                            "model_name": _get_display_name(s_name),
+                            "provider": getattr(s_obj, "provider", "Local Baseline") or "Local Baseline",
+                        }
+                        for s_name, s_obj in scorers_to_run
+                    ],
+                    "benchmark_version": request.benchmark_version,
+                    "conversation_id": request.conversation_id,
+                    "current_turn_id": request.current_turn_id,
+                    "task": request.task,
+                }
+                self._send_sse_event("init", init_info)
+
+                results_by_model: dict[str, dict[str, Any]] = {}
+                workers = min(32, max(1, total_models))
+                with ThreadPoolExecutor(max_workers=workers) as pool:
+                    futures = {
+                        pool.submit(self._predict_single_scorer, s_name, s_obj, request): s_name
+                        for s_name, s_obj in scorers_to_run
+                    }
+                    for fut in as_completed(futures):
+                        res = fut.result()
+                        results_by_model[res["model_id"]] = res
+                        elapsed_from_start_ms = round((time.perf_counter() - t_start) * 1000, 2)
+                        res["elapsed_since_req_ms"] = elapsed_from_start_ms
+
+                        progressive_agg = self._compute_multi_model_aggregation(
+                            results_by_model, total_expected=total_models
+                        )
+                        self._send_sse_event(
+                            "model_done",
+                            {
+                                "model": res,
+                                "completed_count": len(results_by_model),
+                                "total_count": total_models,
+                                "elapsed_ms": elapsed_from_start_ms,
+                                "aggregate": progressive_agg,
+                            },
+                        )
+
+                final_agg = self._compute_multi_model_aggregation(results_by_model, total_expected=total_models)
+                target_text = request.turns[-1].text if request.turns else ""
+                total_duration_ms = round((time.perf_counter() - t_start) * 1000, 2)
+                self._send_sse_event(
+                    "complete",
+                    {
+                        "mode": "multi_model" if is_multi or total_models > 1 else "single_model",
+                        "models_count": len(results_by_model),
+                        "total_duration_ms": total_duration_ms,
+                        "aggregate": final_agg,
+                        "models": results_by_model,
+                        "target_text": target_text,
+                    },
+                )
+                self.close_connection = True
+            elif not is_multi and len(scorers_to_run) == 1:
                 name, scorer = scorers_to_run[0]
                 single_res = self._predict_single_scorer(name, scorer, request)
                 response = {
@@ -449,6 +544,17 @@ class PredictHandler(BaseHTTPRequestHandler):
         except Exception as e:
             abstain = ModelOutput.create_abstention_output()
             self._send_json(422, {"error": str(e), "output": abstain.model_dump()})
+
+    def _send_sse_event(self, event_name: str, data: Any) -> bool:
+        """Send a Server-Sent Event (SSE) formatted message and flush immediately."""
+        try:
+            payload = json.dumps(data)
+            msg = f"event: {event_name}\ndata: {payload}\n\n".encode()
+            self.wfile.write(msg)
+            self.wfile.flush()
+            return True
+        except Exception:
+            return False
 
     def _send_json(self, status: int, data: Any) -> None:
         payload = json.dumps(data, indent=2).encode("utf-8")
