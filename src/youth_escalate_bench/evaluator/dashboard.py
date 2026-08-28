@@ -739,42 +739,62 @@ def generate_service_dashboard_html(
             margin-bottom: 2rem;
             overflow-x: auto;
             padding-bottom: 0.25rem;
+            align-items: center;
         }}
         .tab-btn {{
-            background: transparent;
-            border: none;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
             color: var(--text-secondary);
             font-family: var(--font-sans);
-            font-size: 0.92rem;
+            font-size: 0.88rem;
             font-weight: 600;
-            padding: 0.75rem 1.25rem;
+            height: 42px;
+            padding: 0 1.15rem;
             border-radius: 10px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
+            transition: all 0.15s ease;
+            display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
+            gap: 0.6rem;
             white-space: nowrap;
+            box-sizing: border-box;
+            line-height: 1;
+            user-select: none;
         }}
         .tab-btn:hover {{
             color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.04);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.12);
+        }}
+        .tab-btn:focus {{
+            outline: none;
+        }}
+        .tab-btn:focus-visible {{
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 1px;
         }}
         .tab-btn.active {{
             color: #ffffff;
-            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(129, 140, 248, 0.15));
-            border: 1px solid rgba(56, 189, 248, 0.35);
-            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.1);
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.16), rgba(129, 140, 248, 0.16));
+            border-color: rgba(56, 189, 248, 0.45);
+            box-shadow: 0 4px 16px rgba(56, 189, 248, 0.12);
         }}
         .tab-badge {{
             font-size: 0.72rem;
             font-family: var(--font-mono);
             font-weight: 700;
-            padding: 0.12rem 0.5rem;
+            padding: 0.15rem 0.55rem;
             border-radius: 9999px;
             background: rgba(255, 255, 255, 0.08);
             color: var(--text-secondary);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+            height: 20px;
+            box-sizing: border-box;
         }}
         .tab-btn.active .tab-badge {{
             background: rgba(56, 189, 248, 0.25);
@@ -1078,19 +1098,30 @@ def generate_service_dashboard_html(
             color: var(--text-secondary);
             font-size: 0.8rem;
             font-weight: 600;
-            padding: 0.35rem 0.8rem;
+            padding: 0.4rem 0.85rem;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            box-sizing: border-box;
+            line-height: 1;
+            user-select: none;
+        }}
+        .filter-btn:focus {{
+            outline: none;
         }}
         .filter-btn:hover {{
             color: #ffffff;
             border-color: rgba(255, 255, 255, 0.2);
+            background: #283548;
         }}
         .filter-btn.active {{
-            background: rgba(56, 189, 248, 0.15);
+            background: rgba(56, 189, 248, 0.16);
             color: var(--accent-cyan);
-            border-color: rgba(56, 189, 248, 0.4);
+            border-color: rgba(56, 189, 248, 0.45);
         }}
 
         /* Search input */
@@ -1160,7 +1191,7 @@ def generate_service_dashboard_html(
         <!-- Navigation Tabs -->
         <nav class="nav-tabs" id="nav-tabs">
             <button class="tab-btn active" onclick="switchTab('tab-analytics')" id="btn-tab-analytics">
-                <span>📈</span> Visual Analytics & Heatmaps
+                <span>📈</span> Visual Analytics & Heatmaps <span class="tab-badge">4 Figures</span>
             </button>
             <button class="tab-btn" onclick="switchTab('tab-models')" id="btn-tab-models">
                 <span>🤖</span> Evaluated Models & Live Access <span class="tab-badge">{models_count}</span>
@@ -1172,10 +1203,10 @@ def generate_service_dashboard_html(
                 <span>🎯</span> Hard-Sample Ranking <span class="tab-badge">{hardest_turns_count}</span>
             </button>
             <button class="tab-btn" onclick="switchTab('tab-playground')" id="btn-tab-playground">
-                <span>⚡</span> Live Predict Playground
+                <span>⚡</span> Live Predict Playground <span class="tab-badge">Sandbox</span>
             </button>
             <button class="tab-btn" onclick="switchTab('tab-data')" id="btn-tab-data">
-                <span>📋</span> Data & Governance Reports
+                <span>📋</span> Data & Governance Reports <span class="tab-badge">Audits</span>
             </button>
         </nav>
 
