@@ -56,6 +56,14 @@ def test_generate_service_dashboard_html() -> None:
     assert "addCustomPredictModel" in html
     assert "dash-visual-verdict" in html
     assert "renderPredictResponse" in html
+    assert "analytics-selected-count" in html
+    assert "btn-regenerate-analytics" in html
+    assert "analytics-model-grid" in html
+    assert "analytics-matrix-tbody" in html
+    assert "analytics-trajectory-container" in html
+    assert "fig-img-comparison" in html
+    assert "fig-dl-comparison" in html
+    assert "regenerateAnalyticsInfographics" in html
 
 
 def test_server_health_check(live_server: tuple[str, int]) -> None:
@@ -435,4 +443,46 @@ def test_server_predict_streaming_multi_model(live_server: tuple[str, int]) -> N
     assert len(complete_event["models"]) == 3
     assert "aggregate" in complete_event
     assert complete_event["aggregate"]["is_final"] is True
+    conn.close()
+
+
+def test_server_infographics_regenerate_post(live_server: tuple[str, int]) -> None:
+    """Test POST /api/infographics/regenerate with specific model subset."""
+    host, port = live_server
+    conn = HTTPConnection(host, port, timeout=30)
+    payload = json.dumps({"models": ["lexicon_raw", "char_ngram_tfidf"]})
+    headers = {"Content-Type": "application/json"}
+    conn.request("POST", "/api/infographics/regenerate", body=payload, headers=headers)
+    res = conn.getresponse()
+    assert res.status == 200
+    assert "application/json" in res.getheader("Content-Type", "")
+    data = json.loads(res.read().decode("utf-8"))
+    assert data["status"] == "success"
+    assert data["models_count"] == 2
+    assert "lexicon_raw" in data["selected_models"]
+    assert "char_ngram_tfidf" in data["selected_models"]
+    assert len(data["generated_files"]) >= 4
+    assert "infographic_models_comparison.png" in data["generated_files"]
+    assert "figure_auprc_heatmap.png" in data["generated_files"]
+    assert "figure_context_trajectory.png" in data["generated_files"]
+    assert "figure_llm_leaderboard.png" in data["generated_files"]
+    assert data["top_baseline"] is not None
+    assert "trajectory_bars_html" in data
+    assert "matrix_rows_html" in data
+    assert "timestamp" in data
+    conn.close()
+
+
+def test_server_infographics_regenerate_get(live_server: tuple[str, int]) -> None:
+    """Test GET /api/infographics/regenerate with query params."""
+    host, port = live_server
+    conn = HTTPConnection(host, port, timeout=30)
+    conn.request("GET", "/api/infographics/regenerate?models=lexicon_raw")
+    res = conn.getresponse()
+    assert res.status == 200
+    assert "application/json" in res.getheader("Content-Type", "")
+    data = json.loads(res.read().decode("utf-8"))
+    assert data["status"] == "success"
+    assert data["models_count"] == 1
+    assert data["selected_models"] == ["lexicon_raw"]
     conn.close()

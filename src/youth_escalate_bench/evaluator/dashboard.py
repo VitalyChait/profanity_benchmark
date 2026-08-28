@@ -234,7 +234,123 @@ def build_evaluated_models_catalog(
     }
 
 
-def generate_model_selector_component(models: list[dict[str, Any]], prefix: str = "pred") -> str:
+def build_trajectory_bars_html(models_list: list[dict[str, Any]]) -> str:
+    """Render top trajectory progress bars for context visualizer."""
+    trajectory_bars_html = ""
+    baselines_list = [m for m in models_list if m.get("provider") == "Local Baseline"]
+    top_models_for_bars = [m for m in models_list if m.get("provider") != "Local Baseline"][:4]
+    baselines_for_bars = baselines_list[:2]
+    sampled_for_trajectory = top_models_for_bars + baselines_for_bars
+    if not sampled_for_trajectory:
+        sampled_for_trajectory = models_list[:6]
+
+    for m in sampled_for_trajectory:
+        t_val = m.get("turn_auprc", 0.0)
+        p_val = m.get("pair_auprc", t_val)
+        pref_val = m.get("prefix_auprc", 0.0)
+        delta_val = m.get("delta_auprc", 0.0)
+        delta_str = f"+{delta_val:.3f}" if delta_val > 0 else f"{delta_val:.3f}"
+        badge_cls = "badge-emerald" if delta_val >= 0 else "badge-rose"
+
+        trajectory_bars_html += f"""
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-card); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 0.75rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <span style="font-weight: 700; color: #ffffff; font-size: 0.88rem;">{m['name']}</span>
+                    <span class="badge badge-indigo" style="font-size: 0.7rem;">{m.get('family', 'Model')}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 0.75rem; color: var(--text-muted);">Causal Gain:</span>
+                    <span class="badge {badge_cls}">{delta_str} Δ AUPRC</span>
+                </div>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; font-size: 0.78rem;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 0.25rem;">
+                        <span>Turn Only</span>
+                        <span class="cell-mono" style="color: #c084fc; font-weight: 600;">{t_val:.3f}</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: {max(5, int(t_val * 100))}%; background: linear-gradient(90deg, #a855f7, #c084fc); border-radius: 3px;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 0.25rem;">
+                        <span>Prev + Turn</span>
+                        <span class="cell-mono" style="color: var(--accent-cyan); font-weight: 600;">{p_val:.3f}</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: {max(5, int(p_val * 100))}%; background: linear-gradient(90deg, #0284c7, #38bdf8); border-radius: 3px;"></div>
+                    </div>
+                </div>
+                <div>
+                    <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 0.25rem;">
+                        <span>Full Prefix</span>
+                        <span class="cell-mono" style="color: var(--accent-emerald); font-weight: 700;">{pref_val:.3f}</span>
+                    </div>
+                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
+                        <div style="height: 100%; width: {max(5, int(pref_val * 100))}%; background: linear-gradient(90deg, #059669, #34d399); border-radius: 3px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
+    return trajectory_bars_html
+
+
+def build_analytics_matrix_rows_html(models_list: list[dict[str, Any]]) -> str:
+    """Render cross-condition performance matrix table rows for visual analytics."""
+    analytics_matrix_rows = ""
+    for idx, m in enumerate(models_list, 1):
+        delta_val = m.get("delta_auprc", 0.0)
+        delta_str = f"+{delta_val:.3f}" if delta_val > 0 else f"{delta_val:.3f}"
+        delta_badge_cls = "badge-emerald" if delta_val >= 0 else "badge-rose"
+
+        turn_auroc_str = f"{m['turn_auroc']:.3f}" if m.get("turn_auroc") is not None else "—"
+        pair_auroc_str = f"{m['pair_auroc']:.3f}" if m.get("pair_auroc") is not None else "—"
+        prefix_auroc_str = f"{m['prefix_auroc']:.3f}" if m.get("prefix_auroc") is not None else "—"
+
+        pair_val = m.get("pair_auprc", 0.0)
+        analytics_matrix_rows += f"""
+        <tr>
+            <td style="font-weight: 700; color: var(--text-primary);">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.8rem;">#{idx}</span>
+                    <span>{m['name']}</span>
+                </div>
+            </td>
+            <td>
+                <span class="badge badge-purple">{m['family']}</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.35rem;">{m['provider']}</span>
+            </td>
+            <td class="cell-mono" style="text-align: right;">
+                <span style="color: #ffffff; font-weight: 600;">{m['turn_auprc']:.3f}</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.2rem;">({turn_auroc_str})</span>
+            </td>
+            <td class="cell-mono" style="text-align: right;">
+                <span style="color: #ffffff; font-weight: 600;">{pair_val:.3f}</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.2rem;">({pair_auroc_str})</span>
+            </td>
+            <td class="cell-mono" style="text-align: right;">
+                <span style="color: var(--accent-cyan); font-weight: 700;">{m['prefix_auprc']:.3f}</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.2rem;">({prefix_auroc_str})</span>
+            </td>
+            <td style="text-align: center;">
+                <span class="badge {delta_badge_cls}">{delta_str}</span>
+            </td>
+            <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">
+                {m['r_at_fpr1']:.3f}
+            </td>
+        </tr>
+        """
+    return analytics_matrix_rows
+
+
+def generate_model_selector_component(
+    models: list[dict[str, Any]],
+    prefix: str = "pred",
+    default_all: bool = False,
+) -> str:
     """Generate 3-column model selection checklist toolbar with Select All, Local Baselines, Frontier LLMs, and Custom columns."""
     baselines: list[dict[str, Any]] = []
     frontier_llms: list[dict[str, Any]] = []
@@ -280,7 +396,7 @@ def generate_model_selector_component(models: list[dict[str, Any]], prefix: str 
                 badge_cls = "badge-emerald"
                 status_tag = "Active"
 
-            is_checked = m_id == "lexicon_raw"
+            is_checked = True if default_all else (m_id == "lexicon_raw")
             checked_attr = "checked" if is_checked else ""
             selected_cls = "is-selected" if is_checked else ""
 
@@ -302,11 +418,18 @@ def generate_model_selector_component(models: list[dict[str, Any]], prefix: str 
     frontier_items = _render_items(frontier_llms, "frontier")
     custom_items = _render_items(custom_models, "custom")
 
+    if default_all:
+        count_text = f"Selected: All {total_models} Models (Full Scope)"
+        count_badge_cls = "badge-emerald"
+    else:
+        count_text = "Selected: 1 Model (Raw Lexicon Match)"
+        count_badge_cls = "badge-cyan"
+
     return f"""
     <div class="form-group" style="margin-bottom: 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
             <label class="form-label" style="margin-bottom: 0;">Select Evaluation Model(s):</label>
-            <span id="{prefix}-selected-count" class="badge badge-cyan" style="font-family: var(--font-mono); font-size: 0.78rem;">Selected: 1 Model (Raw Lexicon Match)</span>
+            <span id="{prefix}-selected-count" class="badge {count_badge_cls}" style="font-family: var(--font-mono); font-size: 0.78rem;">{count_text}</span>
         </div>
 
         <div style="display: flex; gap: 0.4rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center;">
@@ -445,108 +568,10 @@ def generate_service_dashboard_html(
     top_baseline = baselines_list[0] if baselines_list else None
     max_delta_model = max(catalog["models"], key=lambda m: m["delta_auprc"]) if catalog["models"] else None
 
-    # Pre-render cross-condition analytics performance matrix
-    analytics_matrix_rows = ""
-    for idx, m in enumerate(catalog["models"], 1):
-        delta_val = m["delta_auprc"]
-        delta_str = f"+{delta_val:.3f}" if delta_val > 0 else f"{delta_val:.3f}"
-        delta_badge_cls = "badge-emerald" if delta_val >= 0 else "badge-rose"
-
-        turn_auroc_str = f"{m['turn_auroc']:.3f}" if m.get("turn_auroc") is not None else "—"
-        pair_auroc_str = f"{m['pair_auroc']:.3f}" if m.get("pair_auroc") is not None else "—"
-        prefix_auroc_str = f"{m['prefix_auroc']:.3f}" if m.get("prefix_auroc") is not None else "—"
-
-        pair_val = m.get("pair_auprc", 0.0)
-        analytics_matrix_rows += f"""
-        <tr>
-            <td style="font-weight: 700; color: var(--text-primary);">
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 0.8rem;">#{idx}</span>
-                    <span>{m['name']}</span>
-                </div>
-            </td>
-            <td>
-                <span class="badge badge-purple">{m['family']}</span>
-                <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 0.35rem;">{m['provider']}</span>
-            </td>
-            <td class="cell-mono" style="text-align: right;">
-                <span style="color: #ffffff; font-weight: 600;">{m['turn_auprc']:.3f}</span>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.2rem;">({turn_auroc_str})</span>
-            </td>
-            <td class="cell-mono" style="text-align: right;">
-                <span style="color: #ffffff; font-weight: 600;">{pair_val:.3f}</span>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.2rem;">({pair_auroc_str})</span>
-            </td>
-            <td class="cell-mono" style="text-align: right;">
-                <span style="color: var(--accent-cyan); font-weight: 700;">{m['prefix_auprc']:.3f}</span>
-                <span style="font-size: 0.72rem; color: var(--text-muted); margin-left: 0.2rem;">({prefix_auroc_str})</span>
-            </td>
-            <td style="text-align: center;">
-                <span class="badge {delta_badge_cls}">{delta_str}</span>
-            </td>
-            <td class="cell-mono" style="text-align: right; color: var(--text-secondary);">
-                {m['r_at_fpr1']:.3f}
-            </td>
-        </tr>
-        """
-
-    # Pre-render top trajectory progress bars for context visualizer
-    trajectory_bars_html = ""
-    top_models_for_bars = [m for m in catalog["models"] if m["provider"] != "Local Baseline"][:4]
-    baselines_for_bars = baselines_list[:2]
-    sampled_for_trajectory = top_models_for_bars + baselines_for_bars
-
-    for m in sampled_for_trajectory:
-        t_val = m["turn_auprc"]
-        p_val = m.get("pair_auprc", t_val)
-        pref_val = m["prefix_auprc"]
-        delta_val = m["delta_auprc"]
-        delta_str = f"+{delta_val:.3f}" if delta_val > 0 else f"{delta_val:.3f}"
-        badge_cls = "badge-emerald" if delta_val >= 0 else "badge-rose"
-
-        trajectory_bars_html += f"""
-        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-card); border-radius: 10px; padding: 0.85rem 1rem; margin-bottom: 0.75rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
-                <div style="display: flex; align-items: center; gap: 0.6rem;">
-                    <span style="font-weight: 700; color: #ffffff; font-size: 0.88rem;">{m['name']}</span>
-                    <span class="badge badge-indigo" style="font-size: 0.7rem;">{m['family']}</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 0.75rem; color: var(--text-muted);">Causal Gain:</span>
-                    <span class="badge {badge_cls}">{delta_str} Δ AUPRC</span>
-                </div>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; font-size: 0.78rem;">
-                <div>
-                    <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 0.25rem;">
-                        <span>Turn Only</span>
-                        <span class="cell-mono" style="color: #c084fc; font-weight: 600;">{t_val:.3f}</span>
-                    </div>
-                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
-                        <div style="height: 100%; width: {max(5, int(t_val * 100))}%; background: linear-gradient(90deg, #a855f7, #c084fc); border-radius: 3px;"></div>
-                    </div>
-                </div>
-                <div>
-                    <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 0.25rem;">
-                        <span>Prev + Turn</span>
-                        <span class="cell-mono" style="color: var(--accent-cyan); font-weight: 600;">{p_val:.3f}</span>
-                    </div>
-                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
-                        <div style="height: 100%; width: {max(5, int(p_val * 100))}%; background: linear-gradient(90deg, #0284c7, #38bdf8); border-radius: 3px;"></div>
-                    </div>
-                </div>
-                <div>
-                    <div style="display: flex; justify-content: space-between; color: var(--text-muted); margin-bottom: 0.25rem;">
-                        <span>Full Prefix</span>
-                        <span class="cell-mono" style="color: var(--accent-emerald); font-weight: 700;">{pref_val:.3f}</span>
-                    </div>
-                    <div style="height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden;">
-                        <div style="height: 100%; width: {max(5, int(pref_val * 100))}%; background: linear-gradient(90deg, #059669, #34d399); border-radius: 3px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        """
+    # Pre-render cross-condition analytics performance matrix and trajectory progress bars
+    analytics_model_selector = generate_model_selector_component(catalog["models"], prefix="analytics", default_all=True)
+    analytics_matrix_rows = build_analytics_matrix_rows_html(catalog["models"])
+    trajectory_bars_html = build_trajectory_bars_html(catalog["models"])
 
     total_errors = errors_data.get("summary", {}).get("total_error_instances", 22)
     raw_diff_sentences = difficulty_data.get("sentences", [])
@@ -1421,24 +1446,48 @@ def generate_service_dashboard_html(
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem;">
                     <div style="background: rgba(15, 23, 42, 0.6); padding: 0.9rem 1.1rem; border-radius: 10px; border: 1px solid var(--border-card);">
                         <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Top Frontier LLM (Full Prefix)</div>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #ffffff; margin: 0.2rem 0;">{top_llm['name'] if top_llm else 'Mistral Small Latest'}</div>
-                        <div style="font-size: 0.78rem; color: var(--accent-emerald); font-weight: 600;">{top_llm['prefix_auprc'] if top_llm else 0.995:.3f} AUPRC (Top Performer)</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #ffffff; margin: 0.2rem 0;" id="analytics-kpi-top-llm-name">{top_llm['name'] if top_llm else 'Mistral Small Latest'}</div>
+                        <div style="font-size: 0.78rem; color: var(--accent-emerald); font-weight: 600;" id="analytics-kpi-top-llm-score">{top_llm['prefix_auprc'] if top_llm else 0.995:.3f} AUPRC (Top Performer)</div>
                     </div>
                     <div style="background: rgba(15, 23, 42, 0.6); padding: 0.9rem 1.1rem; border-radius: 10px; border: 1px solid var(--border-card);">
                         <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Top Baseline Keyword Match</div>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: #ffffff; margin: 0.2rem 0;">{top_baseline['name'] if top_baseline else 'Raw Lexicon Match'}</div>
-                        <div style="font-size: 0.78rem; color: var(--accent-cyan); font-weight: 600;">{top_baseline['prefix_auprc'] if top_baseline else 0.763:.3f} AUPRC (Offline Baseline)</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: #ffffff; margin: 0.2rem 0;" id="analytics-kpi-top-baseline-name">{top_baseline['name'] if top_baseline else 'Raw Lexicon Match'}</div>
+                        <div style="font-size: 0.78rem; color: var(--accent-cyan); font-weight: 600;" id="analytics-kpi-top-baseline-score">{top_baseline['prefix_auprc'] if top_baseline else 0.763:.3f} AUPRC (Offline Baseline)</div>
                     </div>
                     <div style="background: rgba(15, 23, 42, 0.6); padding: 0.9rem 1.1rem; border-radius: 10px; border: 1px solid var(--border-card);">
                         <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Maximum Causal Context Gain</div>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;">+{max_delta_model['delta_auprc'] if max_delta_model else 0.092:.3f} Δ AUPRC</div>
-                        <div style="font-size: 0.78rem; color: var(--text-secondary);">{max_delta_model['name'] if max_delta_model else 'Nemotron 3 Nano Omni'}</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-emerald); margin: 0.2rem 0;" id="analytics-kpi-max-delta-val">+{max_delta_model['delta_auprc'] if max_delta_model else 0.092:.3f} Δ AUPRC</div>
+                        <div style="font-size: 0.78rem; color: var(--text-secondary);" id="analytics-kpi-max-delta-name">{max_delta_model['name'] if max_delta_model else 'Nemotron 3 Nano Omni'}</div>
                     </div>
                     <div style="background: rgba(15, 23, 42, 0.6); padding: 0.9rem 1.1rem; border-radius: 10px; border: 1px solid var(--border-card);">
-                        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Evaluated Context Conditions</div>
-                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-cyan); margin: 0.2rem 0;">3 Conditions</div>
-                        <div style="font-size: 0.78rem; color: var(--text-muted);">Turn / Prev+Turn / Prefix (1k Turns)</div>
+                        <div style="font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em;">Evaluated Context Scope</div>
+                        <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-cyan); margin: 0.2rem 0;" id="analytics-kpi-models-count">{models_count} Models</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);" id="analytics-kpi-models-sub">Turn / Prev+Turn / Prefix (1k Turns)</div>
                     </div>
+                </div>
+
+                <!-- Interactive Model Scope Selector for Visual Analytics & Infographics -->
+                <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-card);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+                        <div>
+                            <h3 style="font-size: 0.95rem; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 0.4rem; margin: 0;">
+                                <span>🎯</span> Model Scope for Visual Analytics & Infographics
+                            </h3>
+                            <p style="font-size: 0.78rem; color: var(--text-secondary); margin: 0.2rem 0 0 0;">
+                                By default, all models are included. Filter or select specific models below, then click Regenerate to update all 300 DPI figures, trajectory dynamics, and performance tables.
+                            </p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                            <span id="analytics-selected-count" class="badge badge-emerald" style="font-size: 0.8rem; font-family: var(--font-mono); padding: 0.35rem 0.75rem;">
+                                Selected: All {models_count} Models (Full Scope)
+                            </span>
+                            <button type="button" class="btn-sm btn-cyan" id="btn-regenerate-analytics" onclick="regenerateAnalyticsInfographics()" style="padding: 0.45rem 1rem; font-weight: 700; cursor: pointer;">
+                                <span>🔄</span> Regenerate Infographics
+                            </button>
+                        </div>
+                    </div>
+                    <div id="analytics-regen-status" style="display: none; margin-bottom: 0.85rem; padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.82rem;"></div>
+                    {analytics_model_selector}
                 </div>
             </div>
 
@@ -1453,7 +1502,7 @@ def generate_service_dashboard_html(
                     </div>
                     <span class="badge badge-purple">Context Uplift Dynamics</span>
                 </div>
-                <div style="margin-top: 0.75rem;">
+                <div id="analytics-trajectory-container" style="margin-top: 0.75rem;">
                     {trajectory_bars_html}
                 </div>
             </div>
@@ -1476,11 +1525,11 @@ def generate_service_dashboard_html(
                             <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">Fig 1: Comprehensive Multi-Panel Benchmark</span>
                             <span class="badge badge-indigo">Overview</span>
                         </div>
-                        <img class="gallery-img" src="/reports/infographic_models_comparison.png" data-fig="infographic_models_comparison.png" alt="Fig 1: Comprehensive Multi-Panel Model Benchmark" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/infographic_models_comparison.png';}}" onclick="openLightbox(this.src, 'Fig 1: Comprehensive Multi-Panel Model Benchmark')">
-                        <div class="gallery-caption">Comprehensive 4-quadrant benchmark visualization comparing all 38 models across conversational context levels.</div>
+                        <img class="gallery-img" id="fig-img-comparison" src="/reports/infographic_models_comparison.png" data-fig="infographic_models_comparison.png" alt="Fig 1: Comprehensive Multi-Panel Model Benchmark" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/infographic_models_comparison.png';}}" onclick="openLightbox(this.src, 'Fig 1: Comprehensive Multi-Panel Model Benchmark')">
+                        <div class="gallery-caption">Comprehensive 4-quadrant benchmark visualization comparing selected models across conversational context levels.</div>
                         <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem;">
-                            <button class="btn-sm btn-outline" onclick="openLightbox('/reports/infographic_models_comparison.png', 'Fig 1: Comprehensive Multi-Panel Model Benchmark')">🔍 Zoom</button>
-                            <a href="/reports/infographic_models_comparison.png" download="infographic_models_comparison.png" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
+                            <button class="btn-sm btn-outline" id="fig-zoom-comparison" onclick="openLightbox(document.getElementById('fig-img-comparison').src, 'Fig 1: Comprehensive Multi-Panel Model Benchmark')">🔍 Zoom</button>
+                            <a href="/reports/infographic_models_comparison.png" download="infographic_models_comparison.png" id="fig-dl-comparison" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
                         </div>
                     </div>
 
@@ -1490,11 +1539,11 @@ def generate_service_dashboard_html(
                             <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">Fig 2: AUPRC & AUROC Performance Matrix Heatmaps</span>
                             <span class="badge badge-purple">Heatmap</span>
                         </div>
-                        <img class="gallery-img" src="/reports/figure_auprc_heatmap.png" data-fig="figure_auprc_heatmap.png" alt="Fig 2: AUPRC & AUROC Performance Matrix Heatmaps" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/figure_auprc_heatmap.png';}}" onclick="openLightbox(this.src, 'Fig 2: AUPRC & AUROC Performance Matrix Heatmaps')">
+                        <img class="gallery-img" id="fig-img-heatmap" src="/reports/figure_auprc_heatmap.png" data-fig="figure_auprc_heatmap.png" alt="Fig 2: AUPRC & AUROC Performance Matrix Heatmaps" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/figure_auprc_heatmap.png';}}" onclick="openLightbox(this.src, 'Fig 2: AUPRC & AUROC Performance Matrix Heatmaps')">
                         <div class="gallery-caption">Direct head-to-head performance heatmaps across Isolated Turn, Previous+Turn, and Full Prefix causal windows.</div>
                         <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem;">
-                            <button class="btn-sm btn-outline" onclick="openLightbox('/reports/figure_auprc_heatmap.png', 'Fig 2: AUPRC & AUROC Performance Matrix Heatmaps')">🔍 Zoom</button>
-                            <a href="/reports/figure_auprc_heatmap.png" download="figure_auprc_heatmap.png" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
+                            <button class="btn-sm btn-outline" id="fig-zoom-heatmap" onclick="openLightbox(document.getElementById('fig-img-heatmap').src, 'Fig 2: AUPRC & AUROC Performance Matrix Heatmaps')">🔍 Zoom</button>
+                            <a href="/reports/figure_auprc_heatmap.png" download="figure_auprc_heatmap.png" id="fig-dl-heatmap" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
                         </div>
                     </div>
 
@@ -1504,11 +1553,11 @@ def generate_service_dashboard_html(
                             <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">Fig 3: Causal Context Expansion Dynamics</span>
                             <span class="badge badge-emerald">Trajectories</span>
                         </div>
-                        <img class="gallery-img" src="/reports/figure_context_trajectory.png" data-fig="figure_context_trajectory.png" alt="Fig 3: Causal Context Expansion Dynamics" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/figure_context_trajectory.png';}}" onclick="openLightbox(this.src, 'Fig 3: Causal Context Expansion Dynamics')">
+                        <img class="gallery-img" id="fig-img-trajectory" src="/reports/figure_context_trajectory.png" data-fig="figure_context_trajectory.png" alt="Fig 3: Causal Context Expansion Dynamics" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/figure_context_trajectory.png';}}" onclick="openLightbox(this.src, 'Fig 3: Causal Context Expansion Dynamics')">
                         <div class="gallery-caption">Trajectory curves revealing which models benefit from contextual history vs which degrade due to conversational noise.</div>
                         <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem;">
-                            <button class="btn-sm btn-outline" onclick="openLightbox('/reports/figure_context_trajectory.png', 'Fig 3: Causal Context Expansion Dynamics')">🔍 Zoom</button>
-                            <a href="/reports/figure_context_trajectory.png" download="figure_context_trajectory.png" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
+                            <button class="btn-sm btn-outline" id="fig-zoom-trajectory" onclick="openLightbox(document.getElementById('fig-img-trajectory').src, 'Fig 3: Causal Context Expansion Dynamics')">🔍 Zoom</button>
+                            <a href="/reports/figure_context_trajectory.png" download="figure_context_trajectory.png" id="fig-dl-trajectory" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
                         </div>
                     </div>
 
@@ -1518,11 +1567,11 @@ def generate_service_dashboard_html(
                             <span style="font-weight: 700; font-size: 0.88rem; color: #fff;">Fig 4: Dedicated LLM Leaderboard (Full Prefix)</span>
                             <span class="badge badge-amber">Leaderboard</span>
                         </div>
-                        <img class="gallery-img" src="/reports/figure_llm_leaderboard.png" data-fig="figure_llm_leaderboard.png" alt="Fig 4: Dedicated LLM Leaderboard (Full Prefix)" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/figure_llm_leaderboard.png';}}" onclick="openLightbox(this.src, 'Fig 4: Dedicated LLM Leaderboard (Full Prefix)')">
+                        <img class="gallery-img" id="fig-img-leaderboard" src="/reports/figure_llm_leaderboard.png" data-fig="figure_llm_leaderboard.png" alt="Fig 4: Dedicated LLM Leaderboard (Full Prefix)" onerror="if(!this.dataset.tried){{this.dataset.tried='1';this.src='/data/processed/report/figure_llm_leaderboard.png';}}" onclick="openLightbox(this.src, 'Fig 4: Dedicated LLM Leaderboard (Full Prefix)')">
                         <div class="gallery-caption">Official benchmark leaderboard ranked by Full Prefix AUPRC with 1% FPR operational safety recall.</div>
                         <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem;">
-                            <button class="btn-sm btn-outline" onclick="openLightbox('/reports/figure_llm_leaderboard.png', 'Fig 4: Dedicated LLM Leaderboard (Full Prefix)')">🔍 Zoom</button>
-                            <a href="/reports/figure_llm_leaderboard.png" download="figure_llm_leaderboard.png" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
+                            <button class="btn-sm btn-outline" id="fig-zoom-leaderboard" onclick="openLightbox(document.getElementById('fig-img-leaderboard').src, 'Fig 4: Dedicated LLM Leaderboard (Full Prefix)')">🔍 Zoom</button>
+                            <a href="/reports/figure_llm_leaderboard.png" download="figure_llm_leaderboard.png" id="fig-dl-leaderboard" class="btn-sm btn-cyan" style="text-decoration: none;">📥 Download PNG</a>
                         </div>
                     </div>
                 </div>
@@ -1534,7 +1583,7 @@ def generate_service_dashboard_html(
                     <div>
                         <h3 class="panel-title" style="font-size: 1.05rem;"><span>📋</span> Comprehensive Performance Matrix across Context Conditions</h3>
                         <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 0.2rem;">
-                            Exact numerical AUPRC and AUROC values for all {models_count} evaluated models across Isolated Turn, Previous + Turn, and Full Prefix.
+                            Exact numerical AUPRC and AUROC values for all evaluated models across Isolated Turn, Previous + Turn, and Full Prefix.
                         </p>
                     </div>
                     <input type="text" class="search-input" id="analytics-table-search" placeholder="Search model or family..." onkeyup="filterAnalyticsTable()" style="max-width: 260px;">
@@ -1552,7 +1601,7 @@ def generate_service_dashboard_html(
                                 <th style="text-align: right;">Recall @ FPR 1%</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="analytics-matrix-tbody">
                             {analytics_matrix_rows}
                         </tbody>
                     </table>
@@ -2071,6 +2120,27 @@ def generate_service_dashboard_html(
             }});
             const badge = document.getElementById(prefix + '-selected-count');
             if (!badge) return;
+            if (prefix === 'analytics') {{
+                if (checked.length === 0) {{
+                    badge.textContent = 'No Models Selected (0)';
+                    badge.className = 'badge badge-rose';
+                }} else if (checked.length === allBoxes.length) {{
+                    badge.textContent = 'Selected: All ' + checked.length + ' Models (Full Scope)';
+                    badge.className = 'badge badge-emerald';
+                }} else {{
+                    badge.textContent = 'Selected: ' + checked.length + ' Models (' + checked.length + ' of ' + allBoxes.length + ')';
+                    badge.className = 'badge badge-indigo';
+                }}
+                const statusDiv = document.getElementById('analytics-regen-status');
+                if (statusDiv) {{
+                    statusDiv.style.display = 'block';
+                    statusDiv.style.background = 'rgba(251, 191, 36, 0.12)';
+                    statusDiv.style.border = '1px solid rgba(251, 191, 36, 0.35)';
+                    statusDiv.style.color = '#fbbf24';
+                    statusDiv.innerHTML = '⚡ Scope changed (' + checked.length + ' selected). Click <strong>"Regenerate Infographics"</strong> to update 300 DPI figures & analytics.';
+                }}
+                return;
+            }}
             if (checked.length === 0) {{
                 badge.textContent = 'No Models Selected (0)';
                 badge.className = 'badge badge-rose';
@@ -2085,6 +2155,134 @@ def generate_service_dashboard_html(
             }} else {{
                 badge.textContent = 'Selected: ' + checked.length + ' Models (Multi-Model Ensemble)';
                 badge.className = 'badge badge-indigo';
+            }}
+        }}
+
+        async function regenerateAnalyticsInfographics() {{
+            const btn = document.getElementById('btn-regenerate-analytics');
+            const statusDiv = document.getElementById('analytics-regen-status');
+            const selectedBoxes = Array.from(document.querySelectorAll('.analytics-checkbox:checked'));
+            const selected = selectedBoxes.map(b => b.value);
+
+            if (selected.length === 0) {{
+                if (statusDiv) {{
+                    statusDiv.style.display = 'block';
+                    statusDiv.style.background = 'rgba(244, 63, 94, 0.15)';
+                    statusDiv.style.border = '1px solid rgba(244, 63, 94, 0.4)';
+                    statusDiv.style.color = '#fb7185';
+                    statusDiv.innerHTML = '⚠️ Please select at least 1 model before regenerating infographics.';
+                }}
+                return;
+            }}
+
+            if (btn) {{
+                btn.disabled = true;
+                btn.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#fff; margin-right:6px;"></span>Regenerating 300 DPI Figures...';
+            }}
+            if (statusDiv) {{
+                statusDiv.style.display = 'block';
+                statusDiv.style.background = 'rgba(56, 189, 248, 0.12)';
+                statusDiv.style.border = '1px solid rgba(56, 189, 248, 0.35)';
+                statusDiv.style.color = '#38bdf8';
+                statusDiv.innerHTML = '<span class="pulse-dot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#38bdf8; margin-right:6px;"></span>Rendering 4 publication-ready figures & recalculating metrics for ' + selected.length + ' selected models...';
+            }}
+
+            const tStart = performance.now();
+
+            try {{
+                const resp = await fetch('/api/infographics/regenerate', {{
+                    method: 'POST',
+                    headers: {{ 'Content-Type': 'application/json' }},
+                    body: JSON.stringify({{ models: selected }})
+                }});
+                if (!resp.ok) {{
+                    throw new Error('Server returned HTTP ' + resp.status);
+                }}
+                const data = await resp.json();
+                const elapsedSec = ((performance.now() - tStart) / 1000).toFixed(2);
+                const t = data.timestamp || Date.now();
+
+                // 1. Refresh all 4 gallery images with cache busting
+                const figMappings = [
+                    {{ id: 'fig-img-comparison', downloadId: 'fig-dl-comparison', zoomId: 'fig-zoom-comparison', name: 'infographic_models_comparison.png', title: 'Fig 1: Comprehensive Multi-Panel Model Benchmark' }},
+                    {{ id: 'fig-img-heatmap', downloadId: 'fig-dl-heatmap', zoomId: 'fig-zoom-heatmap', name: 'figure_auprc_heatmap.png', title: 'Fig 2: AUPRC & AUROC Performance Matrix Heatmaps' }},
+                    {{ id: 'fig-img-trajectory', downloadId: 'fig-dl-trajectory', zoomId: 'fig-zoom-trajectory', name: 'figure_context_trajectory.png', title: 'Fig 3: Causal Context Expansion Dynamics' }},
+                    {{ id: 'fig-img-leaderboard', downloadId: 'fig-dl-leaderboard', zoomId: 'fig-zoom-leaderboard', name: 'figure_llm_leaderboard.png', title: 'Fig 4: Dedicated LLM Leaderboard (Full Prefix)' }}
+                ];
+
+                figMappings.forEach(item => {{
+                    const img = document.getElementById(item.id);
+                    if (img) {{
+                        const newSrc = '/reports/' + item.name + '?t=' + t;
+                        img.src = newSrc;
+                        img.onclick = () => openLightbox(newSrc, item.title);
+                    }}
+                    const dl = document.getElementById(item.downloadId);
+                    if (dl) {{
+                        dl.href = '/reports/' + item.name + '?t=' + t;
+                    }}
+                    const zoom = document.getElementById(item.zoomId);
+                    if (zoom) {{
+                        zoom.onclick = () => openLightbox('/reports/' + item.name + '?t=' + t, item.title);
+                    }}
+                }});
+
+                // 2. Update KPI summary cards
+                if (data.top_llm) {{
+                    const elName = document.getElementById('analytics-kpi-top-llm-name');
+                    const elScore = document.getElementById('analytics-kpi-top-llm-score');
+                    if (elName) elName.textContent = data.top_llm.name;
+                    if (elScore) elScore.textContent = data.top_llm.prefix_auprc.toFixed(3) + ' AUPRC (Top Performer)';
+                }}
+                if (data.top_baseline) {{
+                    const elName = document.getElementById('analytics-kpi-top-baseline-name');
+                    const elScore = document.getElementById('analytics-kpi-top-baseline-score');
+                    if (elName) elName.textContent = data.top_baseline.name;
+                    if (elScore) elScore.textContent = data.top_baseline.prefix_auprc.toFixed(3) + ' AUPRC (Offline Baseline)';
+                }}
+                if (data.max_delta_model) {{
+                    const elVal = document.getElementById('analytics-kpi-max-delta-val');
+                    const elName = document.getElementById('analytics-kpi-max-delta-name');
+                    const d = data.max_delta_model.delta_auprc;
+                    if (elVal) elVal.textContent = (d >= 0 ? '+' : '') + d.toFixed(3) + ' Δ AUPRC';
+                    if (elName) elName.textContent = data.max_delta_model.name;
+                }}
+                const elCount = document.getElementById('analytics-kpi-models-count');
+                const elSub = document.getElementById('analytics-kpi-models-sub');
+                if (elCount) elCount.textContent = data.models_count + ' Models';
+                if (elSub) elSub.textContent = 'Selected Visual Scope (' + data.models_count + ' evaluated)';
+
+                // 3. Update Causal Trajectories container
+                if (data.trajectory_bars_html) {{
+                    const trajContainer = document.getElementById('analytics-trajectory-container');
+                    if (trajContainer) trajContainer.innerHTML = data.trajectory_bars_html;
+                }}
+
+                // 4. Update Performance Matrix table rows
+                if (data.matrix_rows_html) {{
+                    const tbody = document.getElementById('analytics-matrix-tbody');
+                    if (tbody) tbody.innerHTML = data.matrix_rows_html;
+                }}
+
+                // 5. Update status
+                if (statusDiv) {{
+                    statusDiv.style.background = 'rgba(16, 185, 129, 0.15)';
+                    statusDiv.style.border = '1px solid rgba(16, 185, 129, 0.4)';
+                    statusDiv.style.color = '#34d399';
+                    statusDiv.innerHTML = '✅ Successfully regenerated 4 publication-ready figures & visual analytics for ' + data.models_count + ' models in ' + elapsedSec + 's!';
+                }}
+            }} catch (err) {{
+                if (statusDiv) {{
+                    statusDiv.style.background = 'rgba(244, 63, 94, 0.15)';
+                    statusDiv.style.border = '1px solid rgba(244, 63, 94, 0.4)';
+                    statusDiv.style.color = '#fb7185';
+                    statusDiv.innerHTML = '❌ Failed to regenerate infographics: ' + err.message;
+                }}
+            }} finally {{
+                if (btn) {{
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>🔄</span> Regenerate Infographics';
+                }}
             }}
         }}
 

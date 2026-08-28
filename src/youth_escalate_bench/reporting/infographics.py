@@ -657,8 +657,9 @@ def _generate_llm_leaderboard(
     y = np.arange(len(llm_scorers))
 
     palette = ["#38bdf8", "#34d399", "#818cf8", "#f59e0b", "#ec4899", "#a78bfa"]
+    bar_colors = [palette[i % len(palette)] for i in range(len(llm_scorers))]
     bars = ax.barh(
-        y, scores, height=0.55, color=palette[: len(llm_scorers)], alpha=0.9, edgecolor="#334155"
+        y, scores, height=0.55, color=bar_colors, alpha=0.9, edgecolor="#334155"
     )
 
     ax.set_yticks(y)

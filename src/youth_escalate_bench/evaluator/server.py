@@ -8,17 +8,20 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import yaml
 
 from youth_escalate_bench.baselines.scorers import ModerationScorer, build_default_scorers
 from youth_escalate_bench.evaluator.dashboard import (
+    _load_yaml_safe,
+    build_analytics_matrix_rows_html,
     build_evaluated_models_catalog,
+    build_trajectory_bars_html,
     generate_predict_page_html,
     generate_service_dashboard_html,
 )
-from youth_escalate_bench.reporting.infographics import _get_display_name
+from youth_escalate_bench.reporting.infographics import _get_display_name, generate_all_infographics
 from youth_escalate_bench.schemas.inference import InferenceRequest, ModelOutput
 
 
@@ -153,6 +156,10 @@ class PredictHandler(BaseHTTPRequestHandler):
         if path == "/api/models":
             models_catalog = build_evaluated_models_catalog(self.reports_dir)
             self._send_json(200, models_catalog)
+            return
+
+        if path == "/api/infographics/regenerate":
+            self._handle_regenerate_infographics()
             return
 
         # 4. Static reports, figures, heatmaps, and summaries
@@ -384,8 +391,12 @@ class PredictHandler(BaseHTTPRequestHandler):
         self.do_GET()
 
     def do_POST(self) -> None:
+        if self.path == "/api/infographics/regenerate":
+            self._handle_regenerate_infographics()
+            return
+
         if self.path != "/predict":
-            self.send_error(404, "Unknown endpoint. Only POST /predict is supported for inference.")
+            self.send_error(404, "Unknown endpoint. Only POST /predict and /api/infographics/regenerate are supported.")
             return
 
         length = int(self.headers.get("Content-Length", 0))
@@ -556,6 +567,124 @@ class PredictHandler(BaseHTTPRequestHandler):
         except Exception:
             return False
 
+    def _handle_regenerate_infographics(self) -> None:
+        """Dynamically regenerate publication figures, trajectory dynamics, and matrix rows for selected models."""
+        t0 = time.perf_counter()
+        req_models: list[str] | None = None
+
+        if self.command == "GET":
+            parsed = urlparse(self.path)
+            query = parse_qs(parsed.query)
+            if "models" in query:
+                req_models = []
+                for item in query["models"]:
+                    req_models.extend([m.strip() for m in item.split(",") if m.strip()])
+        else:
+            length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(length) if length > 0 else b"{}"
+            try:
+                payload = json.loads(body.decode("utf-8")) if body else {}
+            except Exception:
+                payload = {}
+            raw_models = payload.get("models")
+            if isinstance(raw_models, list):
+                req_models = [str(m).strip() for m in raw_models if str(m).strip()]
+            elif isinstance(raw_models, str):
+                req_models = [m.strip() for m in raw_models.split(",") if m.strip()]
+
+        # 1. Load evaluation results
+        eval_candidates = [
+            self.reports_dir / "data" / "evaluation_results.yaml",
+            self.reports_dir / "evaluation_results.yaml",
+            Path("data/processed/report/data/evaluation_results.yaml"),
+            Path("data/processed/report/evaluation_results.yaml"),
+            Path("data/processed/evaluate/evaluation_results.yaml"),
+        ]
+        eval_path = next((p for p in eval_candidates if p.exists()), None)
+        raw_results: list[dict[str, Any]] = []
+        if eval_path:
+            raw_data = _load_yaml_safe(eval_path)
+            raw_results = raw_data if isinstance(raw_data, list) else raw_data.get("results", [])
+
+        # 2. Build full catalog
+        full_catalog = build_evaluated_models_catalog(self.reports_dir)
+        all_models = full_catalog.get("models", [])
+
+        # 3. Filter models
+        if req_models and not any(str(m).lower() in ("all", "select_all", "*") for m in req_models):
+            target_ids = {str(m).lower() for m in req_models}
+            selected_models = [
+                m for m in all_models
+                if m["id"].lower() in target_ids
+                or m["name"].lower() in target_ids
+                or any(t in m["id"].lower() or t in m["name"].lower() for t in target_ids)
+            ]
+            if not selected_models:
+                selected_models = all_models
+        else:
+            selected_models = all_models
+
+        selected_ids = {m["id"] for m in selected_models}
+        filtered_results = [
+            r for r in raw_results
+            if r.get("scorer") in selected_ids
+            or any(m["id"] == r.get("scorer") for m in selected_models)
+        ]
+        if not filtered_results:
+            filtered_results = raw_results
+
+        # 4. Load onset data if available
+        onset_candidates = [
+            self.reports_dir / "data" / "onset_metrics.yaml",
+            self.reports_dir / "onset_metrics.yaml",
+            Path("data/processed/evaluate/onset_metrics.yaml"),
+        ]
+        onset_path = next((p for p in onset_candidates if p.exists()), None)
+        onset_data = _load_yaml_safe(onset_path) if onset_path else {}
+
+        # 5. Generate updated infographics (saved directly into self.reports_dir)
+        self.reports_dir.mkdir(parents=True, exist_ok=True)
+        generated_files = generate_all_infographics(
+            filtered_results,
+            self.reports_dir,
+            onset_data,
+        )
+
+        # 6. Recompute KPI summaries for selected models
+        top_llm = next((m for m in selected_models if m.get("provider") != "Local Baseline"), None)
+        top_baseline = next((m for m in selected_models if m.get("provider") == "Local Baseline"), None)
+        max_delta_model = max(selected_models, key=lambda m: m.get("delta_auprc", 0.0)) if selected_models else None
+
+        # 7. Pre-render updated HTML snippets
+        trajectory_html = build_trajectory_bars_html(selected_models)
+        matrix_html = build_analytics_matrix_rows_html(selected_models)
+
+        elapsed_ms = round((time.perf_counter() - t0) * 1000.0, 1)
+
+        resp = {
+            "status": "success",
+            "models_count": len(selected_models),
+            "selected_models": [m["id"] for m in selected_models],
+            "generated_files": generated_files,
+            "top_llm": {
+                "name": top_llm["name"],
+                "prefix_auprc": round(top_llm["prefix_auprc"], 3),
+            } if top_llm else None,
+            "top_baseline": {
+                "name": top_baseline["name"],
+                "prefix_auprc": round(top_baseline["prefix_auprc"], 3),
+            } if top_baseline else None,
+            "max_delta_model": {
+                "name": max_delta_model["name"],
+                "delta_auprc": round(max_delta_model["delta_auprc"], 3),
+            } if max_delta_model else None,
+            "trajectory_bars_html": trajectory_html,
+            "matrix_rows_html": matrix_html,
+            "elapsed_ms": elapsed_ms,
+            "timestamp": int(time.time() * 1000),
+        }
+        self._send_json(200, resp)
+
     def _send_json(self, status: int, data: Any) -> None:
         payload = json.dumps(data, indent=2).encode("utf-8")
         self._send_bytes(status, payload, "application/json")
@@ -587,7 +716,9 @@ def serve(
     PredictHandler.server_host = host
     PredictHandler.server_port = port
 
+    ThreadingHTTPServer.allow_reuse_address = True
     server = ThreadingHTTPServer((host, port), PredictHandler)
+    server.daemon_threads = True
     print("=" * 72)
     print("YouthEscalateBench Evaluator Service Online!")
     print(f"  • Moderation API Endpoint : http://{host}:{port}/predict")
