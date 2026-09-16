@@ -17,6 +17,9 @@ infographics:
 - figure_context_trajectory.png
 - figure_llm_leaderboard.png
 - infographic_dashboard.html
+- infographic_governance_audit.png
+- infographic_split_data.png
+- infographic_data_lifecycle.png
 llm_error_summary: {}
 onset_dynamics:
   detection_rate: 0.1543859649122807

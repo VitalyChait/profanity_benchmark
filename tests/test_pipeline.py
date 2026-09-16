@@ -125,3 +125,42 @@ def test_reports_dir_export(tmp_path: Path) -> None:
     assert (reports_dir / "evaluation_report.md").exists()
     assert (reports_dir / "table_main_results.tex").exists()
     assert (reports_dir / "data").is_dir()
+
+
+def test_upsert_error_case_merges_identical_templates() -> None:
+    from youth_escalate_bench.stages.report import _upsert_error_case
+
+    buckets: dict = {}
+    phrase = "bro why did you push solo without comms"
+    for i, prob in enumerate((0.7, 0.8, 0.6), start=1):
+        _upsert_error_case(
+            buckets,
+            "prompted_llm_judge",
+            {
+                "conversation_id": f"syn_{i}",
+                "turn_id": "t3",
+                "condition": "current_turn_only",
+                "error_type": "False Positive (Over-moderation)",
+                "predicted_harm_probability": prob,
+                "turn_text": phrase,
+            },
+        )
+    _upsert_error_case(
+        buckets,
+        "prompted_llm_judge",
+        {
+            "conversation_id": "syn_covert",
+            "turn_id": "t5",
+            "condition": "full_prefix",
+            "error_type": "False Negative (Missed Harm)",
+            "predicted_harm_probability": 0.1,
+            "turn_text": "nobody in this discord wanted you here, just leave",
+        },
+    )
+    model_bucket = buckets["prompted_llm_judge"]
+    assert len(model_bucket) == 2
+    fp_key = (phrase, "False Positive (Over-moderation)")
+    fp = model_bucket[fp_key]
+    assert fp["occurrences"] == 3
+    assert abs(fp["predicted_harm_probability"] - (0.7 + 0.8 + 0.6) / 3) < 1e-6
+    assert fp["additional_conversation_ids"] == ["syn_2", "syn_3"]

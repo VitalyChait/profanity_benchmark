@@ -40,6 +40,79 @@ _API_BYTES_CACHE: dict[str, tuple[str, bytes]] = {}
 _STATIC_BYTES_CACHE: dict[str, tuple[int, bytes, str]] = {}
 _RESPONSE_CACHE_LOCK = threading.Lock()
 _MAX_STATIC_CACHE_BYTES = 8 * 1024 * 1024  # cache individual files up to 8 MiB
+_STUB_MAX_BYTES = 512
+
+
+def _file_is_stub(path: Path) -> bool:
+    try:
+        return path.stat().st_size <= _STUB_MAX_BYTES
+    except OSError:
+        return True
+
+
+def pick_static_report_file(
+    relative_name: str,
+    candidate_dirs: list[Path],
+    *,
+    preferred_dir: Path | None = None,
+) -> Path | None:
+    """Choose which on-disk report artifact to serve for a URL.
+
+    Stub files (tiny placeholders) never win. When the request maps to a
+    preferred directory (e.g. ``/reports/foo.png`` → ``reports/foo.png``), that
+    copy is used if it is a real file so freshly regenerated figures are not
+    hidden by a larger stale copy under ``data/processed/report/``.
+    """
+    matches: list[Path] = []
+    for c_dir in candidate_dirs:
+        target = c_dir / relative_name
+        if target.is_file() and target not in matches:
+            matches.append(target)
+        base_only = c_dir / Path(relative_name).name
+        if base_only.is_file() and base_only not in matches:
+            matches.append(base_only)
+    if not matches:
+        return None
+
+    if preferred_dir is not None:
+        for candidate in (preferred_dir / relative_name, preferred_dir / Path(relative_name).name):
+            if candidate in matches and not _file_is_stub(candidate):
+                return candidate
+
+    def _rank(p: Path) -> tuple[int, float, int]:
+        try:
+            st = p.stat()
+            return (0 if st.st_size <= _STUB_MAX_BYTES else 1, st.st_mtime, st.st_size)
+        except OSError:
+            return (0, 0.0, 0)
+
+    return max(matches, key=_rank)
+
+
+def _catalog_models_to_eval_rows(models: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Build evaluation-result rows from catalog metrics when YAML rows are missing."""
+    rows: list[dict[str, Any]] = []
+    cond_map = (
+        ("current_turn_only", "turn_auprc", "turn_auroc"),
+        ("prev_plus_current", "pair_auprc", "pair_auroc"),
+        ("full_prefix", "prefix_auprc", "prefix_auroc"),
+    )
+    for m in models:
+        scorer = str(m.get("id") or "")
+        if not scorer:
+            continue
+        for cond, auprc_key, auroc_key in cond_map:
+            auroc = m.get(auroc_key)
+            row: dict[str, Any] = {
+                "scorer": scorer,
+                "condition": cond,
+                "auprc": float(m.get(auprc_key) or 0.0),
+                "recall_at_fpr_1pct": float(m.get("r_at_fpr1") or 0.0),
+            }
+            if auroc is not None:
+                row["auroc"] = float(auroc)
+            rows.append(row)
+    return rows
 
 
 def _paths_fingerprint(paths: list[Path]) -> str:
@@ -294,10 +367,13 @@ class PredictHandler(BaseHTTPRequestHandler):
         # Keep full relative path under reports/ or data/processed/report/
         # so alternate roots remain reachable when stubs shadow basenames.
         relative_name = filename
+        preferred_dir: Path | None = None
         if filename.startswith("reports/"):
             relative_name = filename[len("reports/") :]
+            preferred_dir = self.reports_dir
         elif filename.startswith("data/processed/report/"):
             relative_name = filename[len("data/processed/report/") :]
+            preferred_dir = Path("data/processed/report")
 
         candidate_dirs = [
             self.reports_dir,
@@ -305,28 +381,12 @@ class PredictHandler(BaseHTTPRequestHandler):
             Path("reports"),
             Path("reports/snapshots/snapshot_2026.Q1"),
         ]
-
-        matches: list[Path] = []
-        for c_dir in candidate_dirs:
-            target = c_dir / relative_name
-            if target.is_file():
-                matches.append(target)
-            # Also try basename-only for legacy links
-            base_only = c_dir / Path(relative_name).name
-            if base_only.is_file() and base_only not in matches:
-                matches.append(base_only)
-
-        if matches:
-            # Prefer the richest artifact (larger, then newer) so stub reports/
-            # files do not hide full copies under data/processed/report/.
-            def _rank(p: Path) -> tuple[int, float]:
-                try:
-                    st = p.stat()
-                    return (st.st_size, st.st_mtime)
-                except OSError:
-                    return (0, 0.0)
-
-            target = max(matches, key=_rank)
+        target = pick_static_report_file(
+            relative_name,
+            candidate_dirs,
+            preferred_dir=preferred_dir,
+        )
+        if target is not None:
             cached = _get_cached_static_bytes(target)
             if cached is not None:
                 data, mime_type = cached
@@ -344,7 +404,8 @@ class PredictHandler(BaseHTTPRequestHandler):
                         mime_type = "text/html; charset=utf-8"
                     else:
                         mime_type = "application/octet-stream"
-            self._send_bytes(200, data, mime_type, cacheable=True, max_age=300)
+            is_image = (mime_type or "").startswith("image/")
+            self._send_bytes(200, data, mime_type, cacheable=not is_image, max_age=300)
             return
 
         self.send_error(404, f"Resource not found: {path}")
@@ -771,9 +832,12 @@ class PredictHandler(BaseHTTPRequestHandler):
         full_catalog = build_evaluated_models_catalog(self.reports_dir)
         all_models = full_catalog.get("models", [])
 
-        # 3. Filter models
-        if req_models and not any(str(m).lower() in ("all", "select_all", "*") for m in req_models):
-            target_ids = {str(m).lower() for m in req_models}
+        # 3. Filter models — never silently expand a subset back to the full panel
+        subset_requested = bool(
+            req_models and not any(str(m).lower() in ("all", "select_all", "*") for m in req_models)
+        )
+        if subset_requested:
+            target_ids = {str(m).lower() for m in req_models or []}
             selected_models = [
                 m for m in all_models
                 if m["id"].lower() in target_ids
@@ -781,7 +845,15 @@ class PredictHandler(BaseHTTPRequestHandler):
                 or any(t in m["id"].lower() or t in m["name"].lower() for t in target_ids)
             ]
             if not selected_models:
-                selected_models = all_models
+                self._send_json(
+                    400,
+                    {
+                        "status": "error",
+                        "error": "No evaluated models matched the requested ids.",
+                        "requested": req_models,
+                    },
+                )
+                return
         else:
             selected_models = all_models
 
@@ -792,7 +864,9 @@ class PredictHandler(BaseHTTPRequestHandler):
             or any(m["id"] == r.get("scorer") for m in selected_models)
         ]
         if not filtered_results:
-            filtered_results = raw_results
+            filtered_results = (
+                _catalog_models_to_eval_rows(selected_models) if subset_requested else raw_results
+            )
 
         # 4. Load onset data if available
         onset_candidates = [
@@ -809,6 +883,7 @@ class PredictHandler(BaseHTTPRequestHandler):
             filtered_results,
             self.reports_dir,
             onset_data,
+            include_governance=False,
         )
         invalidate_dashboard_caches()
         invalidate_response_caches()
@@ -818,8 +893,8 @@ class PredictHandler(BaseHTTPRequestHandler):
         top_baseline = next((m for m in selected_models if m.get("provider") == "Local Baseline"), None)
         max_delta_model = max(selected_models, key=lambda m: m.get("delta_auprc", 0.0)) if selected_models else None
 
-        # 7. Pre-render updated HTML snippets
-        trajectory_html = build_trajectory_bars_html(selected_models)
+        # 7. Pre-render updated HTML snippets for the selected scope (all rows, not a top-N sample)
+        trajectory_html = build_trajectory_bars_html(selected_models, max_bars=None)
         matrix_html = build_analytics_matrix_rows_html(selected_models)
 
         elapsed_ms = round((time.perf_counter() - t0) * 1000.0, 1)

@@ -23,6 +23,97 @@ _HTML_CACHE_LOCK = threading.Lock()
 
 # Cap inline failure rows so the dashboard stays responsive; full set remains on /api/errors
 MAX_INLINE_ERROR_CASES = 200
+# How many model names to list before collapsing into "+N more"
+_ERROR_MODELS_PREVIEW = 3
+
+
+def collapse_error_cases_by_utterance(cases: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Collapse identical turn texts into one diagnostic row per (utterance, error type).
+
+    Synthetic conversations reuse a small template bank, so flattening per-model
+    cases produces dozens of identical rows (e.g. "bro why did you push solo
+    without comms"). Group by normalized text + error type and keep instance /
+    model counts so the table is a distinct-utterance diagnostic, not a clone list.
+    """
+    grouped: dict[tuple[str, str], dict[str, Any]] = {}
+    order: list[tuple[str, str]] = []
+    for c in cases:
+        text = str(c.get("turn_text") or "").strip()
+        if not text:
+            continue
+        err = str(c.get("error_type") or "")
+        key = (text.lower(), err)
+        if key not in grouped:
+            grouped[key] = {
+                "turn_text": text,
+                "error_type": err,
+                "gold_severity": c.get("gold_severity", ""),
+                "gold_actionable": c.get("gold_actionable", False),
+                "reason": c.get("reason") or c.get("diagnostic_reason", ""),
+                "prob_sum": 0.0,
+                "prob_n": 0,
+                "occurrences": 0,
+                "models": [],
+                "_models_seen": set(),
+                "sample_ids": [],
+                "condition": c.get("condition", ""),
+            }
+            order.append(key)
+        g = grouped[key]
+        occ = int(c.get("occurrences") or 1)
+        g["occurrences"] += occ
+        prob = float(c.get("prob") if c.get("prob") is not None else c.get("predicted_harm_probability") or 0.0)
+        g["prob_sum"] += prob * occ
+        g["prob_n"] += occ
+        model = str(c.get("model") or c.get("display_name") or "").strip()
+        seen: set[str] = g["_models_seen"]
+        if model and model not in seen:
+            seen.add(model)
+            g["models"].append(model)
+        cid = str(c.get("conv_id") or c.get("conversation_id") or "")
+        tid = str(c.get("turn_id") or "")
+        if cid and len(g["sample_ids"]) < 3:
+            sample = f"{cid}:{tid}" if tid else cid
+            if sample not in g["sample_ids"]:
+                g["sample_ids"].append(sample)
+    result: list[dict[str, Any]] = []
+    for key in order:
+        g = grouped[key]
+        n = g["prob_n"] or 1
+        models: list[str] = g["models"]
+        result.append(
+            {
+                "turn_text": g["turn_text"],
+                "error_type": g["error_type"],
+                "gold_severity": g["gold_severity"],
+                "gold_actionable": g["gold_actionable"],
+                "reason": g["reason"],
+                "prob": g["prob_sum"] / n,
+                "occurrences": g["occurrences"],
+                "models": models,
+                "model": models[0] if len(models) == 1 else f"{len(models)} models",
+                "model_count": len(models),
+                "sample_ids": g["sample_ids"],
+                "condition": g["condition"],
+            }
+        )
+    result.sort(key=lambda r: (r["occurrences"], r["model_count"]), reverse=True)
+    return result
+
+
+def _format_error_models_cell(models: list[str]) -> str:
+    """Render the models column for a collapsed failure-case row."""
+    if not models:
+        return '<span style="color: var(--text-muted);">—</span>'
+    if len(models) == 1:
+        return f"<strong>{html_escape(models[0])}</strong>"
+    preview = ", ".join(html_escape(m) for m in models[:_ERROR_MODELS_PREVIEW])
+    extra = f" +{len(models) - _ERROR_MODELS_PREVIEW}" if len(models) > _ERROR_MODELS_PREVIEW else ""
+    return (
+        f"<strong>{len(models)} models</strong>"
+        f'<div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem;">'
+        f"{preview}{extra}</div>"
+    )
 
 
 def invalidate_dashboard_caches() -> None:
@@ -346,15 +437,27 @@ def _build_evaluated_models_catalog_uncached(
     }
 
 
-def build_trajectory_bars_html(models_list: list[dict[str, Any]]) -> str:
-    """Render top trajectory progress bars for context visualizer."""
+def build_trajectory_bars_html(
+    models_list: list[dict[str, Any]],
+    *,
+    max_bars: int | None = 6,
+) -> str:
+    """Render trajectory progress bars for the context visualizer.
+
+    On the initial dashboard (``max_bars=6``) sample top LLMs plus baselines so
+    a 30+ model catalog stays readable. After regenerate, pass ``max_bars=None``
+    so every selected model appears.
+    """
     trajectory_bars_html = ""
-    baselines_list = [m for m in models_list if m.get("provider") == "Local Baseline"]
-    top_models_for_bars = [m for m in models_list if m.get("provider") != "Local Baseline"][:4]
-    baselines_for_bars = baselines_list[:2]
-    sampled_for_trajectory = top_models_for_bars + baselines_for_bars
-    if not sampled_for_trajectory:
-        sampled_for_trajectory = models_list[:6]
+    if max_bars is None or len(models_list) <= max_bars:
+        sampled_for_trajectory = list(models_list)
+    else:
+        baselines_list = [m for m in models_list if m.get("provider") == "Local Baseline"]
+        top_models_for_bars = [m for m in models_list if m.get("provider") != "Local Baseline"][:4]
+        baselines_for_bars = baselines_list[:2]
+        sampled_for_trajectory = top_models_for_bars + baselines_for_bars
+        if not sampled_for_trajectory:
+            sampled_for_trajectory = models_list[:max_bars]
 
     for m in sampled_for_trajectory:
         t_val = m.get("turn_auprc", 0.0)
@@ -544,12 +647,12 @@ def generate_model_selector_component(
             <span id="{prefix}-selected-count" class="badge {count_badge_cls}" style="font-family: var(--font-mono); font-size: 0.78rem;">{count_text}</span>
         </div>
 
-        <div style="display: flex; gap: 0.4rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center;">
-            <button type="button" class="btn-sm btn-cyan" onclick="selectPredictModels('{prefix}', 'all')">🔘 Select All ({total_models})</button>
-            <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'baselines')">⚡ Local Baselines ({total_baselines})</button>
-            <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'llms')">🤖 Frontier LLMs ({total_llms})</button>
-            <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'custom')">🛠️ Custom ({total_custom})</button>
-            <button type="button" class="btn-sm btn-outline" onclick="selectPredictModels('{prefix}', 'none')">🧹 Clear</button>
+        <div class="scope-preset-bar" data-scope-bar="{prefix}" style="display: flex; gap: 0.4rem; margin-bottom: 0.6rem; flex-wrap: wrap; align-items: center;">
+            <button type="button" class="btn-sm scope-preset-btn{' is-selected' if default_all else ''}" data-scope-prefix="{prefix}" data-scope-mode="all" onclick="selectPredictModels('{prefix}', 'all')">🔘 Select All ({total_models})</button>
+            <button type="button" class="btn-sm scope-preset-btn" data-scope-prefix="{prefix}" data-scope-mode="baselines" onclick="selectPredictModels('{prefix}', 'baselines')">⚡ Local Baselines ({total_baselines})</button>
+            <button type="button" class="btn-sm scope-preset-btn" data-scope-prefix="{prefix}" data-scope-mode="llms" onclick="selectPredictModels('{prefix}', 'llms')">🤖 Frontier LLMs ({total_llms})</button>
+            <button type="button" class="btn-sm scope-preset-btn" data-scope-prefix="{prefix}" data-scope-mode="custom" onclick="selectPredictModels('{prefix}', 'custom')">🛠️ Custom ({total_custom})</button>
+            <button type="button" class="btn-sm scope-preset-btn" data-scope-prefix="{prefix}" data-scope-mode="none" onclick="selectPredictModels('{prefix}', 'none')">🧹 Clear</button>
             <input type="text" class="search-input" id="{prefix}-model-filter" placeholder="Filter models..." onkeyup="filterModelCheckboxes('{prefix}')" style="max-width: 170px; padding: 0.25rem 0.6rem; font-size: 0.78rem; margin-left: auto;">
         </div>
 
@@ -833,22 +936,40 @@ def _generate_service_dashboard_html_uncached(
                     "gold_severity": c.get("gold_severity", ""),
                     "turn_text": c.get("turn_text", ""),
                     "reason": c.get("diagnostic_reason", ""),
+                    "occurrences": int(c.get("occurrences") or 1),
                 }
             )
 
-    total_error_case_count = int(
-        errors_data.get("summary", {}).get("total_error_instances") or len(all_error_cases)
+    total_error_instance_count = int(
+        errors_data.get("summary", {}).get("total_error_instances") or sum(
+            int(c.get("occurrences") or 1) for c in all_error_cases
+        )
     )
-    # Keep the page light: render a capped sample; full dump stays on /api/errors
-    inline_error_cases = all_error_cases[:MAX_INLINE_ERROR_CASES]
+    distinct_error_cases = collapse_error_cases_by_utterance(all_error_cases)
+    unique_error_case_count = len(distinct_error_cases)
+    unique_fp_count = sum(1 for r in distinct_error_cases if "Positive" in r["error_type"])
+    unique_fn_count = sum(1 for r in distinct_error_cases if "Negative" in r["error_type"])
+    # Keep the page light: render a capped sample of distinct utterances
+    inline_error_cases = distinct_error_cases[:MAX_INLINE_ERROR_CASES]
     error_truncation_note = ""
-    if len(all_error_cases) > MAX_INLINE_ERROR_CASES:
+    grouped_note = (
+        f'<div style="color: var(--text-muted); font-size: 0.8rem; margin: 0.5rem 0 0.75rem;">'
+        f"Showing {len(inline_error_cases)} distinct utterance"
+        f"{'s' if len(inline_error_cases) != 1 else ''} "
+        f"(collapsed from {total_error_instance_count} instance rows; identical synthetic templates grouped). "
+        f'Full JSON: <a href="/api/errors" target="_blank" style="color: var(--accent-cyan);">/api/errors</a>'
+        f"</div>"
+    )
+    if unique_error_case_count > MAX_INLINE_ERROR_CASES:
         error_truncation_note = (
             f'<div style="color: var(--text-muted); font-size: 0.8rem; margin: 0.5rem 0 0.75rem;">'
-            f'Showing {MAX_INLINE_ERROR_CASES} of {total_error_case_count} cases for responsiveness. '
+            f"Showing {MAX_INLINE_ERROR_CASES} of {unique_error_case_count} distinct utterances "
+            f"({total_error_instance_count} instances). "
             f'Full JSON: <a href="/api/errors" target="_blank" style="color: var(--accent-cyan);">/api/errors</a>'
             f"</div>"
         )
+    elif all_error_cases:
+        error_truncation_note = grouped_note
 
     # Prepare difficulty sentences list (using distinct linguistic utterances)
     difficulty_sentences = distinct_difficulty_sentences[:20]
@@ -858,7 +979,7 @@ def _generate_service_dashboard_html_uncached(
     if not inline_error_cases:
         error_cases_rows = """
                             <tr>
-                                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem 1rem;">
+                                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem 1rem;">
                                     No failure cases loaded. Re-run the report stage or ensure
                                     <code>llm_error_cases.json</code> contains a non-empty <code>by_model</code> map.
                                 </td>
@@ -868,11 +989,22 @@ def _generate_service_dashboard_html_uncached(
         is_fp = "False Positive" in row["error_type"]
         badge_cls = "badge-amber" if is_fp else "badge-rose"
         label_short = "FP (Over-mod)" if is_fp else "FN (Missed)"
+        occ = int(row.get("occurrences") or 1)
+        samples = ", ".join(str(s) for s in row.get("sample_ids") or [])
+        models_cell = _format_error_models_cell(list(row.get("models") or []))
+        utterance_attr = html_escape(str(row["turn_text"]), quote=True)
+        error_type_attr = html_escape(str(row["error_type"]), quote=True)
         error_cases_rows += f"""
-                            <tr data-type="{row['error_type']}">
-                                <td class="cell-mono"><strong>{row['model']}</strong></td>
-                                <td style="max-width: 320px; font-weight: 500;">"{html_escape(str(row['turn_text']))}"</td>
+                            <tr data-type="{error_type_attr}" data-utterance="{utterance_attr}">
+                                <td class="cell-mono">{models_cell}</td>
+                                <td style="max-width: 320px; font-weight: 500;">
+                                    "{html_escape(str(row['turn_text']))}"
+                                    <div style="font-size: 0.72rem; color: var(--text-muted); font-family: var(--font-mono); margin-top: 0.15rem;">
+                                        {html_escape(samples) if samples else ""}
+                                    </div>
+                                </td>
                                 <td><span class="badge {badge_cls}">{label_short}</span></td>
+                                <td><span class="badge badge-indigo">{occ}×</span></td>
                                 <td><span class="badge badge-indigo">{html_escape(str(row['gold_severity']))}</span></td>
                                 <td class="cell-mono" style="font-weight: 700;">{row['prob']:.2f}</td>
                                 <td style="color: var(--text-secondary); font-size: 0.8rem;">{html_escape(str(row['reason']))}</td>
@@ -1754,6 +1886,23 @@ def _generate_service_dashboard_html_uncached(
             border-color: rgba(56, 189, 248, 0.45);
         }}
 
+        /* Model-scope presets: shared class; selected vs idle is background only */
+        .scope-preset-btn {{
+            background: #1e293b;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-card);
+        }}
+        .scope-preset-btn:hover {{
+            background: #283548;
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }}
+        .scope-preset-btn.is-selected {{
+            background: rgba(56, 189, 248, 0.18);
+            color: var(--accent-cyan);
+            border-color: rgba(56, 189, 248, 0.45);
+        }}
+
         /* Search input */
         .search-input {{
             background: #0f172a;
@@ -2108,24 +2257,30 @@ def _generate_service_dashboard_html_uncached(
         <section class="tab-content" id="tab-errors">
             <div class="panel-card">
                 <div class="panel-header">
-                    <h2 class="panel-title"><span>🔍</span> Turn-by-Turn LLM Failure Cases & Misclassifications</h2>
+                    <div>
+                        <h2 class="panel-title"><span>🔍</span> Turn-by-Turn LLM Failure Cases & Misclassifications</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 0.25rem;">
+                            Distinct utterances only — identical synthetic templates are grouped, with instance counts per row.
+                        </p>
+                    </div>
                     <input type="text" class="search-input" id="error-search" placeholder="Search turn text or model..." onkeyup="filterErrorTable()">
                 </div>
                 <div class="filter-bar">
-                    <button class="filter-btn active" onclick="setErrorFilter('all', this)">All Errors ({total_error_case_count})</button>
-                    <button class="filter-btn" onclick="setErrorFilter('False Positive', this)">False Positives (Over-Moderation)</button>
-                    <button class="filter-btn" onclick="setErrorFilter('False Negative', this)">False Negatives (Missed Harm)</button>
+                    <button class="filter-btn active" onclick="setErrorFilter('all', this)">All Errors ({unique_error_case_count} distinct)</button>
+                    <button class="filter-btn" onclick="setErrorFilter('False Positive', this)">False Positives ({unique_fp_count})</button>
+                    <button class="filter-btn" onclick="setErrorFilter('False Negative', this)">False Negatives ({unique_fn_count})</button>
                 </div>
                 {error_truncation_note}
                 <div class="table-responsive">
                     <table id="errors-table">
                         <thead>
                             <tr>
-                                <th>Evaluated Model</th>
+                                <th>Evaluated Model(s)</th>
                                 <th>Turn Text</th>
                                 <th>Error Classification</th>
+                                <th>Occurrences</th>
                                 <th>Severity / Gold</th>
-                                <th>Predicted Prob</th>
+                                <th>Avg Predicted Prob</th>
                                 <th>Diagnostic Attribution</th>
                             </tr>
                         </thead>
@@ -2786,6 +2941,36 @@ def _generate_service_dashboard_html_uncached(
             runLivePredict();
         }}
 
+        function inferScopePresetMode(prefix) {{
+            const boxes = Array.from(document.querySelectorAll('.' + prefix + '-checkbox'));
+            if (!boxes.length) return '';
+            const totals = {{ baselines: 0, llms: 0, custom: 0 }};
+            const checked = {{ baselines: 0, llms: 0, custom: 0 }};
+            boxes.forEach(b => {{
+                const item = b.closest('.' + prefix + '-check-item');
+                const cat = item ? (item.getAttribute('data-category') || '') : '';
+                const prov = item ? (item.getAttribute('data-provider') || '') : '';
+                let key = 'llms';
+                if (cat === 'custom' || prov.includes('requesty')) key = 'custom';
+                else if (cat === 'baselines' || prov.includes('local')) key = 'baselines';
+                totals[key] += 1;
+                if (b.checked) checked[key] += 1;
+            }});
+            const nChecked = checked.baselines + checked.llms + checked.custom;
+            if (nChecked === 0) return 'none';
+            if (nChecked === boxes.length) return 'all';
+            if (checked.baselines === totals.baselines && checked.llms === 0 && checked.custom === 0 && totals.baselines > 0) return 'baselines';
+            if (checked.llms === totals.llms && checked.baselines === 0 && checked.custom === 0 && totals.llms > 0) return 'llms';
+            if (checked.custom === totals.custom && checked.baselines === 0 && checked.llms === 0 && totals.custom > 0) return 'custom';
+            return '';
+        }}
+
+        function setScopePresetHighlight(prefix, mode) {{
+            document.querySelectorAll('.scope-preset-btn[data-scope-prefix="' + prefix + '"]').forEach(btn => {{
+                btn.classList.toggle('is-selected', !!mode && btn.getAttribute('data-scope-mode') === mode);
+            }});
+        }}
+
         function selectPredictModels(prefix, mode) {{
             const boxes = document.querySelectorAll('.' + prefix + '-checkbox');
             boxes.forEach(b => {{
@@ -2893,6 +3078,7 @@ def _generate_service_dashboard_html_uncached(
                     if (item) item.classList.remove('is-selected');
                 }}
             }});
+            setScopePresetHighlight(prefix, inferScopePresetMode(prefix));
             const badge = document.getElementById(prefix + '-selected-count');
             if (!badge) return;
             if (prefix === 'analytics') {{
@@ -2967,7 +3153,12 @@ def _generate_service_dashboard_html_uncached(
                     body: JSON.stringify({{ models: selected }})
                 }});
                 if (!resp.ok) {{
-                    throw new Error('Server returned HTTP ' + resp.status);
+                    let detail = 'Server returned HTTP ' + resp.status;
+                    try {{
+                        const errBody = await resp.json();
+                        if (errBody && errBody.error) detail = errBody.error;
+                    }} catch (parseErr) {{}}
+                    throw new Error(detail);
                 }}
                 const data = await resp.json();
                 const elapsedSec = ((performance.now() - tStart) / 1000).toFixed(2);
@@ -2984,7 +3175,14 @@ def _generate_service_dashboard_html_uncached(
                 figMappings.forEach(item => {{
                     const img = document.getElementById(item.id);
                     if (img) {{
+                        delete img.dataset.tried;
                         const newSrc = '/reports/' + item.name + '?t=' + t;
+                        img.onerror = function() {{
+                            if (!this.dataset.tried) {{
+                                this.dataset.tried = '1';
+                                this.src = '/reports/' + item.name + '?t=' + t + '&retry=1';
+                            }}
+                        }};
                         img.src = newSrc;
                         img.onclick = () => openLightbox(newSrc, item.title);
                     }}
@@ -3040,7 +3238,7 @@ def _generate_service_dashboard_html_uncached(
                     statusDiv.style.background = 'rgba(16, 185, 129, 0.15)';
                     statusDiv.style.border = '1px solid rgba(16, 185, 129, 0.4)';
                     statusDiv.style.color = '#34d399';
-                    statusDiv.innerHTML = '✅ Successfully regenerated 4 publication-ready figures & visual analytics for ' + data.models_count + ' models in ' + elapsedSec + 's!';
+                    statusDiv.innerHTML = '✅ Updated publication figures, causal trajectories, and the performance matrix for ' + data.models_count + ' models in ' + elapsedSec + 's!';
                 }}
             }} catch (err) {{
                 if (statusDiv) {{
@@ -4276,6 +4474,21 @@ def _generate_predict_page_html_uncached(
         .btn-cyan:hover {{ background: #0369a1; }}
         .btn-outline {{ background: rgba(255, 255, 255, 0.05); color: #cbd5e1; border-color: #334155; }}
         .btn-outline:hover {{ background: rgba(255, 255, 255, 0.1); color: #ffffff; }}
+        .scope-preset-btn {{
+            background: #1e293b;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-subtle);
+        }}
+        .scope-preset-btn:hover {{
+            background: #283548;
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.2);
+        }}
+        .scope-preset-btn.is-selected {{
+            background: rgba(56, 189, 248, 0.18);
+            color: var(--accent-cyan, #38bdf8);
+            border-color: rgba(56, 189, 248, 0.45);
+        }}
 
         .search-input {{
             background: #0f172a;
@@ -4491,6 +4704,36 @@ print(response.json())</div>
             submitPredict();
         }}
 
+        function inferScopePresetMode(prefix) {{
+            const boxes = Array.from(document.querySelectorAll('.' + prefix + '-checkbox'));
+            if (!boxes.length) return '';
+            const totals = {{ baselines: 0, llms: 0, custom: 0 }};
+            const checked = {{ baselines: 0, llms: 0, custom: 0 }};
+            boxes.forEach(b => {{
+                const item = b.closest('.' + prefix + '-check-item');
+                const cat = item ? (item.getAttribute('data-category') || '') : '';
+                const prov = item ? (item.getAttribute('data-provider') || '') : '';
+                let key = 'llms';
+                if (cat === 'custom' || prov.includes('requesty')) key = 'custom';
+                else if (cat === 'baselines' || prov.includes('local')) key = 'baselines';
+                totals[key] += 1;
+                if (b.checked) checked[key] += 1;
+            }});
+            const nChecked = checked.baselines + checked.llms + checked.custom;
+            if (nChecked === 0) return 'none';
+            if (nChecked === boxes.length) return 'all';
+            if (checked.baselines === totals.baselines && checked.llms === 0 && checked.custom === 0 && totals.baselines > 0) return 'baselines';
+            if (checked.llms === totals.llms && checked.baselines === 0 && checked.custom === 0 && totals.llms > 0) return 'llms';
+            if (checked.custom === totals.custom && checked.baselines === 0 && checked.llms === 0 && totals.custom > 0) return 'custom';
+            return '';
+        }}
+
+        function setScopePresetHighlight(prefix, mode) {{
+            document.querySelectorAll('.scope-preset-btn[data-scope-prefix="' + prefix + '"]').forEach(btn => {{
+                btn.classList.toggle('is-selected', !!mode && btn.getAttribute('data-scope-mode') === mode);
+            }});
+        }}
+
         function selectPredictModels(prefix, mode) {{
             const boxes = document.querySelectorAll('.' + prefix + '-checkbox');
             boxes.forEach(b => {{
@@ -4554,6 +4797,7 @@ print(response.json())</div>
                     if (item) item.classList.remove('is-selected');
                 }}
             }});
+            setScopePresetHighlight(prefix, inferScopePresetMode(prefix));
             const badge = document.getElementById(prefix + '-selected-count');
             if (!badge) return;
             if (checked.length === 0) {{

@@ -43,6 +43,15 @@
 ### Fig 4: Dedicated LLM Moderation Leaderboard
 ![LLM Leaderboard](figure_llm_leaderboard.png)
 
+### Fig 5: Corpus Governance & Multi-Source Legal Audit Architecture
+![Corpus Governance & Legal Audit](infographic_governance_audit.png)
+
+### Fig 6: Zero-Leakage Benchmark Dataset Splitting & Quota Stratification
+![Zero-Leakage Dataset Splitting & Quotas](infographic_split_data.png)
+
+### Fig 7: End-to-End Pipeline Architecture & Governance Lifecycle
+![Data Lifecycle Infographic](infographic_data_lifecycle.png)
+
 > 🌐 **Interactive Dashboard:** View the self-contained dashboard at [`infographic_dashboard.html`](infographic_dashboard.html).
 
 ---

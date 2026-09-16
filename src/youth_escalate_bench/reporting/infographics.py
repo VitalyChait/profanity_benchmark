@@ -179,8 +179,15 @@ def generate_all_infographics(
     results: list[dict[str, Any]],
     output_dir: Path,
     onset_data: dict[str, Any] | None = None,
+    *,
+    include_governance: bool = True,
 ) -> list[str]:
-    """Generate all publication-ready infographics, charts, and standalone HTML dashboard."""
+    """Generate all publication-ready infographics, charts, and standalone HTML dashboard.
+
+    ``include_governance`` is True for the report stage. Dashboard analytics
+    regenerate sets it False so model-scope figure refreshes do not rewrite
+    governance / split / lifecycle panels.
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     generated_files: list[str] = []
 
@@ -228,15 +235,16 @@ def generate_all_infographics(
         logger.warning("infographics_html_dashboard_error", error=str(e))
 
     # Generate Governance, Split Data & Audit Reports Infographics
-    try:
-        gov_files = generate_governance_and_data_infographics(
-            reports_dir=output_dir, output_dir=output_dir
-        )
-        for gf in gov_files:
-            if gf not in generated_files:
-                generated_files.append(gf)
-    except Exception as e:
-        logger.warning("governance_infographics_error", error=str(e))
+    if include_governance:
+        try:
+            gov_files = generate_governance_and_data_infographics(
+                reports_dir=output_dir, output_dir=output_dir
+            )
+            for gf in gov_files:
+                if gf not in generated_files:
+                    generated_files.append(gf)
+        except Exception as e:
+            logger.warning("governance_infographics_error", error=str(e))
 
     return generated_files
 

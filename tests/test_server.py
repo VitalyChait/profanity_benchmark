@@ -1,6 +1,7 @@
 """Unit tests for evaluator service, HTTP server, and analysis dashboard."""
 
 import json
+import re
 import threading
 from http.client import HTTPConnection
 from pathlib import Path
@@ -8,8 +9,17 @@ from typing import Any
 
 import pytest
 
-from youth_escalate_bench.evaluator.dashboard import generate_service_dashboard_html
-from youth_escalate_bench.evaluator.server import PredictHandler, ThreadingHTTPServer
+from youth_escalate_bench.evaluator.dashboard import (
+    build_trajectory_bars_html,
+    collapse_error_cases_by_utterance,
+    generate_service_dashboard_html,
+    invalidate_dashboard_caches,
+)
+from youth_escalate_bench.evaluator.server import (
+    PredictHandler,
+    ThreadingHTTPServer,
+    pick_static_report_file,
+)
 
 
 @pytest.fixture(scope="module")
@@ -64,6 +74,88 @@ def test_generate_service_dashboard_html() -> None:
     assert "fig-img-comparison" in html
     assert "fig-dl-comparison" in html
     assert "regenerateAnalyticsInfographics" in html
+    assert "scope-preset-btn" in html
+    assert "setScopePresetHighlight" in html
+    assert 'class="btn-sm scope-preset-btn is-selected" data-scope-prefix="analytics" data-scope-mode="all"' in html
+    assert 'class="btn-sm scope-preset-btn" data-scope-prefix="analytics" data-scope-mode="baselines"' in html
+    assert 'class="btn-sm scope-preset-btn" data-scope-prefix="analytics" data-scope-mode="none"' in html
+    assert "btn-cyan" not in html.split('data-scope-bar="analytics"')[1].split("model-columns-container")[0]
+
+
+def test_collapse_error_cases_by_utterance_dedupes_template_clones() -> None:
+    phrase = "bro why did you push solo without comms"
+    cases = [
+        {
+            "model": "Gemma A",
+            "turn_text": phrase,
+            "error_type": "False Positive (Over-moderation)",
+            "prob": 0.7,
+            "gold_severity": "coarse_monitor",
+            "reason": "over",
+            "conv_id": "c1",
+            "turn_id": "t3",
+        },
+        {
+            "model": "Gemma A",
+            "turn_text": phrase.upper(),
+            "error_type": "False Positive (Over-moderation)",
+            "prob": 0.8,
+            "gold_severity": "coarse_monitor",
+            "reason": "over",
+            "conv_id": "c2",
+            "turn_id": "t3",
+        },
+        {
+            "model": "Gemma B",
+            "turn_text": phrase,
+            "error_type": "False Positive (Over-moderation)",
+            "prob": 0.6,
+            "gold_severity": "coarse_monitor",
+            "reason": "over",
+            "conv_id": "c3",
+            "turn_id": "t1",
+        },
+        {
+            "model": "Gemma A",
+            "turn_text": "nobody in this discord wanted you here, just leave",
+            "error_type": "False Negative (Missed Harm)",
+            "prob": 0.1,
+            "gold_severity": "actionable",
+            "reason": "miss",
+            "conv_id": "c4",
+            "turn_id": "t5",
+        },
+    ]
+    out = collapse_error_cases_by_utterance(cases)
+    assert len(out) == 2
+    fp = next(r for r in out if "Positive" in r["error_type"])
+    fn = next(r for r in out if "Negative" in r["error_type"])
+    assert fp["occurrences"] == 3
+    assert fp["model_count"] == 2
+    assert fp["turn_text"].lower() == phrase
+    assert set(fp["models"]) == {"Gemma A", "Gemma B"}
+    assert fn["occurrences"] == 1
+    assert abs(fp["prob"] - (0.7 + 0.8 + 0.6) / 3) < 1e-9
+
+
+def test_error_table_collapses_duplicate_utterances() -> None:
+    invalidate_dashboard_caches()
+    html = generate_service_dashboard_html(reports_dir=Path("reports"), host="127.0.0.1", port=8080)
+    start = html.find('id="errors-table"')
+    end = html.find('id="difficulty-table"')
+    assert start != -1 and end != -1
+    chunk = html[start:end]
+    utterances = re.findall(r'data-utterance="([^"]*)"', chunk)
+    counts: dict[str, int] = {}
+    for u in utterances:
+        key = u.lower()
+        counts[key] = counts.get(key, 0) + 1
+    for utterance, n in counts.items():
+        assert n == 1, f"duplicate error-table row for {utterance!r} ({n} times)"
+    phrase = "bro why did you push solo without comms"
+    if phrase in counts:
+        assert counts[phrase] == 1
+    assert "distinct utterances" in html or "distinct utterance" in html
 
 
 def test_server_health_check(live_server: tuple[str, int]) -> None:
@@ -111,6 +203,9 @@ def test_server_predict_get_html(live_server: tuple[str, int]) -> None:
     assert "Execute POST /predict Request" in body
     assert "pred-model-grid" in body
     assert "Select All" in body
+    assert "scope-preset-btn" in body
+    assert "setScopePresetHighlight" in body
+    assert 'data-scope-prefix="pred" data-scope-mode="all"' in body
     assert "Local Baselines" in body
     assert "Frontier LLMs" in body
     assert "Custom Models" in body
@@ -470,6 +565,24 @@ def test_server_infographics_regenerate_post(live_server: tuple[str, int]) -> No
     assert "trajectory_bars_html" in data
     assert "matrix_rows_html" in data
     assert "timestamp" in data
+    assert data["matrix_rows_html"].count("<tr") == 2
+    assert "Raw Lexicon Match" in data["trajectory_bars_html"]
+    assert "Char N-Gram TF-IDF" in data["trajectory_bars_html"]
+    conn.close()
+
+    # Freshly written reports/ PNGs must be served — not a larger stale copy
+    # under data/processed/report/.
+    reports_png = Path("reports") / "infographic_models_comparison.png"
+    processed_png = Path("data/processed/report") / "infographic_models_comparison.png"
+    assert reports_png.is_file()
+    conn = HTTPConnection(host, port, timeout=10)
+    conn.request("GET", "/reports/infographic_models_comparison.png?t=" + str(data["timestamp"]))
+    img_res = conn.getresponse()
+    assert img_res.status == 200
+    body = img_res.read()
+    assert len(body) == reports_png.stat().st_size
+    if processed_png.is_file() and processed_png.stat().st_size != reports_png.stat().st_size:
+        assert len(body) != processed_png.stat().st_size
     conn.close()
 
 
@@ -485,4 +598,47 @@ def test_server_infographics_regenerate_get(live_server: tuple[str, int]) -> Non
     assert data["status"] == "success"
     assert data["models_count"] == 1
     assert data["selected_models"] == ["lexicon_raw"]
+    assert data["matrix_rows_html"].count("<tr") == 1
+    assert "Raw Lexicon Match" in data["trajectory_bars_html"]
     conn.close()
+
+
+def test_pick_static_report_file_prefers_url_dir_over_larger_stale_copy(tmp_path: Path) -> None:
+    reports = tmp_path / "reports"
+    processed = tmp_path / "processed"
+    reports.mkdir()
+    processed.mkdir()
+    name = "infographic_models_comparison.png"
+    fresh = b"fresh-small-figure" + b"\x00" * 600
+    stale = b"STALE" * 800
+    (reports / name).write_bytes(fresh)
+    (processed / name).write_bytes(stale)
+    chosen = pick_static_report_file(
+        name,
+        [reports, processed],
+        preferred_dir=reports,
+    )
+    assert chosen == reports / name
+    assert chosen is not None
+    assert chosen.read_bytes() == fresh
+
+
+def test_build_trajectory_bars_html_shows_all_selected_when_unbounded() -> None:
+    models = [
+        {
+            "id": f"m{i}",
+            "name": f"Model {i}",
+            "family": "LLM",
+            "provider": "OpenRouter",
+            "turn_auprc": 0.1 * i,
+            "pair_auprc": 0.15 * i,
+            "prefix_auprc": 0.2 * i,
+            "delta_auprc": 0.05,
+        }
+        for i in range(1, 9)
+    ]
+    sampled = build_trajectory_bars_html(models)
+    assert sampled.count("Model ") == 4
+    full = build_trajectory_bars_html(models, max_bars=None)
+    assert full.count("Model ") == 8
+    assert "Model 8" in full

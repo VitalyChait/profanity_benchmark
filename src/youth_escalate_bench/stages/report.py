@@ -104,6 +104,40 @@ def _generate_latex_table(data_by_scorer: dict[str, dict[str, dict[str, Any]]]) 
     return "\n".join(lines)
 
 
+def _upsert_error_case(
+    buckets: dict[str, dict[tuple[str, str], dict[str, Any]]],
+    scorer: str,
+    case: dict[str, Any],
+) -> None:
+    """Merge a failure case into the per-model bucket keyed by (utterance, error type).
+
+    Synthetic conversations reuse template lines, so sequential extraction would
+    otherwise store 50 clones of the same phrase. Identical texts increment
+    ``occurrences`` on the representative case instead of appending a new row.
+    """
+    text = str(case.get("turn_text") or "").strip()
+    err = str(case.get("error_type") or "")
+    key = (text.lower(), err)
+    bucket = buckets.setdefault(scorer, {})
+    existing = bucket.get(key)
+    if existing is None:
+        stored = dict(case)
+        stored["occurrences"] = 1
+        stored["additional_conversation_ids"] = []
+        bucket[key] = stored
+        return
+    old_n = int(existing.get("occurrences") or 1)
+    new_n = old_n + 1
+    old_p = float(existing.get("predicted_harm_probability") or 0.0)
+    new_p = float(case.get("predicted_harm_probability") or 0.0)
+    existing["predicted_harm_probability"] = round((old_p * old_n + new_p) / new_n, 4)
+    existing["occurrences"] = new_n
+    cid = case.get("conversation_id")
+    extra = existing.setdefault("additional_conversation_ids", [])
+    if cid and cid != existing.get("conversation_id") and len(extra) < 8:
+        extra.append(cid)
+
+
 def _extract_llm_error_cases(
     input_dir: Path,
     config: dict[str, Any],
@@ -167,7 +201,9 @@ def _extract_llm_error_cases(
         input_dir / "predictions.jsonl",
         Path("data/processed/evaluate/predictions.jsonl"),
     ]
-    model_errors: dict[str, list[dict[str, Any]]] = {}
+    # Unique (utterance, error_type) per scorer; clones increment occurrences.
+    model_case_buckets: dict[str, dict[tuple[str, str], dict[str, Any]]] = {}
+    model_instance_counts: dict[str, dict[str, int]] = {}
 
     max_cases = int(config.get("max_error_cases_per_model", 50))
     for p_file in preds_candidates:
@@ -177,8 +213,6 @@ def _extract_llm_error_cases(
                     for line in f:
                         pred = json.loads(line)
                         scorer = pred.get("scorer", "")
-                        if len(model_errors.get(scorer, [])) >= max_cases:
-                            continue
                         display_name, family = _get_display_name(scorer)
                         if (
                             "LLM" not in family
@@ -206,6 +240,12 @@ def _extract_llm_error_cases(
                                 if (pred_act and not gold_act)
                                 else "False Negative (Missed Harm)"
                             )
+                            counts = model_instance_counts.setdefault(scorer, {"fp": 0, "fn": 0})
+                            if "Positive" in err_type:
+                                counts["fp"] += 1
+                            else:
+                                counts["fn"] += 1
+
                             t_info = turn_lookup.get(key, {})
                             turn_text = t_info.get("text", f"[{turn_id} text unavailable]")
                             history = t_info.get("history", [])
@@ -229,10 +269,9 @@ def _extract_llm_error_cases(
                                 else:
                                     diag = f"Model under-estimated harm (P={prob:.3f}) below actionable threshold."
 
-                            if scorer not in model_errors:
-                                model_errors[scorer] = []
-
-                            model_errors[scorer].append(
+                            _upsert_error_case(
+                                model_case_buckets,
+                                scorer,
                                 {
                                     "conversation_id": conv_id,
                                     "turn_id": turn_id,
@@ -249,25 +288,32 @@ def _extract_llm_error_cases(
                                     "platform_style": t_info.get("platform_style", "group_chat"),
                                     "dialogue_history": history,
                                     "diagnostic_reason": diag,
-                                }
+                                },
                             )
             except Exception:
                 pass
             break
 
-    # Organize statistics
+    # Organize statistics: keep the most frequent distinct utterances per model
     summary_by_model: dict[str, Any] = {}
-    for scorer, cases in model_errors.items():
+    for scorer, bucket in model_case_buckets.items():
         disp_name, fam = _get_display_name(scorer)
-        fps = [c for c in cases if "False Positive" in c["error_type"]]
-        fns = [c for c in cases if "False Negative" in c["error_type"]]
+        cases = sorted(
+            bucket.values(),
+            key=lambda c: int(c.get("occurrences") or 1),
+            reverse=True,
+        )
+        counts = model_instance_counts.get(scorer, {"fp": 0, "fn": 0})
+        fps = counts["fp"]
+        fns = counts["fn"]
         summary_by_model[scorer] = {
             "display_name": disp_name,
             "family": fam,
-            "total_errors": len(cases),
-            "false_positives": len(fps),
-            "false_negatives": len(fns),
-            "cases": cases,
+            "total_errors": fps + fns,
+            "false_positives": fps,
+            "false_negatives": fns,
+            "distinct_utterances": len(cases),
+            "cases": cases[:max_cases],
         }
 
     return {
@@ -530,9 +576,10 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
 
         d_name = m_info["display_name"]
         cases = m_info["cases"]
+        tot = m_info.get("total_errors", sum(int(c.get("occurrences") or 1) for c in cases))
         error_section_lines.extend(
             [
-                f"#### 🤖 {d_name} ({len(cases)} failure cases)",
+                f"#### 🤖 {d_name} ({len(cases)} distinct utterances, {tot} instances)",
                 "",
             ]
         )
@@ -548,18 +595,25 @@ def run_report(config: dict[str, Any], input_dir: Path, output_dir: Path) -> dic
             turn_text = c["turn_text"]
             history = c.get("dialogue_history", [])
             diag = c.get("diagnostic_reason", "")
+            occ = int(c.get("occurrences") or 1)
+            extra_ids = c.get("additional_conversation_ids") or []
 
             badge = "🔴 **FALSE POSITIVE**" if "Positive" in err_type else "🟠 **FALSE NEGATIVE**"
+            occ_note = f" — observed **{occ}×** (identical template collapsed)" if occ > 1 else ""
 
             error_section_lines.extend(
                 [
-                    f"**Case #{idx}: `{conv_id}` — Turn `{turn_id}`** ({badge})",
+                    f"**Case #{idx}: `{conv_id}` — Turn `{turn_id}`** ({badge}){occ_note}",
                     f"- **Context Condition:** `{cond}`",
                     f"- **LLM Prediction:** Harm Probability = `{prob:.3f}` (Actionable = `{prob >= 0.5}`)",
                     f"- **Gold Ground Truth:** Severity = `{gold_sev}` (Actionable = `{gold_act}`)",
                     f'- **Evaluated Turn Text:** > *"{turn_text}"*',
                 ]
             )
+            if extra_ids:
+                shown = ", ".join(f"`{i}`" for i in extra_ids[:5])
+                more = f" (+{len(extra_ids) - 5} more)" if len(extra_ids) > 5 else ""
+                error_section_lines.append(f"- **Also observed in:** {shown}{more}")
 
             if history:
                 error_section_lines.append("- **Dialogue Context:**")
