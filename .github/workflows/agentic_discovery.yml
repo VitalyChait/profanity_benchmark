@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: "pip"
@@ -34,7 +34,7 @@ jobs:
           yeb lexicon-stats
 
       - name: Commit and Create Discovery PR
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "feat(agent): autonomous weekly slang and profanity discovery update"
           title: "🤖 Weekly Autonomous Slang & Profanity Discovery"
