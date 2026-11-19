@@ -148,12 +148,13 @@ class DiscoveryLoop:
             )
 
         # 6. Append to discovery digest
-        self._append_to_digest(candidates, verified_results, newly_added_terms)
+        same_as_previous = self._append_to_digest(candidates, verified_results, newly_added_terms)
 
         logger.info(
             "discovery_cycle_completed",
             candidates_scouted=len(candidates),
             new_terms_added=len(newly_added_terms),
+            same_as_previous=same_as_previous,
         )
 
         return {
@@ -161,6 +162,7 @@ class DiscoveryLoop:
             "candidates_count": len(candidates),
             "new_terms_added": newly_added_terms,
             "contrastive_pairs_count": len(contrastive_pairs),
+            "same_as_previous": same_as_previous,
         }
 
     def _append_to_digest(
@@ -168,8 +170,11 @@ class DiscoveryLoop:
         candidates: list[Any],
         verified: list[Any],
         newly_added: list[str],
-    ) -> None:
-        """Write an entry in reports/agentic_discovery_digest.md, collapsing consecutive identical runs."""
+    ) -> bool:
+        """Write an entry in reports/agentic_discovery_digest.md, collapsing consecutive identical runs.
+
+        Returns True when the new run matches the immediately preceding digest entry.
+        """
         now_utc = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
         body_lines = [
             f"- **Candidates Scouted:** {len(candidates)}",
@@ -195,8 +200,10 @@ class DiscoveryLoop:
         else:
             prefix, entries = _DEFAULT_DIGEST_HEADER, []
 
+        same_as_previous = bool(entries and entries[-1][2] == new_body)
         entries.append((now_utc, 1, new_body))
         merged_entries = _merge_consecutive_entries(entries)
         self.digest_path.write_text(
             _format_digest_document(prefix, merged_entries), encoding="utf-8"
         )
+        return same_as_previous

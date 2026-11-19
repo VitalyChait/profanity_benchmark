@@ -166,22 +166,26 @@ def test_discovery_digest_collapses_consecutive_identical_runs(tmp_path: Path) -
                 for i in range(7)
             ]
         )
-        loop.run_discovery_cycle(random_limit=7)
+        res_1 = loop.run_discovery_cycle(random_limit=7)
+        assert res_1["same_as_previous"] is False
 
         # Runs 2, 3, 4: 0 scouted, 0 added (identical results)
         loop.scout.scout_random_slang = MagicMock(return_value=[])
-        loop.run_discovery_cycle(random_limit=15)
+        res_2 = loop.run_discovery_cycle(random_limit=15)
+        assert res_2["same_as_previous"] is False
         text_after_2 = digest_path.read_text(encoding="utf-8")
         assert "## Discovery Run: `2026-11-19 19:13:15 UTC`" in text_after_2
         assert "same for last" not in text_after_2
 
-        loop.run_discovery_cycle(random_limit=15)
+        res_3 = loop.run_discovery_cycle(random_limit=15)
+        assert res_3["same_as_previous"] is True
         text_after_3 = digest_path.read_text(encoding="utf-8")
         assert "2026-11-19 19:13:15 UTC" not in text_after_3
         assert "## Discovery Run: `2026-11-19 19:15:26 UTC` (same for last 2 runs)" in text_after_3
         assert text_after_3.count("## Discovery Run:") == 2
 
-        loop.run_discovery_cycle(random_limit=15)
+        res_4 = loop.run_discovery_cycle(random_limit=15)
+        assert res_4["same_as_previous"] is True
         text_after_4 = digest_path.read_text(encoding="utf-8")
         assert "2026-11-19 19:15:26 UTC" not in text_after_4
         assert "## Discovery Run: `2026-11-26 04:00:00 UTC` (same for last 3 runs)" in text_after_4
@@ -193,11 +197,36 @@ def test_discovery_digest_collapses_consecutive_identical_runs(tmp_path: Path) -
                 SlangCandidate(term="chill", meaning="relaxed", example="stay chill", source="mock")
             ]
         )
-        loop.run_discovery_cycle(random_limit=1)
+        res_5 = loop.run_discovery_cycle(random_limit=1)
+        assert res_5["same_as_previous"] is False
         text_after_5 = digest_path.read_text(encoding="utf-8")
         assert "## Discovery Run: `2026-11-26 04:00:00 UTC` (same for last 3 runs)" in text_after_5
         assert "## Discovery Run: `2026-12-03 04:00:00 UTC`" in text_after_5
         assert text_after_5.count("## Discovery Run:") == 3
+
+
+def test_cli_agent_discover_writes_github_output(tmp_path: Path) -> None:
+    gh_output = tmp_path / "github_output.txt"
+    runner = CliRunner()
+
+    mock_result = {
+        "timestamp": "2026-11-19T00:00:00+00:00",
+        "candidates_count": 0,
+        "new_terms_added": [],
+        "contrastive_pairs_count": 0,
+        "same_as_previous": True,
+    }
+    with patch("youth_escalate_bench.agents.runner.DiscoveryLoop") as mock_loop_cls:
+        mock_loop_cls.return_value.run_discovery_cycle.return_value = mock_result
+        res = runner.invoke(
+            main,
+            ["agent-discover", "--random-limit", "0"],
+            env={"GITHUB_OUTPUT": str(gh_output)},
+        )
+
+    assert res.exit_code == 0
+    assert "Same as Previous   : True" in res.output
+    assert gh_output.read_text(encoding="utf-8") == "same_as_previous=true\n"
 
 
 def test_pii_audit_module(tmp_path: Path) -> None:

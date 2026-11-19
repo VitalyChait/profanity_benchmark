@@ -1,5 +1,6 @@
 """YouthEscalateBench CLI."""
 
+import os
 from pathlib import Path
 
 import click
@@ -833,8 +834,14 @@ def agent_discover_command(random_limit: int, terms: str | None) -> None:
     new_terms_str = ", ".join(res["new_terms_added"]) if res["new_terms_added"] else "None"
     click.echo(f"New Terms Ingested : {len(res['new_terms_added'])} ({new_terms_str})")
     click.echo(f"Pairs Synthesized  : {res['contrastive_pairs_count']}")
+    click.echo(f"Same as Previous   : {res['same_as_previous']}")
     click.echo("Audit Digest       : reports/agentic_discovery_digest.md")
     click.echo("=" * 65)
+
+    github_output = os.environ.get("GITHUB_OUTPUT", "").strip()
+    if github_output:
+        with Path(github_output).open("a", encoding="utf-8") as f:
+            f.write(f"same_as_previous={'true' if res['same_as_previous'] else 'false'}\n")
 
 
 @main.command("cache-stats")
