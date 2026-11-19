@@ -1,7 +1,8 @@
 """Unit tests for autonomous agentic discovery framework and release tooling."""
 
+from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
 
@@ -119,6 +120,84 @@ def test_discovery_loop_run(tmp_path: Path) -> None:
     assert db_path.exists()
     assert digest_path.exists()
     assert "scuzzbag" in digest_path.read_text(encoding="utf-8")
+
+
+def test_discovery_digest_collapses_consecutive_identical_runs(tmp_path: Path) -> None:
+    db_path = tmp_path / "profanity_database.json"
+    lex_path = tmp_path / "profanity_lexicon.txt"
+    digest_path = tmp_path / "discovery_digest.md"
+
+    lex_path.write_text("trash\nkys\n", encoding="utf-8")
+
+    loop = DiscoveryLoop(
+        db_path=db_path,
+        lexicon_txt_path=lex_path,
+        digest_path=digest_path,
+    )
+    loop.scout.scout_targeted_terms = MagicMock(return_value=[])
+    loop.scout.scout_random_slang = MagicMock(return_value=[])
+
+    timestamps = [
+        datetime(2026, 8, 26, 21, 15, 26, tzinfo=UTC),
+        datetime(2026, 11, 19, 19, 13, 15, tzinfo=UTC),
+        datetime(2026, 11, 19, 19, 15, 26, tzinfo=UTC),
+        datetime(2026, 11, 26, 4, 0, 0, tzinfo=UTC),
+        datetime(2026, 12, 3, 4, 0, 0, tzinfo=UTC),
+    ]
+
+    with patch("youth_escalate_bench.agents.runner.datetime") as mock_dt:
+        mock_dt.now.side_effect = [
+            timestamps[0],
+            timestamps[0],
+            timestamps[1],
+            timestamps[1],
+            timestamps[2],
+            timestamps[2],
+            timestamps[3],
+            timestamps[3],
+            timestamps[4],
+            timestamps[4],
+        ]
+
+        # Run 1: 7 scouted, 0 added
+        loop.scout.scout_random_slang = MagicMock(
+            return_value=[
+                SlangCandidate(term=f"benign_{i}", meaning="friendly greeting", example="yo", source="mock")
+                for i in range(7)
+            ]
+        )
+        loop.run_discovery_cycle(random_limit=7)
+
+        # Runs 2, 3, 4: 0 scouted, 0 added (identical results)
+        loop.scout.scout_random_slang = MagicMock(return_value=[])
+        loop.run_discovery_cycle(random_limit=15)
+        text_after_2 = digest_path.read_text(encoding="utf-8")
+        assert "## Discovery Run: `2026-11-19 19:13:15 UTC`" in text_after_2
+        assert "same for last" not in text_after_2
+
+        loop.run_discovery_cycle(random_limit=15)
+        text_after_3 = digest_path.read_text(encoding="utf-8")
+        assert "2026-11-19 19:13:15 UTC" not in text_after_3
+        assert "## Discovery Run: `2026-11-19 19:15:26 UTC` (same for last 2 runs)" in text_after_3
+        assert text_after_3.count("## Discovery Run:") == 2
+
+        loop.run_discovery_cycle(random_limit=15)
+        text_after_4 = digest_path.read_text(encoding="utf-8")
+        assert "2026-11-19 19:15:26 UTC" not in text_after_4
+        assert "## Discovery Run: `2026-11-26 04:00:00 UTC` (same for last 3 runs)" in text_after_4
+        assert text_after_4.count("## Discovery Run:") == 2
+
+        # Run 5: different result (1 scouted, 0 added) -> new entry appended
+        loop.scout.scout_random_slang = MagicMock(
+            return_value=[
+                SlangCandidate(term="chill", meaning="relaxed", example="stay chill", source="mock")
+            ]
+        )
+        loop.run_discovery_cycle(random_limit=1)
+        text_after_5 = digest_path.read_text(encoding="utf-8")
+        assert "## Discovery Run: `2026-11-26 04:00:00 UTC` (same for last 3 runs)" in text_after_5
+        assert "## Discovery Run: `2026-12-03 04:00:00 UTC`" in text_after_5
+        assert text_after_5.count("## Discovery Run:") == 3
 
 
 def test_pii_audit_module(tmp_path: Path) -> None:

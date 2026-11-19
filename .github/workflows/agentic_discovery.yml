@@ -43,6 +43,6 @@ jobs:
           title: "🤖 Weekly Autonomous Slang & Profanity Discovery"
           body: |
             Autonomous Agentic Discovery scan executed.
-            See `reports/agentic_discovery_digest.md` for newly scouted terms, category classifications, and synthesized minimal pairs.
+            See `reports/agentic_discovery_digest.md` for newly scouted terms, category classifications, and synthesized minimal pairs (consecutive runs with identical results are consolidated under the latest run timestamp).
           branch: agentic-discovery-update
           base: master
