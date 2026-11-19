@@ -474,9 +474,12 @@ def test_server_resolve_scorers_all() -> None:
     handler = PredictHandler.__new__(PredictHandler)
     handler.lexicon_path = Path("data/processed/youth_profanity_lexicon.json")
     handler.scorer = None
+    all_scorers = handler.get_all_scorers(handler.lexicon_path)
     scorers = handler._resolve_scorers(None, "all")
-    assert len(scorers) >= 30
+    assert len(scorers) == len(all_scorers)
+    assert len(scorers) >= 7
     assert any(s[0] == "lexicon_raw" for s in scorers)
+    assert any(s[0] == "ensemble_moderator" for s in scorers)
 
 
 def test_server_predict_streaming_multi_model(live_server: tuple[str, int]) -> None:

@@ -1,6 +1,6 @@
 # Independent PII Audit & Spot-Check Report
 
-**Audit Timestamp:** `2026-09-03 15:00:21 UTC`  
+**Audit Timestamp:** `2026-11-19 19:09:51 UTC`  
 **Dataset Evaluated:** `data/processed/split/split_test.parquet`  
 **Audit Status:** 🟢 **AUDIT PASSED (Zero PII Residue Detected)**  
 
@@ -29,4 +29,4 @@
 - [x] Public release clearance approved for non-commercial research
 
 **Audited By:** Vitaly Chait (YouthEscalateBench Safety Team)  
-**Sign-off Date:** `2026-09-03`  
+**Sign-off Date:** `2026-11-19`  
