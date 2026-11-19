@@ -5,9 +5,8 @@ import re
 from pathlib import Path
 from typing import Any
 
-import yaml
-
 import matplotlib
+import yaml
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

@@ -13,8 +13,6 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-import yaml
-
 from youth_escalate_bench.baselines.scorers import ModerationScorer, build_default_scorers
 from youth_escalate_bench.evaluator.dashboard import (
     _load_difficulty_data,
